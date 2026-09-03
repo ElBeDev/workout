@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Plus, X } from "lucide-react";
 import { ExercisePicker } from "@/components/ExercisePicker";
 import { addExerciseToRoutine } from "./actions";
 
@@ -14,7 +15,7 @@ export function AddExerciseForm({ routineId }: { routineId: string }) {
 
   if (!selected) {
     return (
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold">Agregar ejercicio</h2>
         <ExercisePicker onSelect={(ex) => setSelected(ex)} />
       </div>
@@ -27,12 +28,21 @@ export function AddExerciseForm({ routineId }: { routineId: string }) {
         await addExerciseToRoutine(formData);
         setSelected(null);
       }}
-      className="flex flex-col gap-2 rounded-xl border border-black/10 p-3 dark:border-white/10"
+      className="flex flex-col gap-3"
     >
       <input type="hidden" name="routineId" value={routineId} />
       <input type="hidden" name="exerciseId" value={selected.id} />
 
-      <p className="text-sm font-medium capitalize">{selected.name}</p>
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold capitalize">{selected.name}</p>
+        <button
+          type="button"
+          onClick={() => setSelected(null)}
+          className="flex h-7 w-7 items-center justify-center rounded-full text-black/40 dark:text-white/40"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
 
       <div className="flex gap-2">
         <label className="flex-1 text-xs text-black/50 dark:text-white/50">
@@ -66,21 +76,13 @@ export function AddExerciseForm({ routineId }: { routineId: string }) {
         </label>
       </div>
 
-      <div className="flex gap-2">
-        <button
-          type="submit"
-          className="flex-1 rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white"
-        >
-          Agregar a la rutina
-        </button>
-        <button
-          type="button"
-          onClick={() => setSelected(null)}
-          className="rounded-full border border-black/10 px-4 py-2 text-sm dark:border-white/10"
-        >
-          Cancelar
-        </button>
-      </div>
+      <button
+        type="submit"
+        className="inline-flex items-center justify-center gap-1.5 rounded-full bg-accent px-4 py-2.5 text-sm font-medium text-white shadow-sm active:scale-[0.98]"
+      >
+        <Plus className="h-4 w-4" />
+        Agregar a la rutina
+      </button>
     </form>
   );
 }

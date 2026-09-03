@@ -9,6 +9,7 @@ import {
 import { and, eq, desc, ne } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ChevronLeft, Check, Flag } from "lucide-react";
 import { logSet, finishSession } from "./actions";
 
 type LastSet = { weight: string | null; reps: number | null };
@@ -99,29 +100,34 @@ export default async function EntrenarPage({
   return (
     <div className="flex flex-col gap-6">
       <header className="flex items-center gap-2">
-        <Link href={`/rutinas/${routine.id}`} className="text-black/40 dark:text-white/40">
-          ‹
+        <Link
+          href={`/rutinas/${routine.id}`}
+          className="flex h-8 w-8 items-center justify-center rounded-full text-black/40 dark:text-white/40"
+        >
+          <ChevronLeft className="h-5 w-5" />
         </Link>
-        <h1 className="text-2xl font-bold">{routine.name}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{routine.name}</h1>
       </header>
 
-      <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-4">
         {items.map((item) => {
           const lastTime = lastTimeByExercise.get(item.exerciseId) ?? new Map();
           return (
             <section
               key={item.exerciseId}
-              className="rounded-2xl border border-black/10 p-3 dark:border-white/10"
+              className="rounded-2xl border border-black/10 bg-surface p-3 shadow-sm dark:border-white/10"
             >
-              <div className="mb-2 flex items-center gap-3">
-                {item.gifUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={item.gifUrl}
-                    alt={item.exerciseName}
-                    className="h-12 w-12 rounded-lg object-cover"
-                  />
-                )}
+              <div className="mb-3 flex items-center gap-3">
+                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-black/5 dark:bg-white/10">
+                  {item.gifUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={item.gifUrl}
+                      alt={item.exerciseName}
+                      className="h-full w-full object-cover"
+                    />
+                  )}
+                </div>
                 <p className="text-sm font-semibold capitalize">{item.exerciseName}</p>
               </div>
 
@@ -142,7 +148,7 @@ export default async function EntrenarPage({
                         <input type="hidden" name="exerciseId" value={item.exerciseId} />
                         <input type="hidden" name="setNumber" value={setNumber} />
 
-                        <span className="w-5 text-xs text-black/40 dark:text-white/40">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black/5 text-[11px] font-medium text-black/50 dark:bg-white/10 dark:text-white/50">
                           {setNumber}
                         </span>
 
@@ -153,7 +159,7 @@ export default async function EntrenarPage({
                           inputMode="decimal"
                           defaultValue={existing?.weight ?? undefined}
                           placeholder={last ? `${last.weight ?? "-"} kg` : "kg"}
-                          className="w-20 rounded-lg border border-black/10 px-2 py-2 text-sm dark:border-white/10 dark:bg-transparent"
+                          className="w-20 rounded-lg border border-black/10 px-2 py-2.5 text-sm dark:border-white/10 dark:bg-transparent"
                         />
                         <input
                           name="reps"
@@ -161,18 +167,19 @@ export default async function EntrenarPage({
                           inputMode="numeric"
                           defaultValue={existing?.reps ?? undefined}
                           placeholder={last ? `${last.reps ?? "-"} reps` : `${item.targetReps} reps`}
-                          className="w-20 rounded-lg border border-black/10 px-2 py-2 text-sm dark:border-white/10 dark:bg-transparent"
+                          className="w-20 rounded-lg border border-black/10 px-2 py-2.5 text-sm dark:border-white/10 dark:bg-transparent"
                         />
 
                         <button
                           type="submit"
-                          className={`ml-auto rounded-full px-3 py-2 text-xs font-medium ${
+                          className={`ml-auto flex h-9 w-9 items-center justify-center rounded-full transition ${
                             existing?.completed
                               ? "bg-green-600 text-white"
-                              : "bg-black/10 dark:bg-white/10"
+                              : "bg-black/5 text-black/40 dark:bg-white/10 dark:text-white/40"
                           }`}
+                          aria-label="Marcar serie"
                         >
-                          {existing?.completed ? "✓" : "OK"}
+                          <Check className="h-4 w-4" strokeWidth={2.5} />
                         </button>
                       </form>
                     );
@@ -187,8 +194,9 @@ export default async function EntrenarPage({
       <form action={finishSession.bind(null, sessionId)}>
         <button
           type="submit"
-          className="w-full rounded-full bg-blue-600 px-4 py-3 text-sm font-medium text-white"
+          className="flex w-full items-center justify-center gap-2 rounded-full bg-accent px-4 py-3.5 text-sm font-semibold text-white shadow-sm active:scale-[0.98]"
         >
+          <Flag className="h-4 w-4" />
           Terminar entrenamiento
         </button>
       </form>
