@@ -19,10 +19,10 @@ Lo que ya funciona de punta a punta:
 - [x] Gráficas de progreso por ejercicio (peso máximo por sesión, Recharts).
 - [x] Fallback a un ícono cuando el gif de un ejercicio no carga.
 
-Lo que falta del MVP (ver sección 3):
+- [x] Reordenar ejercicios dentro de una rutina (flechas subir/bajar).
+- [x] Rest timer entre series (90s por defecto, +/-15s, flotante durante el entrenamiento).
 
-- [ ] Reordenar ejercicios dentro de una rutina.
-- [ ] Rest timer entre series.
+**MVP (fase 1) completo.** Lo que sigue es todo fase 2 (ver sección 4).
 
 Notas de infra que ya no hay que repetir:
 - El cliente de DB (`src/db/index.ts`) es "lazy" a propósito — si se inicializa en el import top-level, `next build` truena en Vercel al analizar rutas aunque `DATABASE_URL` sí exista en el entorno de runtime.
@@ -60,13 +60,13 @@ Conclusión: el patrón ganador es **"planner + tracker"**: armas la rutina una 
 3. **Rutinas (armar/editar)**
    - Crear rutina con nombre (ej. "Push Day", "Piernas"). ✅
    - Agregar ejercicios a la rutina, definir series objetivo, reps objetivo, y opcional peso objetivo. ✅
-   - Reordenar / eliminar ejercicios. — eliminar ✅, reordenar ⏳ pendiente.
+   - Reordenar / eliminar ejercicios. ✅
    - Puede haber varias rutinas y organizarlas por día de la semana o por "programa" (ej. rutina de 4 días). ✅ (varias rutinas sí; agrupar por "programa" queda para después)
 4. **Modo entrenamiento (ejecutar rutina)** ✅
    - Entras a la rutina del día, ves el primer ejercicio con su gif.
    - Por cada serie: input rápido de **peso** y **reps**, botón "listo" para marcar la serie. ✅
    - Se muestra automáticamente lo que hiciste la última vez en ese mismo ejercicio/serie (referencia para progressive overload). ✅
-   - Rest timer entre series (opcional pero muy usado). ⏳ pendiente.
+   - Rest timer entre series (opcional pero muy usado). ✅
    - Al terminar, la rutina queda guardada como "sesión completada" con fecha. ✅
 5. **Historial / progreso** ✅
    - Por ejercicio: gráfica simple de peso máximo o volumen a través del tiempo. ✅ (peso máximo; volumen queda para después)
@@ -134,7 +134,7 @@ SetLog (cada serie registrada durante la sesión)
 2. **Home** — rutinas del usuario, botón "Empezar" por rutina. ✅
 3. **Mis rutinas** — lista de rutinas, crear/borrar. ✅
 4. **Editor de rutina** — explorador de ejercicios (grid con gif, filtro por músculo), definir series/reps/peso, quitar ejercicios. ✅
-5. **Modo entrenamiento** — todos los ejercicios de la rutina, input de peso/reps por serie, gif visible, referencia de la sesión anterior. ✅ (falta: un ejercicio a la vez / rest timer)
+5. **Modo entrenamiento** — todos los ejercicios de la rutina, input de peso/reps por serie, gif visible, referencia de la sesión anterior, rest timer flotante. ✅
 6. **Progreso** — lista de sesiones completadas + gráfica de peso máximo por ejercicio. ✅
 7. **Perfil** — usuario logueado, cerrar sesión. ✅ (peso corporal queda para fase 2)
 
@@ -144,8 +144,9 @@ SetLog (cada serie registrada durante la sesión)
 - ~~Semana 2: catálogo de ejercicios (ExerciseDB) + CRUD de rutinas~~ ✅
 - ~~Semana 3: modo entrenamiento (logueo de series) + guardado de sesiones~~ ✅
 - ~~Gráficas de progreso, explorador visual de ejercicios, auth real (usuario + contraseña)~~ ✅
-- **Siguiente**: reordenar ejercicios en una rutina, rest timer.
-- **Después**: body weight tracking, notas por sesión.
+- ~~Reordenar ejercicios en una rutina, rest timer~~ ✅
+
+**MVP completo.** Siguiente (fase 2, sin prisa): body weight tracking, notas por sesión, sugerencia automática de peso/reps.
 
 ---
 
