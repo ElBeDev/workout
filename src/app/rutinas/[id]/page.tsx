@@ -2,13 +2,14 @@ import { db } from "@/db";
 import { routines, routineExercises, exercises } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import { ChevronUp, ChevronDown, Play, Trash2, Repeat, Layers } from "lucide-react";
+import { ChevronUp, ChevronDown, Play, Trash2 } from "lucide-react";
 import { bodyPartLabel } from "@/lib/body-parts";
 import { requireUserId } from "@/lib/session";
 import { Card, PageHeader, PrimaryButton, SectionTitle } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { AddExerciseForm } from "./AddExerciseForm";
 import { RoutineSettings } from "./RoutineSettings";
+import { ExerciseTargetsEditor } from "./ExerciseTargetsEditor";
 import { removeRoutineExercise, moveRoutineExercise } from "./actions";
 import { startSession } from "../../entrenar/actions";
 
@@ -86,17 +87,13 @@ export default async function RutinaDetailPage({
                     <p className="truncate text-[15px] font-semibold capitalize">
                       {item.exerciseName}
                     </p>
-                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[13px] text-muted">
-                      <span className="inline-flex items-center gap-1">
-                        <Layers className="h-3.5 w-3.5" />
-                        {item.targetSets} series
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <Repeat className="h-3.5 w-3.5" />
-                        {item.targetReps} reps
-                        {item.targetWeight ? ` · ${item.targetWeight} kg` : ""}
-                      </span>
-                    </div>
+                    <ExerciseTargetsEditor
+                      routineId={routine.id}
+                      routineExerciseId={item.id}
+                      targetSets={item.targetSets}
+                      targetReps={item.targetReps}
+                      targetWeight={item.targetWeight}
+                    />
                     <p className="mt-0.5 text-[12px] text-muted/80">
                       {bodyPartLabel(item.bodyPart)}
                     </p>

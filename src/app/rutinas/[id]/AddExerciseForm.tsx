@@ -53,7 +53,7 @@ export function AddExerciseForm({ routineId }: { routineId: string }) {
       <div className="grid grid-cols-3 gap-2">
         <label className="text-[12px] font-medium text-muted">
           Series
-          <input name="targetSets" type="number" min={1} defaultValue={3} className={fieldClass} />
+          <input name="targetSets" type="number" min={1} defaultValue={2} className={fieldClass} />
         </label>
         <label className="text-[12px] font-medium text-muted">
           Reps

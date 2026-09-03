@@ -66,6 +66,34 @@ export async function addExerciseToRoutine(formData: FormData) {
   revalidatePath(`/rutinas/${routineId}`);
 }
 
+export async function updateRoutineExercise(
+  routineId: string,
+  routineExerciseId: string,
+  formData: FormData
+) {
+  await requireOwnedRoutine(routineId);
+
+  const targetSets = Math.max(1, Number(formData.get("targetSets") ?? 1));
+  const targetReps = Math.max(1, Number(formData.get("targetReps") ?? 1));
+  const targetWeightRaw = formData.get("targetWeight");
+  const targetWeight =
+    targetWeightRaw && String(targetWeightRaw).trim() !== ""
+      ? String(targetWeightRaw)
+      : null;
+
+  await db
+    .update(routineExercises)
+    .set({ targetSets, targetReps, targetWeight })
+    .where(
+      and(
+        eq(routineExercises.id, routineExerciseId),
+        eq(routineExercises.routineId, routineId)
+      )
+    );
+
+  revalidatePath(`/rutinas/${routineId}`);
+}
+
 export async function removeRoutineExercise(routineId: string, routineExerciseId: string) {
   await requireOwnedRoutine(routineId);
   await db
