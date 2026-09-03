@@ -5,7 +5,7 @@ import { Check, Layers, Pencil, Repeat, X } from "lucide-react";
 import { updateRoutineExercise } from "./actions";
 
 const fieldClass =
-  "w-full rounded-xl border border-border bg-surface-2 px-2 py-2 text-center text-[14px] text-foreground outline-none focus:ring-2 focus:ring-accent";
+  "w-full rounded-xl border border-border bg-surface-2 px-1.5 py-2 text-center text-[14px] text-foreground outline-none focus:ring-2 focus:ring-accent [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 
 export function ExerciseTargetsEditor({
   routineId,
