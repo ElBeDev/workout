@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { routines } from "@/db/schema";
-import { getCurrentUserId } from "@/db/current-user";
+import { requireUserId } from "@/lib/session";
 import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { ChevronRight, Plus } from "lucide-react";
@@ -9,7 +9,7 @@ import { createRoutine } from "./actions";
 export const dynamic = "force-dynamic";
 
 export default async function RutinasPage() {
-  const userId = await getCurrentUserId();
+  const userId = await requireUserId();
   const myRoutines = await db
     .select()
     .from(routines)

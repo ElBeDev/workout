@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Play, Trash2 } from "lucide-react";
 import { bodyPartLabel } from "@/lib/body-parts";
+import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { AddExerciseForm } from "./AddExerciseForm";
 import { removeRoutineExercise } from "./actions";
 import { startSession } from "../../entrenar/actions";
@@ -59,15 +60,12 @@ export default async function RutinaDetailPage({
               key={item.id}
               className="flex items-center gap-3 rounded-2xl border border-black/10 bg-surface p-2.5 shadow-sm dark:border-white/10"
             >
-              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-black/5 dark:bg-white/10">
-                {item.gifUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={item.gifUrl}
-                    alt={item.exerciseName}
-                    className="h-full w-full object-cover"
-                  />
-                )}
+              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl">
+                <ExerciseThumb
+                  src={item.gifUrl}
+                  alt={item.exerciseName}
+                  className="h-full w-full"
+                />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold capitalize">

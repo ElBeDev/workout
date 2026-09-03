@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { setLogs, workoutSessions, exercises } from "@/db/schema";
-import { getCurrentUserId } from "@/db/current-user";
+import { requireUserId } from "@/lib/session";
 import { and, eq, max, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -15,7 +15,7 @@ export default async function ExerciseProgressPage({
   params: Promise<{ exerciseId: string }>;
 }) {
   const { exerciseId } = await params;
-  const userId = await getCurrentUserId();
+  const userId = await requireUserId();
 
   const [exercise] = await db
     .select()

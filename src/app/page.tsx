@@ -2,14 +2,14 @@ import Link from "next/link";
 import { Play, Plus, Dumbbell } from "lucide-react";
 import { db } from "@/db";
 import { routines } from "@/db/schema";
-import { getCurrentUserId } from "@/db/current-user";
+import { requireUserId } from "@/lib/session";
 import { eq } from "drizzle-orm";
 import { startSession } from "./entrenar/actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const userId = await getCurrentUserId();
+  const userId = await requireUserId();
   const myRoutines = await db
     .select()
     .from(routines)

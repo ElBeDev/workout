@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Search, Loader2 } from "lucide-react";
 import { BODY_PARTS, bodyPartLabel } from "@/lib/body-parts";
+import { ExerciseThumb } from "@/components/ExerciseThumb";
 
 type ExerciseResult = {
   id: string;
@@ -106,16 +107,8 @@ export function ExercisePicker({
             onClick={() => onSelect(ex)}
             className="flex flex-col overflow-hidden rounded-2xl border border-black/10 bg-white text-left shadow-sm transition active:scale-[0.98] dark:border-white/10 dark:bg-white/5"
           >
-            <div className="aspect-square w-full bg-black/5 dark:bg-white/10">
-              {ex.gifUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={ex.gifUrl}
-                  alt={ex.name}
-                  loading="lazy"
-                  className="h-full w-full object-cover"
-                />
-              )}
+            <div className="aspect-square w-full">
+              <ExerciseThumb src={ex.gifUrl} alt={ex.name} className="h-full w-full" />
             </div>
             <div className="flex flex-col gap-0.5 p-2">
               <span className="line-clamp-2 text-xs font-medium capitalize leading-tight">

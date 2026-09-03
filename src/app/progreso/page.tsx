@@ -2,14 +2,15 @@ import Link from "next/link";
 import { ChevronRight, CalendarClock } from "lucide-react";
 import { db } from "@/db";
 import { workoutSessions, routines, setLogs, exercises } from "@/db/schema";
-import { getCurrentUserId } from "@/db/current-user";
+import { requireUserId } from "@/lib/session";
 import { and, desc, eq, isNotNull } from "drizzle-orm";
 import { bodyPartLabel } from "@/lib/body-parts";
+import { ExerciseThumb } from "@/components/ExerciseThumb";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProgresoPage() {
-  const userId = await getCurrentUserId();
+  const userId = await requireUserId();
 
   const sessions = await db
     .select({
@@ -56,15 +57,8 @@ export default async function ProgresoPage() {
                   href={`/progreso/${ex.id}`}
                   className="flex items-center gap-3 rounded-2xl border border-black/10 bg-surface p-2.5 shadow-sm dark:border-white/10"
                 >
-                  <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-black/5 dark:bg-white/10">
-                    {ex.gifUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={ex.gifUrl}
-                        alt={ex.name}
-                        className="h-full w-full object-cover"
-                      />
-                    )}
+                  <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl">
+                    <ExerciseThumb src={ex.gifUrl} alt={ex.name} className="h-full w-full" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium capitalize">{ex.name}</p>

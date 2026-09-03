@@ -11,8 +11,20 @@ import {
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
-  email: text("email").notNull().unique(),
+  // Nullable so the pre-auth placeholder row keeps working during the
+  // switch to real accounts; enforced as required in the signup/login
+  // actions instead of at the DB level.
+  username: text("username").unique(),
+  passwordHash: text("password_hash"),
+  email: text("email").unique(),
   name: text("name"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const sessions = pgTable("sessions", {
+  token: text("token").primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

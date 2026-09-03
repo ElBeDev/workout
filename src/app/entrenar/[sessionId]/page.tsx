@@ -10,6 +10,7 @@ import { and, eq, desc, ne } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Check, Flag } from "lucide-react";
+import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { logSet, finishSession } from "./actions";
 
 type LastSet = { weight: string | null; reps: number | null };
@@ -118,15 +119,12 @@ export default async function EntrenarPage({
               className="rounded-2xl border border-black/10 bg-surface p-3 shadow-sm dark:border-white/10"
             >
               <div className="mb-3 flex items-center gap-3">
-                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-black/5 dark:bg-white/10">
-                  {item.gifUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={item.gifUrl}
-                      alt={item.exerciseName}
-                      className="h-full w-full object-cover"
-                    />
-                  )}
+                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl">
+                  <ExerciseThumb
+                    src={item.gifUrl}
+                    alt={item.exerciseName}
+                    className="h-full w-full"
+                  />
                 </div>
                 <p className="text-sm font-semibold capitalize">{item.exerciseName}</p>
               </div>

@@ -11,8 +11,11 @@ const TABS = [
   { href: "/perfil", label: "Perfil", icon: User },
 ] as const;
 
+const HIDDEN_ON = ["/login", "/registro"];
+
 export function BottomNav() {
   const pathname = usePathname();
+  if (HIDDEN_ON.includes(pathname)) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-black/10 bg-(--background)/90 backdrop-blur-lg pb-[env(safe-area-inset-bottom)] dark:border-white/10">
