@@ -18,27 +18,23 @@ export function BottomNav() {
   if (HIDDEN_ON.includes(pathname)) return null;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-black/10 bg-(--background)/90 backdrop-blur-lg pb-[env(safe-area-inset-bottom)] dark:border-white/10">
-      <ul className="mx-auto flex max-w-md">
+    <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-5 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <ul className="pointer-events-auto flex w-full max-w-md items-center justify-between rounded-full border border-border bg-surface p-1.5 shadow-[0_10px_30px_rgba(21,21,31,0.12)]">
         {TABS.map((tab) => {
-          const active = pathname === tab.href;
+          const active =
+            tab.href === "/" ? pathname === "/" : pathname.startsWith(tab.href);
           const Icon = tab.icon;
           return (
             <li key={tab.href} className="flex-1">
               <Link
                 href={tab.href}
-                className={`flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${
+                className={`flex flex-col items-center gap-0.5 rounded-full py-2 text-[11px] font-medium transition ${
                   active
-                    ? "text-blue-600 dark:text-blue-400"
-                    : "text-black/40 dark:text-white/40"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted"
                 }`}
               >
-                <Icon
-                  className="h-5 w-5"
-                  strokeWidth={active ? 2.5 : 2}
-                  fill={active ? "currentColor" : "none"}
-                  fillOpacity={active ? 0.15 : 0}
-                />
+                <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 2} />
                 {tab.label}
               </Link>
             </li>

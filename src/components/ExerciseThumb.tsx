@@ -16,10 +16,8 @@ export function ExerciseThumb({
 
   if (!src || failed) {
     return (
-      <div
-        className={`flex items-center justify-center bg-black/5 dark:bg-white/10 ${className}`}
-      >
-        <Dumbbell className="h-1/3 w-1/3 text-black/25 dark:text-white/25" />
+      <div className={`flex items-center justify-center bg-accent/40 ${className}`}>
+        <Dumbbell className="h-1/3 w-1/3 text-accent-strong" />
       </div>
     );
   }
@@ -31,7 +29,7 @@ export function ExerciseThumb({
       alt={alt}
       loading="lazy"
       onError={() => setFailed(true)}
-      className={`object-cover ${className}`}
+      className={`bg-white object-cover ${className}`}
     />
   );
 }

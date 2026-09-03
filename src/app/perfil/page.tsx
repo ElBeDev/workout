@@ -1,8 +1,9 @@
 import { eq } from "drizzle-orm";
-import { UserCircle, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
+import { Card, PageHeader, SecondaryButton } from "@/components/ui";
 import { logoutAction } from "../login/actions";
 
 export const dynamic = "force-dynamic";
@@ -10,26 +11,34 @@ export const dynamic = "force-dynamic";
 export default async function PerfilPage() {
   const userId = await requireUserId();
   const [user] = await db.select().from(users).where(eq(users.id, userId));
+  const initial = (user?.username ?? "?").charAt(0).toUpperCase();
 
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="text-2xl font-bold tracking-tight">Perfil</h1>
-      </header>
+      <PageHeader title="Perfil" />
 
-      <section className="flex flex-col items-center gap-3 rounded-2xl border border-black/10 bg-surface p-8 text-center shadow-sm dark:border-white/10">
-        <UserCircle className="h-12 w-12 text-black/20 dark:text-white/20" />
-        <p className="text-sm font-medium">{user?.username}</p>
-      </section>
+      <Card className="flex flex-col items-center gap-3 p-8 text-center">
+        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-accent text-[32px] font-bold text-accent-foreground">
+          {initial}
+        </div>
+        <div>
+          <p className="text-[18px] font-semibold capitalize">{user?.username}</p>
+          {user?.createdAt && (
+            <p className="text-[13px] text-muted">
+              Desde{" "}
+              {new Intl.DateTimeFormat("es-MX", { month: "long", year: "numeric" }).format(
+                user.createdAt
+              )}
+            </p>
+          )}
+        </div>
+      </Card>
 
       <form action={logoutAction}>
-        <button
-          type="submit"
-          className="flex w-full items-center justify-center gap-2 rounded-full border border-black/10 px-4 py-3 text-sm font-medium text-red-500 dark:border-white/10"
-        >
+        <SecondaryButton type="submit" className="w-full text-danger">
           <LogOut className="h-4 w-4" />
           Cerrar sesión
-        </button>
+        </SecondaryButton>
       </form>
     </div>
   );

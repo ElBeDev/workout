@@ -7,10 +7,10 @@ export function LogSetButton({ completed }: { completed: boolean }) {
     <button
       type="submit"
       onClick={() => window.dispatchEvent(new CustomEvent("workout:rest-start"))}
-      className={`ml-auto flex h-9 w-9 items-center justify-center rounded-full transition ${
+      className={`ml-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:scale-95 ${
         completed
-          ? "bg-green-600 text-white"
-          : "bg-black/5 text-black/40 dark:bg-white/10 dark:text-white/40"
+          ? "bg-primary text-primary-foreground"
+          : "border border-border bg-surface-2 text-muted"
       }`}
       aria-label="Marcar serie"
     >

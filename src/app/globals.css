@@ -1,32 +1,66 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f7f8;
+  --background: #ebe7fb;
   --surface: #ffffff;
-  --foreground: #111113;
-  --accent: #2563eb;
+  --surface-2: #f4f3f9;
+  --foreground: #15151f;
+  --muted: #74738a;
+  --accent: #cfc4ff;
+  --accent-foreground: #15151f;
+  --accent-strong: #7c6cf0;
+  --primary: #15151f;
+  --primary-foreground: #ffffff;
+  --border: rgba(21, 21, 31, 0.06);
+  --danger: #e5484d;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
   --color-accent: var(--accent);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-strong: var(--accent-strong);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-border: var(--border);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-outfit);
+  --radius-card: 1.5rem;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0b0b0d;
-    --surface: #17171a;
-    --foreground: #f2f2f3;
-    --accent: #3b82f6;
+    --background: #131220;
+    --surface: #1d1b2c;
+    --surface-2: #29273b;
+    --foreground: #f3f1fb;
+    --muted: #a3a1b8;
+    --accent: #6a5ae0;
+    --accent-foreground: #ffffff;
+    --accent-strong: #b8aaff;
+    --primary: #f3f1fb;
+    --primary-foreground: #15151f;
+    --border: rgba(255, 255, 255, 0.08);
+    --danger: #ff6b6f;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+input,
+button {
+  font-family: inherit;
+}
+
+input::placeholder {
+  color: var(--muted);
+  opacity: 0.8;
 }

@@ -5,6 +5,7 @@ import { workoutSessions, routines, setLogs, exercises } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
 import { and, desc, eq, isNotNull } from "drizzle-orm";
 import { bodyPartLabel } from "@/lib/body-parts";
+import { Card, PageHeader, SectionTitle } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 
 export const dynamic = "force-dynamic";
@@ -40,33 +41,30 @@ export default async function ProgresoPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="text-2xl font-bold tracking-tight">Progreso</h1>
-        <p className="text-sm text-black/50 dark:text-white/50">
-          Historial de sesiones y gráficas por ejercicio.
-        </p>
-      </header>
+      <PageHeader
+        title="Progreso"
+        subtitle={`${sessions.length} ${sessions.length === 1 ? "sesión" : "sesiones"} completadas`}
+      />
 
       {trainedExercises.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold">Por ejercicio</h2>
-          <ul className="flex flex-col gap-2">
+        <section className="flex flex-col gap-3">
+          <SectionTitle>Por ejercicio</SectionTitle>
+          <ul className="flex flex-col gap-3">
             {trainedExercises.map((ex) => (
               <li key={ex.id}>
-                <Link
-                  href={`/progreso/${ex.id}`}
-                  className="flex items-center gap-3 rounded-2xl border border-black/10 bg-surface p-2.5 shadow-sm dark:border-white/10"
-                >
-                  <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl">
-                    <ExerciseThumb src={ex.gifUrl} alt={ex.name} className="h-full w-full" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium capitalize">{ex.name}</p>
-                    <p className="text-[11px] text-black/40 dark:text-white/40">
-                      {bodyPartLabel(ex.bodyPart)}
-                    </p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-black/30 dark:text-white/30" />
+                <Link href={`/progreso/${ex.id}`}>
+                  <Card className="flex items-center gap-3 p-3 transition active:scale-[0.99]">
+                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl">
+                      <ExerciseThumb src={ex.gifUrl} alt={ex.name} className="h-full w-full" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[15px] font-semibold capitalize">{ex.name}</p>
+                      <p className="text-[13px] text-muted">{bodyPartLabel(ex.bodyPart)}</p>
+                    </div>
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2">
+                      <ChevronRight className="h-4 w-4" />
+                    </span>
+                  </Card>
                 </Link>
               </li>
             ))}
@@ -74,32 +72,33 @@ export default async function ProgresoPage() {
         </section>
       )}
 
-      <section className="flex flex-col gap-2">
-        <h2 className="text-sm font-semibold">Sesiones</h2>
+      <section className="flex flex-col gap-3">
+        <SectionTitle>Sesiones</SectionTitle>
         {sessions.length === 0 ? (
-          <p className="text-sm text-black/50 dark:text-white/50">
-            Todavía no tienes sesiones registradas. Termina un entrenamiento
-            para verlo aquí.
-          </p>
+          <Card className="p-6 text-center">
+            <p className="text-sm text-muted">
+              Todavía no tienes sesiones registradas. Termina un entrenamiento
+              para verlo aquí.
+            </p>
+          </Card>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col gap-3">
             {sessions.map((s) => (
-              <li
-                key={s.id}
-                className="flex items-center gap-3 rounded-2xl border border-black/10 bg-surface p-3 shadow-sm dark:border-white/10"
-              >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent/10 text-accent">
-                  <CalendarClock className="h-4 w-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">{s.routineName}</p>
-                  <p className="text-xs text-black/45 dark:text-white/45">
-                    {new Intl.DateTimeFormat("es-MX", {
-                      dateStyle: "medium",
-                      timeStyle: "short",
-                    }).format(s.startedAt)}
-                  </p>
-                </div>
+              <li key={s.id}>
+                <Card className="flex items-center gap-3 p-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-accent text-accent-foreground">
+                    <CalendarClock className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-semibold">{s.routineName}</p>
+                    <p className="text-[13px] text-muted">
+                      {new Intl.DateTimeFormat("es-MX", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      }).format(s.startedAt)}
+                    </p>
+                  </div>
+                </Card>
               </li>
             ))}
           </ul>

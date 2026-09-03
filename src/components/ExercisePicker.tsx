@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Search, Loader2 } from "lucide-react";
 import { BODY_PARTS, bodyPartLabel } from "@/lib/body-parts";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
+import { Chip, SecondaryButton } from "@/components/ui";
 
 type ExerciseResult = {
   id: string;
@@ -74,47 +75,46 @@ export function ExercisePicker({
   return (
     <div className="flex flex-col gap-3">
       <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-black/40 dark:text-white/40" />
+        <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar ejercicio (ej. press banca)"
-          className="w-full rounded-xl border border-black/10 bg-white py-3 pl-9 pr-3 text-sm shadow-sm dark:border-white/10 dark:bg-white/5"
+          placeholder="Buscar ejercicio"
+          className="w-full rounded-2xl border border-border bg-surface-2 py-3.5 pl-11 pr-4 text-[15px] text-foreground outline-none focus:ring-2 focus:ring-accent"
         />
       </div>
 
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-        <FilterChip
-          label="Todos"
-          active={bodyPart === ""}
-          onClick={() => setBodyPart("")}
-        />
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 scrollbar-none">
+        <Chip active={bodyPart === ""} onClick={() => setBodyPart("")}>
+          Todos
+        </Chip>
         {BODY_PARTS.map((bp) => (
-          <FilterChip
+          <Chip
             key={bp.value}
-            label={bp.label}
             active={bodyPart === bp.value}
             onClick={() => setBodyPart(bp.value)}
-          />
+          >
+            {bp.label}
+          </Chip>
         ))}
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-3">
         {items.map((ex) => (
           <button
             key={ex.id}
             type="button"
             onClick={() => onSelect(ex)}
-            className="flex flex-col overflow-hidden rounded-2xl border border-black/10 bg-white text-left shadow-sm transition active:scale-[0.98] dark:border-white/10 dark:bg-white/5"
+            className="flex flex-col gap-2 rounded-[1.25rem] border border-border bg-surface-2 p-2 text-left transition active:scale-[0.98]"
           >
-            <div className="aspect-square w-full">
+            <div className="aspect-square w-full overflow-hidden rounded-2xl bg-surface">
               <ExerciseThumb src={ex.gifUrl} alt={ex.name} className="h-full w-full" />
             </div>
-            <div className="flex flex-col gap-0.5 p-2">
-              <span className="line-clamp-2 text-xs font-medium capitalize leading-tight">
+            <div className="flex flex-col gap-0.5 px-1 pb-1">
+              <span className="line-clamp-2 text-[13px] font-semibold capitalize leading-tight">
                 {ex.name}
               </span>
-              <span className="text-[10px] text-black/50 dark:text-white/50">
+              <span className="text-[11px] text-muted">
                 {[bodyPartLabel(ex.bodyPart), ex.equipment].filter(Boolean).join(" · ")}
               </span>
             </div>
@@ -123,51 +123,22 @@ export function ExercisePicker({
       </div>
 
       {loading && items.length === 0 && (
-        <p className="flex items-center justify-center gap-2 py-6 text-xs text-black/40 dark:text-white/40">
+        <p className="flex items-center justify-center gap-2 py-6 text-xs text-muted">
           <Loader2 className="h-4 w-4 animate-spin" /> Buscando...
         </p>
       )}
 
       {!loading && items.length === 0 && (
-        <p className="py-6 text-center text-xs text-black/40 dark:text-white/40">
+        <p className="py-6 text-center text-xs text-muted">
           No encontramos ejercicios con ese filtro.
         </p>
       )}
 
       {hasMore && (
-        <button
-          type="button"
-          onClick={loadMore}
-          disabled={loading}
-          className="rounded-full border border-black/10 py-2 text-xs font-medium disabled:opacity-50 dark:border-white/10"
-        >
+        <SecondaryButton type="button" onClick={loadMore} disabled={loading}>
           {loading ? "Cargando..." : "Cargar más"}
-        </button>
+        </SecondaryButton>
       )}
     </div>
-  );
-}
-
-function FilterChip({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium whitespace-nowrap transition ${
-        active
-          ? "bg-blue-600 text-white"
-          : "bg-black/5 text-black/60 dark:bg-white/10 dark:text-white/60"
-      }`}
-    >
-      {label}
-    </button>
   );
 }

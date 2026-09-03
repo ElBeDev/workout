@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Dumbbell } from "lucide-react";
+import { Card, Input, PrimaryButton } from "@/components/ui";
 import { registerAction } from "./actions";
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -15,62 +16,56 @@ export default async function RegistroPage({
   const { error } = await searchParams;
 
   return (
-    <div className="flex min-h-[80vh] flex-col justify-center gap-6">
-      <div className="flex flex-col items-center gap-2 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 text-accent">
-          <Dumbbell className="h-6 w-6" />
+    <div className="flex min-h-[85vh] flex-col justify-center gap-6">
+      <div className="flex flex-col items-center gap-3 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-primary text-primary-foreground shadow-[0_8px_24px_rgba(21,21,31,0.18)]">
+          <Dumbbell className="h-7 w-7" />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight">Crea tu cuenta</h1>
-        <p className="text-sm text-black/50 dark:text-white/50">
-          Solo un usuario y una contraseña, nada más.
-        </p>
+        <div>
+          <h1 className="text-[28px] font-bold tracking-tight">Crea tu cuenta</h1>
+          <p className="text-sm text-muted">Solo un usuario y una contraseña.</p>
+        </div>
       </div>
 
-      <form
-        action={registerAction}
-        className="flex flex-col gap-3 rounded-2xl border border-black/10 bg-surface p-4 shadow-sm dark:border-white/10"
-      >
-        {error && (
-          <p className="rounded-lg bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-400">
-            {ERROR_MESSAGES[error] ?? "Algo salió mal, intenta de nuevo."}
-          </p>
-        )}
+      <Card className="p-4">
+        <form action={registerAction} className="flex flex-col gap-3">
+          {error && (
+            <p className="rounded-2xl bg-danger/10 px-4 py-3 text-[13px] font-medium text-danger">
+              {ERROR_MESSAGES[error] ?? "Algo salió mal, intenta de nuevo."}
+            </p>
+          )}
 
-        <label className="flex flex-col gap-1 text-xs text-black/50 dark:text-white/50">
-          Usuario
-          <input
-            name="username"
-            required
-            minLength={3}
-            autoCapitalize="none"
-            autoComplete="username"
-            className="rounded-xl border border-black/10 px-4 py-3 text-sm text-foreground dark:border-white/10 dark:bg-transparent"
-          />
-        </label>
+          <label className="flex flex-col gap-1.5 text-[12px] font-medium text-muted">
+            Usuario
+            <Input
+              name="username"
+              required
+              minLength={3}
+              autoCapitalize="none"
+              autoComplete="username"
+            />
+          </label>
 
-        <label className="flex flex-col gap-1 text-xs text-black/50 dark:text-white/50">
-          Contraseña
-          <input
-            name="password"
-            type="password"
-            required
-            minLength={4}
-            autoComplete="new-password"
-            className="rounded-xl border border-black/10 px-4 py-3 text-sm text-foreground dark:border-white/10 dark:bg-transparent"
-          />
-        </label>
+          <label className="flex flex-col gap-1.5 text-[12px] font-medium text-muted">
+            Contraseña
+            <Input
+              name="password"
+              type="password"
+              required
+              minLength={4}
+              autoComplete="new-password"
+            />
+          </label>
 
-        <button
-          type="submit"
-          className="mt-1 rounded-full bg-accent px-4 py-3 text-sm font-semibold text-white shadow-sm active:scale-[0.98]"
-        >
-          Crear cuenta
-        </button>
-      </form>
+          <PrimaryButton type="submit" className="mt-1">
+            Crear cuenta
+          </PrimaryButton>
+        </form>
+      </Card>
 
-      <p className="text-center text-sm text-black/50 dark:text-white/50">
+      <p className="text-center text-sm text-muted">
         ¿Ya tienes cuenta?{" "}
-        <Link href="/login" className="font-medium text-accent">
+        <Link href="/login" className="font-semibold text-foreground">
           Inicia sesión
         </Link>
       </p>

@@ -1,14 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, X } from "lucide-react";
+import { Plus } from "lucide-react";
 import { ExercisePicker } from "@/components/ExercisePicker";
+import { PrimaryButton, SectionTitle } from "@/components/ui";
 import { addExerciseToRoutine } from "./actions";
 
 type SelectedExercise = {
   id: string;
   name: string;
+  gifUrl: string | null;
 };
+
+const fieldClass =
+  "mt-1 w-full rounded-2xl border border-border bg-surface-2 px-3 py-3 text-[15px] text-foreground outline-none focus:ring-2 focus:ring-accent";
 
 export function AddExerciseForm({ routineId }: { routineId: string }) {
   const [selected, setSelected] = useState<SelectedExercise | null>(null);
@@ -16,7 +21,7 @@ export function AddExerciseForm({ routineId }: { routineId: string }) {
   if (!selected) {
     return (
       <div className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold">Agregar ejercicio</h2>
+        <SectionTitle>Agregar ejercicio</SectionTitle>
         <ExercisePicker onSelect={(ex) => setSelected(ex)} />
       </div>
     );
@@ -28,60 +33,48 @@ export function AddExerciseForm({ routineId }: { routineId: string }) {
         await addExerciseToRoutine(formData);
         setSelected(null);
       }}
-      className="flex flex-col gap-3"
+      className="flex flex-col gap-4"
     >
       <input type="hidden" name="routineId" value={routineId} />
       <input type="hidden" name="exerciseId" value={selected.id} />
 
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold capitalize">{selected.name}</p>
-        <button
-          type="button"
-          onClick={() => setSelected(null)}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-black/40 dark:text-white/40"
-        >
-          <X className="h-4 w-4" />
-        </button>
+      <div className="flex items-center gap-3">
+        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl bg-surface-2">
+          {selected.gifUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={selected.gifUrl} alt="" className="h-full w-full object-cover" />
+          )}
+        </div>
+        <p className="min-w-0 flex-1 truncate text-[16px] font-semibold capitalize">
+          {selected.name}
+        </p>
       </div>
 
-      <div className="flex gap-2">
-        <label className="flex-1 text-xs text-black/50 dark:text-white/50">
+      <div className="grid grid-cols-3 gap-2">
+        <label className="text-[12px] font-medium text-muted">
           Series
-          <input
-            name="targetSets"
-            type="number"
-            min={1}
-            defaultValue={3}
-            className="mt-1 w-full rounded-lg border border-black/10 px-2 py-2 text-sm dark:border-white/10 dark:bg-transparent"
-          />
+          <input name="targetSets" type="number" min={1} defaultValue={3} className={fieldClass} />
         </label>
-        <label className="flex-1 text-xs text-black/50 dark:text-white/50">
+        <label className="text-[12px] font-medium text-muted">
           Reps
-          <input
-            name="targetReps"
-            type="number"
-            min={1}
-            defaultValue={10}
-            className="mt-1 w-full rounded-lg border border-black/10 px-2 py-2 text-sm dark:border-white/10 dark:bg-transparent"
-          />
+          <input name="targetReps" type="number" min={1} defaultValue={10} className={fieldClass} />
         </label>
-        <label className="flex-1 text-xs text-black/50 dark:text-white/50">
-          Peso (opcional)
-          <input
-            name="targetWeight"
-            type="number"
-            step="0.5"
-            className="mt-1 w-full rounded-lg border border-black/10 px-2 py-2 text-sm dark:border-white/10 dark:bg-transparent"
-          />
+        <label className="text-[12px] font-medium text-muted">
+          Peso (kg)
+          <input name="targetWeight" type="number" step="0.5" placeholder="—" className={fieldClass} />
         </label>
       </div>
 
-      <button
-        type="submit"
-        className="inline-flex items-center justify-center gap-1.5 rounded-full bg-accent px-4 py-2.5 text-sm font-medium text-white shadow-sm active:scale-[0.98]"
-      >
+      <PrimaryButton type="submit">
         <Plus className="h-4 w-4" />
         Agregar a la rutina
+      </PrimaryButton>
+      <button
+        type="button"
+        onClick={() => setSelected(null)}
+        className="text-center text-sm font-medium text-muted"
+      >
+        Elegir otro ejercicio
       </button>
     </form>
   );

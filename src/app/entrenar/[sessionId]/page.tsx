@@ -8,10 +8,11 @@ import {
 } from "@/db/schema";
 import { and, eq, desc, ne } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { ChevronLeft, Flag } from "lucide-react";
+import { Flag, Repeat } from "lucide-react";
+import { requireUserId } from "@/lib/session";
+import { Card, PageHeader, PrimaryButton } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
-import { RestTimer } from "@/components/RestTimer";
+import { SessionHud } from "@/components/SessionHud";
 import { LogSetButton } from "@/components/LogSetButton";
 import { logSet, finishSession } from "./actions";
 
@@ -52,18 +53,22 @@ async function getLastTimeSets(
   return map;
 }
 
+const fieldClass =
+  "w-full rounded-2xl border border-border bg-surface-2 px-3 py-3 text-[15px] text-foreground outline-none focus:ring-2 focus:ring-accent";
+
 export default async function EntrenarPage({
   params,
 }: {
   params: Promise<{ sessionId: string }>;
 }) {
   const { sessionId } = await params;
+  const userId = await requireUserId();
 
   const [session] = await db
     .select()
     .from(workoutSessions)
     .where(eq(workoutSessions.id, sessionId));
-  if (!session) notFound();
+  if (!session || session.userId !== userId) notFound();
 
   const [routine] = await db
     .select()
@@ -100,43 +105,47 @@ export default async function EntrenarPage({
     );
   }
 
+  const totalSets = items.reduce((sum, i) => sum + i.targetSets, 0);
+  const completedSets = currentLogs.filter((l) => l.completed).length;
+
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex items-center gap-2">
-        <Link
-          href={`/rutinas/${routine.id}`}
-          className="flex h-8 w-8 items-center justify-center rounded-full text-black/40 dark:text-white/40"
-        >
-          <ChevronLeft className="h-5 w-5" />
-        </Link>
-        <h1 className="text-2xl font-bold tracking-tight">{routine.name}</h1>
-      </header>
+    <div className="flex flex-col gap-5">
+      <PageHeader title={routine.name} backHref={`/rutinas/${routine.id}`} />
+
+      <SessionHud
+        startedAtMs={session.startedAt.getTime()}
+        completed={completedSets}
+        total={totalSets}
+      />
 
       <div className="flex flex-col gap-4">
         {items.map((item) => {
           const lastTime = lastTimeByExercise.get(item.exerciseId) ?? new Map();
           return (
-            <section
-              key={item.exerciseId}
-              className="rounded-2xl border border-black/10 bg-surface p-3 shadow-sm dark:border-white/10"
-            >
+            <Card key={item.exerciseId} className="p-3">
               <div className="mb-3 flex items-center gap-3">
-                <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl">
+                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl">
                   <ExerciseThumb
                     src={item.gifUrl}
                     alt={item.exerciseName}
                     className="h-full w-full"
                   />
                 </div>
-                <p className="text-sm font-semibold capitalize">{item.exerciseName}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[15px] font-semibold capitalize">
+                    {item.exerciseName}
+                  </p>
+                  <p className="mt-0.5 inline-flex items-center gap-1 text-[13px] text-muted">
+                    <Repeat className="h-3.5 w-3.5" />
+                    {item.targetSets} × {item.targetReps} reps
+                  </p>
+                </div>
               </div>
 
               <div className="flex flex-col gap-2">
                 {Array.from({ length: item.targetSets }, (_, i) => i + 1).map(
                   (setNumber) => {
-                    const existing = currentMap.get(
-                      `${item.exerciseId}-${setNumber}`
-                    );
+                    const existing = currentMap.get(`${item.exerciseId}-${setNumber}`);
                     const last = lastTime.get(setNumber);
                     return (
                       <form
@@ -148,7 +157,7 @@ export default async function EntrenarPage({
                         <input type="hidden" name="exerciseId" value={item.exerciseId} />
                         <input type="hidden" name="setNumber" value={setNumber} />
 
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-black/5 text-[11px] font-medium text-black/50 dark:bg-white/10 dark:text-white/50">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/40 text-[12px] font-semibold text-accent-strong">
                           {setNumber}
                         </span>
 
@@ -159,7 +168,7 @@ export default async function EntrenarPage({
                           inputMode="decimal"
                           defaultValue={existing?.weight ?? undefined}
                           placeholder={last ? `${last.weight ?? "-"} kg` : "kg"}
-                          className="w-20 rounded-lg border border-black/10 px-2 py-2.5 text-sm dark:border-white/10 dark:bg-transparent"
+                          className={fieldClass}
                         />
                         <input
                           name="reps"
@@ -167,7 +176,7 @@ export default async function EntrenarPage({
                           inputMode="numeric"
                           defaultValue={existing?.reps ?? undefined}
                           placeholder={last ? `${last.reps ?? "-"} reps` : `${item.targetReps} reps`}
-                          className="w-20 rounded-lg border border-black/10 px-2 py-2.5 text-sm dark:border-white/10 dark:bg-transparent"
+                          className={fieldClass}
                         />
 
                         <LogSetButton completed={Boolean(existing?.completed)} />
@@ -176,21 +185,16 @@ export default async function EntrenarPage({
                   }
                 )}
               </div>
-            </section>
+            </Card>
           );
         })}
       </div>
 
-      <RestTimer />
-
       <form action={finishSession.bind(null, sessionId)}>
-        <button
-          type="submit"
-          className="flex w-full items-center justify-center gap-2 rounded-full bg-accent px-4 py-3.5 text-sm font-semibold text-white shadow-sm active:scale-[0.98]"
-        >
+        <PrimaryButton type="submit">
           <Flag className="h-4 w-4" />
           Terminar entrenamiento
-        </button>
+        </PrimaryButton>
       </form>
     </div>
   );
