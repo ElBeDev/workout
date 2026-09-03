@@ -3,11 +3,11 @@ import { routines, routineExercises, exercises } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Play, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronUp, ChevronDown, Play, Trash2 } from "lucide-react";
 import { bodyPartLabel } from "@/lib/body-parts";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { AddExerciseForm } from "./AddExerciseForm";
-import { removeRoutineExercise } from "./actions";
+import { removeRoutineExercise, moveRoutineExercise } from "./actions";
 import { startSession } from "../../entrenar/actions";
 
 export const dynamic = "force-dynamic";
@@ -55,10 +55,10 @@ export default async function RutinaDetailPage({
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {items.map((item) => (
+          {items.map((item, index) => (
             <li
               key={item.id}
-              className="flex items-center gap-3 rounded-2xl border border-black/10 bg-surface p-2.5 shadow-sm dark:border-white/10"
+              className="flex items-center gap-2 rounded-2xl border border-black/10 bg-surface p-2.5 shadow-sm dark:border-white/10"
             >
               <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl">
                 <ExerciseThumb
@@ -78,6 +78,32 @@ export default async function RutinaDetailPage({
                 <p className="text-[11px] text-black/35 dark:text-white/35">
                   {bodyPartLabel(item.bodyPart)}
                 </p>
+              </div>
+              <div className="flex flex-col">
+                <form
+                  action={moveRoutineExercise.bind(null, routine.id, item.id, "up")}
+                >
+                  <button
+                    type="submit"
+                    disabled={index === 0}
+                    className="flex h-6 w-7 items-center justify-center text-black/30 disabled:opacity-20 dark:text-white/30"
+                    aria-label="Subir"
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </button>
+                </form>
+                <form
+                  action={moveRoutineExercise.bind(null, routine.id, item.id, "down")}
+                >
+                  <button
+                    type="submit"
+                    disabled={index === items.length - 1}
+                    className="flex h-6 w-7 items-center justify-center text-black/30 disabled:opacity-20 dark:text-white/30"
+                    aria-label="Bajar"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+                </form>
               </div>
               <form action={removeRoutineExercise.bind(null, routine.id, item.id)}>
                 <button

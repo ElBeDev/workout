@@ -9,8 +9,10 @@ import {
 import { and, eq, desc, ne } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Check, Flag } from "lucide-react";
+import { ChevronLeft, Flag } from "lucide-react";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
+import { RestTimer } from "@/components/RestTimer";
+import { LogSetButton } from "@/components/LogSetButton";
 import { logSet, finishSession } from "./actions";
 
 type LastSet = { weight: string | null; reps: number | null };
@@ -168,17 +170,7 @@ export default async function EntrenarPage({
                           className="w-20 rounded-lg border border-black/10 px-2 py-2.5 text-sm dark:border-white/10 dark:bg-transparent"
                         />
 
-                        <button
-                          type="submit"
-                          className={`ml-auto flex h-9 w-9 items-center justify-center rounded-full transition ${
-                            existing?.completed
-                              ? "bg-green-600 text-white"
-                              : "bg-black/5 text-black/40 dark:bg-white/10 dark:text-white/40"
-                          }`}
-                          aria-label="Marcar serie"
-                        >
-                          <Check className="h-4 w-4" strokeWidth={2.5} />
-                        </button>
+                        <LogSetButton completed={Boolean(existing?.completed)} />
                       </form>
                     );
                   }
@@ -188,6 +180,8 @@ export default async function EntrenarPage({
           );
         })}
       </div>
+
+      <RestTimer />
 
       <form action={finishSession.bind(null, sessionId)}>
         <button

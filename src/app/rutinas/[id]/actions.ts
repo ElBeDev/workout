@@ -44,3 +44,33 @@ export async function removeRoutineExercise(routineId: string, routineExerciseId
     );
   revalidatePath(`/rutinas/${routineId}`);
 }
+
+export async function moveRoutineExercise(
+  routineId: string,
+  routineExerciseId: string,
+  direction: "up" | "down"
+) {
+  const items = await db
+    .select({ id: routineExercises.id, sortOrder: routineExercises.sortOrder })
+    .from(routineExercises)
+    .where(eq(routineExercises.routineId, routineId))
+    .orderBy(routineExercises.sortOrder);
+
+  const index = items.findIndex((item) => item.id === routineExerciseId);
+  const swapIndex = direction === "up" ? index - 1 : index + 1;
+  if (index === -1 || swapIndex < 0 || swapIndex >= items.length) return;
+
+  const current = items[index];
+  const swap = items[swapIndex];
+
+  await db
+    .update(routineExercises)
+    .set({ sortOrder: swap.sortOrder })
+    .where(eq(routineExercises.id, current.id));
+  await db
+    .update(routineExercises)
+    .set({ sortOrder: current.sortOrder })
+    .where(eq(routineExercises.id, swap.id));
+
+  revalidatePath(`/rutinas/${routineId}`);
+}
