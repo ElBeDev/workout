@@ -21,7 +21,7 @@ export default async function ProgresoPage() {
       routineName: routines.name,
     })
     .from(workoutSessions)
-    .innerJoin(routines, eq(workoutSessions.routineId, routines.id))
+    .leftJoin(routines, eq(workoutSessions.routineId, routines.id))
     .where(and(eq(workoutSessions.userId, userId), isNotNull(workoutSessions.finishedAt)))
     .orderBy(desc(workoutSessions.startedAt))
     .limit(30);
@@ -43,7 +43,11 @@ export default async function ProgresoPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Progreso"
-        subtitle={`${sessions.length} ${sessions.length === 1 ? "sesión" : "sesiones"} completadas`}
+        subtitle={
+          sessions.length === 1
+            ? "1 sesión completada"
+            : `${sessions.length} sesiones completadas`
+        }
       />
 
       {trainedExercises.length > 0 && (
@@ -90,7 +94,9 @@ export default async function ProgresoPage() {
                     <CalendarClock className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-[15px] font-semibold">{s.routineName}</p>
+                    <p className={`text-[15px] font-semibold ${s.routineName ? "" : "text-muted"}`}>
+                      {s.routineName ?? "Rutina eliminada"}
+                    </p>
                     <p className="text-[13px] text-muted">
                       {new Intl.DateTimeFormat("es-MX", {
                         dateStyle: "medium",

@@ -8,6 +8,7 @@ import { requireUserId } from "@/lib/session";
 import { Card, PageHeader, PrimaryButton, SectionTitle } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { AddExerciseForm } from "./AddExerciseForm";
+import { RoutineSettings } from "./RoutineSettings";
 import { removeRoutineExercise, moveRoutineExercise } from "./actions";
 import { startSession } from "../../entrenar/actions";
 
@@ -141,6 +142,8 @@ export default async function RutinaDetailPage({
       <Card className="p-4">
         <AddExerciseForm routineId={routine.id} />
       </Card>
+
+      <RoutineSettings routineId={routine.id} name={routine.name} />
     </div>
   );
 }

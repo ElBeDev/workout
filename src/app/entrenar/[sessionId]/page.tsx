@@ -68,7 +68,7 @@ export default async function EntrenarPage({
     .select()
     .from(workoutSessions)
     .where(eq(workoutSessions.id, sessionId));
-  if (!session || session.userId !== userId) notFound();
+  if (!session || session.userId !== userId || !session.routineId) notFound();
 
   const [routine] = await db
     .select()

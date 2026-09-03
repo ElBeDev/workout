@@ -1,9 +1,40 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { routineExercises } from "@/db/schema";
+import { routines, routineExercises } from "@/db/schema";
+import { requireUserId } from "@/lib/session";
 import { and, eq, sql } from "drizzle-orm";
+
+async function requireOwnedRoutine(routineId: string) {
+  const userId = await requireUserId();
+  const [routine] = await db
+    .select({ id: routines.id })
+    .from(routines)
+    .where(and(eq(routines.id, routineId), eq(routines.userId, userId)));
+  if (!routine) redirect("/rutinas");
+  return routine;
+}
+
+export async function renameRoutine(routineId: string, formData: FormData) {
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return;
+  await requireOwnedRoutine(routineId);
+
+  await db.update(routines).set({ name }).where(eq(routines.id, routineId));
+  revalidatePath(`/rutinas/${routineId}`);
+  revalidatePath("/rutinas");
+  revalidatePath("/");
+}
+
+export async function deleteRoutine(routineId: string) {
+  await requireOwnedRoutine(routineId);
+  await db.delete(routines).where(eq(routines.id, routineId));
+  revalidatePath("/rutinas");
+  revalidatePath("/");
+  redirect("/rutinas");
+}
 
 export async function addExerciseToRoutine(formData: FormData) {
   const routineId = String(formData.get("routineId"));
@@ -15,6 +46,8 @@ export async function addExerciseToRoutine(formData: FormData) {
     targetWeightRaw && String(targetWeightRaw).trim() !== ""
       ? String(targetWeightRaw)
       : null;
+
+  await requireOwnedRoutine(routineId);
 
   const [{ nextOrder }] = await db
     .select({ nextOrder: sql<number>`coalesce(max(${routineExercises.sortOrder}), -1) + 1` })
@@ -34,6 +67,7 @@ export async function addExerciseToRoutine(formData: FormData) {
 }
 
 export async function removeRoutineExercise(routineId: string, routineExerciseId: string) {
+  await requireOwnedRoutine(routineId);
   await db
     .delete(routineExercises)
     .where(
@@ -50,6 +84,8 @@ export async function moveRoutineExercise(
   routineExerciseId: string,
   direction: "up" | "down"
 ) {
+  await requireOwnedRoutine(routineId);
+
   const items = await db
     .select({ id: routineExercises.id, sortOrder: routineExercises.sortOrder })
     .from(routineExercises)

@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { routines } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
-import { eq } from "drizzle-orm";
 
 export async function createRoutine(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
@@ -19,9 +18,4 @@ export async function createRoutine(formData: FormData) {
 
   revalidatePath("/rutinas");
   redirect(`/rutinas/${routine.id}`);
-}
-
-export async function deleteRoutine(routineId: string) {
-  await db.delete(routines).where(eq(routines.id, routineId));
-  revalidatePath("/rutinas");
 }

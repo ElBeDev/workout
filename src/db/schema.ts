@@ -63,7 +63,8 @@ export const routineExercises = pgTable("routine_exercises", {
 export const workoutSessions = pgTable("workout_sessions", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  routineId: uuid("routine_id").notNull().references(() => routines.id),
+  // Nullable + SET NULL so deleting a routine keeps the session history.
+  routineId: uuid("routine_id").references(() => routines.id, { onDelete: "set null" }),
   startedAt: timestamp("started_at").defaultNow().notNull(),
   finishedAt: timestamp("finished_at"),
 });
