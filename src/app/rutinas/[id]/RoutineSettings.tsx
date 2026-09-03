@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Check, Trash2 } from "lucide-react";
-import { Card, Input, PrimaryButton, SecondaryButton, SectionTitle } from "@/components/ui";
+import { Card, Input, SecondaryButton, SectionTitle } from "@/components/ui";
 import { renameRoutine, deleteRoutine } from "./actions";
 
 export function RoutineSettings({
@@ -47,9 +47,13 @@ export function RoutineSettings({
               Cancelar
             </SecondaryButton>
             <form action={deleteRoutine.bind(null, routineId)} className="flex-1">
-              <PrimaryButton type="submit" className="bg-danger text-white shadow-none">
+              <button
+                type="submit"
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-danger px-5 py-3.5 text-[15px] font-semibold text-white transition active:scale-[0.98]"
+              >
+                <Trash2 className="h-4 w-4" />
                 Sí, eliminar
-              </PrimaryButton>
+              </button>
             </form>
           </div>
         </div>
