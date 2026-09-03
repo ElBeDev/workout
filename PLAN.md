@@ -27,6 +27,7 @@ Lo que falta del MVP (ver sección 3):
 Notas de infra que ya no hay que repetir:
 - El cliente de DB (`src/db/index.ts`) es "lazy" a propósito — si se inicializa en el import top-level, `next build` truena en Vercel al analizar rutas aunque `DATABASE_URL` sí exista en el entorno de runtime.
 - En Vercel, la integración de Neon prefija sus variables como `DATABASE_URL_*` si ya existe una variable llamada `DATABASE_URL` — la que de verdad lee el código es la que se llama exactamente `DATABASE_URL` (sin prefijo).
+- El primer registro en `/registro` reclama automáticamente el usuario placeholder que existía antes del login (así la rutina "Espalda" creada antes de tener auth no se perdió). Ese comportamiento (`src/app/registro/actions.ts`) solo aplica mientras exista esa fila sin reclamar — no hace falta tocarlo después.
 
 ## 1. Visión
 
@@ -67,8 +68,8 @@ Conclusión: el patrón ganador es **"planner + tracker"**: armas la rutina una 
    - Se muestra automáticamente lo que hiciste la última vez en ese mismo ejercicio/serie (referencia para progressive overload). ✅
    - Rest timer entre series (opcional pero muy usado). ⏳ pendiente.
    - Al terminar, la rutina queda guardada como "sesión completada" con fecha. ✅
-5. **Historial / progreso**
-   - Por ejercicio: gráfica simple de peso máximo o volumen a través del tiempo. ⏳ pendiente.
+5. **Historial / progreso** ✅
+   - Por ejercicio: gráfica simple de peso máximo o volumen a través del tiempo. ✅ (peso máximo; volumen queda para después)
    - Calendario/lista de sesiones completadas. ✅
 
 ## 4. Features — fase 2 (nice to have)
@@ -94,7 +95,10 @@ No hace falta grabar ni animar nada a mano, hay APIs/bases de datos gratis:
 
 ```
 User
- └─ id, nombre, email
+ └─ id, username, password_hash
+
+Session (auth, no confundir con WorkoutSession)
+ └─ token, user_id, expires_at
 
 Exercise
  └─ id, nombre, músculo, equipo, gif_url/video_url, instrucciones
@@ -119,19 +123,20 @@ SetLog (cada serie registrada durante la sesión)
 - **Frontend**: Next.js 16 (App Router) + TypeScript + Tailwind CSS — mobile-first, con `app/manifest.ts` para que sea instalable como app en el celular.
 - **Backend/DB**: Neon (Postgres serverless) + Drizzle ORM. Ajustamos el plan original de Supabase por Neon porque el deploy es en Vercel y Neon se integra nativo ahí (Storage tab del proyecto).
 - **Auth**: usuario + contraseña propios (scrypt vía `node:crypto`, sin dependencias extra), sesión en cookie httpOnly respaldada por tabla `sessions` (`src/lib/session.ts`, `src/lib/password.ts`).
-- **Gráficas de progreso**: Recharts (todavía no implementado, sección 3.5 pendiente).
+- **Gráficas de progreso**: Recharts — peso máximo por sesión, por ejercicio.
 - **Gifs/videos de ejercicios**: ExerciseDB, cacheados en nuestra propia tabla `exercises` (script `scripts/seed-exercises.ts`).
 - **Storage de archivos**: Vercel Blob — ya está la variable `BLOB_READ_WRITE_TOKEN` configurada en Vercel, sin usar todavía (se necesitará cuando haya fotos de progreso o ejercicios custom del usuario).
 - **Deploy**: Vercel, deploy automático en cada push a `main`.
 
 ## 8. Pantallas principales
 
-1. **Home** — rutina de hoy / accesos rápidos a "Empezar entrenamiento".
-2. **Mis rutinas** — lista de rutinas, botón "crear rutina".
-3. **Editor de rutina** — agregar ejercicios (buscador con gif de preview), definir series/reps.
-4. **Modo entrenamiento** — pantalla grande, un ejercicio a la vez, input de peso/reps por serie, gif visible, rest timer.
-5. **Historial** — lista de sesiones pasadas + gráfica de progreso por ejercicio.
-6. **Perfil** — datos del usuario, peso corporal (fase 2).
+1. **Login / Registro** — usuario + contraseña. ✅
+2. **Home** — rutinas del usuario, botón "Empezar" por rutina. ✅
+3. **Mis rutinas** — lista de rutinas, crear/borrar. ✅
+4. **Editor de rutina** — explorador de ejercicios (grid con gif, filtro por músculo), definir series/reps/peso, quitar ejercicios. ✅
+5. **Modo entrenamiento** — todos los ejercicios de la rutina, input de peso/reps por serie, gif visible, referencia de la sesión anterior. ✅ (falta: un ejercicio a la vez / rest timer)
+6. **Progreso** — lista de sesiones completadas + gráfica de peso máximo por ejercicio. ✅
+7. **Perfil** — usuario logueado, cerrar sesión. ✅ (peso corporal queda para fase 2)
 
 ## 9. Roadmap
 
