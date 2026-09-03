@@ -20,14 +20,21 @@ Lo que ya funciona de punta a punta:
 - [x] Fallback a un ícono cuando el gif de un ejercicio no carga.
 
 - [x] Reordenar ejercicios dentro de una rutina (flechas subir/bajar).
-- [x] Rest timer entre series (90s por defecto, +/-15s, flotante durante el entrenamiento).
+- [x] Rest timer entre series (90s por defecto, +/-15s) integrado en el bloque de estado del entrenamiento.
+
+- [x] Rediseño completo siguiendo la referencia de Dribbble (fondo lavanda, tarjetas blancas, botón principal negro en píldora, chips oscuros, nav flotante, tipografía Outfit). Modo oscuro incluido.
+- [x] Renombrar y eliminar rutinas (con confirmación inline). Al eliminar, el historial de sesiones se conserva como "Rutina eliminada".
+- [x] Editar series / reps / peso objetivo de un ejercicio ya agregado, sin quitarlo (tocar la línea "N series · N reps"). Default al agregar: 2 series.
+- [x] Todas las acciones sobre rutinas verifican que la rutina sea del usuario logueado.
 
 **MVP (fase 1) completo.** Lo que sigue es todo fase 2 (ver sección 4).
 
 Notas de infra que ya no hay que repetir:
 - El cliente de DB (`src/db/index.ts`) es "lazy" a propósito — si se inicializa en el import top-level, `next build` truena en Vercel al analizar rutas aunque `DATABASE_URL` sí exista en el entorno de runtime.
 - En Vercel, la integración de Neon prefija sus variables como `DATABASE_URL_*` si ya existe una variable llamada `DATABASE_URL` — la que de verdad lee el código es la que se llama exactamente `DATABASE_URL` (sin prefijo).
-- El primer registro en `/registro` reclama automáticamente el usuario placeholder que existía antes del login (así la rutina "Espalda" creada antes de tener auth no se perdió). Ese comportamiento (`src/app/registro/actions.ts`) solo aplica mientras exista esa fila sin reclamar — no hace falta tocarlo después.
+- El primer registro en `/registro` reclamó el usuario placeholder que existía antes del login (así la rutina "Espalda" no se perdió). Ya pasó: la cuenta es `bener`. El código en `src/app/registro/actions.ts` sigue ahí pero ya no aplica a nadie; se puede borrar cuando se quiera.
+- `npm run db:push` (drizzle-kit) pide confirmación interactiva cuando la tabla tiene datos y no funciona sin TTY (p. ej. desde un agente). Las últimas migraciones (`username`/`password_hash`/`sessions`, y `workout_sessions.routine_id` nullable con `ON DELETE SET NULL`) se aplicaron con SQL a mano contra Neon y luego se verificó que `db:push` no detectara diferencias. El `schema.ts` es la fuente de verdad.
+- Para probar en local se usa una cuenta QA desechable creada directo en la base (`insert into users ...` con hash scrypt), se recorre la app con Playwright (`npx playwright` + Chromium) y al final se borra el usuario — el `ON DELETE CASCADE` se lleva rutinas y sesiones. Nunca se toca la cuenta real.
 
 ## 1. Visión
 
@@ -61,6 +68,8 @@ Conclusión: el patrón ganador es **"planner + tracker"**: armas la rutina una 
    - Crear rutina con nombre (ej. "Push Day", "Piernas"). ✅
    - Agregar ejercicios a la rutina, definir series objetivo, reps objetivo, y opcional peso objetivo. ✅
    - Reordenar / eliminar ejercicios. ✅
+   - Editar series / reps / peso de un ejercicio ya agregado. ✅
+   - Renombrar / eliminar la rutina (conservando historial). ✅
    - Puede haber varias rutinas y organizarlas por día de la semana o por "programa" (ej. rutina de 4 días). ✅ (varias rutinas sí; agrupar por "programa" queda para después)
 4. **Modo entrenamiento (ejecutar rutina)** ✅
    - Entras a la rutina del día, ves el primer ejercicio con su gif.
@@ -110,7 +119,7 @@ RoutineExercise (ejercicio dentro de una rutina)
  └─ id, routine_id, exercise_id, orden, series_objetivo, reps_objetivo, peso_objetivo (opcional)
 
 WorkoutSession (una ejecución real de la rutina)
- └─ id, user_id, routine_id, fecha, duración
+ └─ id, user_id, routine_id (nullable, SET NULL al borrar la rutina), started_at, finished_at
 
 SetLog (cada serie registrada durante la sesión)
  └─ id, session_id, exercise_id, numero_serie, peso, reps, completada
@@ -120,7 +129,8 @@ SetLog (cada serie registrada durante la sesión)
 
 ## 7. Stack técnico (real, ya implementado)
 
-- **Frontend**: Next.js 16 (App Router) + TypeScript + Tailwind CSS — mobile-first, con `app/manifest.ts` para que sea instalable como app en el celular.
+- **Frontend**: Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 — mobile-first, con `app/manifest.ts` para que sea instalable como app en el celular.
+- **Diseño**: sistema propio inspirado en [este shot de Dribbble](https://dribbble.com/shots/26265316-Ai-Powered-Smarter-Home-Workout-App-Design). Tokens en `src/app/globals.css` (`--background` lavanda, `--surface`, `--primary` casi negro, `--accent` lavanda fuerte, `--danger`, con variante dark). Primitivas en `src/components/ui.tsx`: `Card`, `PrimaryButton`, `SecondaryButton`, `CircleButton`, `Chip`, `Input`, `PageHeader`, `BackButton`, `SectionTitle`. Fuente Outfit vía `next/font`. Iconos `lucide-react`.
 - **Backend/DB**: Neon (Postgres serverless) + Drizzle ORM. Ajustamos el plan original de Supabase por Neon porque el deploy es en Vercel y Neon se integra nativo ahí (Storage tab del proyecto).
 - **Auth**: usuario + contraseña propios (scrypt vía `node:crypto`, sin dependencias extra), sesión en cookie httpOnly respaldada por tabla `sessions` (`src/lib/session.ts`, `src/lib/password.ts`).
 - **Gráficas de progreso**: Recharts — peso máximo por sesión, por ejercicio.
@@ -131,11 +141,11 @@ SetLog (cada serie registrada durante la sesión)
 ## 8. Pantallas principales
 
 1. **Login / Registro** — usuario + contraseña. ✅
-2. **Home** — rutinas del usuario, botón "Empezar" por rutina. ✅
-3. **Mis rutinas** — lista de rutinas, crear/borrar. ✅
-4. **Editor de rutina** — explorador de ejercicios (grid con gif, filtro por músculo), definir series/reps/peso, quitar ejercicios. ✅
-5. **Modo entrenamiento** — todos los ejercicios de la rutina, input de peso/reps por serie, gif visible, referencia de la sesión anterior, rest timer flotante. ✅
-6. **Progreso** — lista de sesiones completadas + gráfica de peso máximo por ejercicio. ✅
+2. **Home** — saludo con el usuario, tarjetas de rutina (gif del primer ejercicio, nº de ejercicios y series) con botón ▶ para empezar. ✅
+3. **Mis rutinas** — lista de rutinas + crear. ✅
+4. **Detalle de rutina** — bloque lavanda con stats (ejercicios / series / músculos), CTA "Empezar entrenamiento", lista de ejercicios (editar series/reps/peso inline, subir/bajar, quitar), explorador para agregar (grid con gif, filtro por músculo), y "Ajustes de la rutina" (renombrar / eliminar). ✅
+5. **Modo entrenamiento** — bloque lavanda pegajoso (`SessionHud`) con tiempo transcurrido, barra de series completadas y el descanso en grande cuando se marca una serie (−15s / Saltar / +15s); tarjetas por ejercicio con una fila por serie (kg + reps, placeholder con lo de la sesión anterior, ✓ para marcar). ✅
+6. **Progreso** — sesiones completadas (las de rutinas borradas salen como "Rutina eliminada") + por ejercicio: mejor marca, última sesión, gráfica de área de peso máximo por sesión. ✅
 7. **Perfil** — usuario logueado, cerrar sesión. ✅ (peso corporal queda para fase 2)
 
 ## 9. Roadmap
@@ -147,6 +157,62 @@ SetLog (cada serie registrada durante la sesión)
 - ~~Reordenar ejercicios en una rutina, rest timer~~ ✅
 
 **MVP completo.** Siguiente (fase 2, sin prisa): body weight tracking, notas por sesión, sugerencia automática de peso/reps.
+
+## 10. Mapa del código
+
+```
+src/app/
+  layout.tsx            Fuente Outfit, viewport/theme-color, BottomNav
+  globals.css           Tokens de diseño (light/dark) y @theme de Tailwind
+  manifest.ts           PWA manifest
+  page.tsx              Home
+  login/, registro/     Auth (page + actions)
+  rutinas/page.tsx      Lista + crear (actions.ts: createRoutine)
+  rutinas/[id]/         Detalle: page, actions (add/remove/move/update ejercicio,
+                        rename/delete rutina — todas con requireOwnedRoutine),
+                        AddExerciseForm, ExerciseTargetsEditor, RoutineSettings
+  entrenar/actions.ts   startSession
+  entrenar/[sessionId]/ page + actions (logSet upsert, finishSession)
+  progreso/             Lista de sesiones y ejercicios; [exerciseId] = gráfica
+  perfil/               Usuario + logout
+  api/exercises/search  Búsqueda/browse del catálogo (q, bodyPart, offset)
+src/components/
+  ui.tsx                Primitivas del sistema de diseño
+  BottomNav.tsx         Nav flotante (oculto en /login y /registro)
+  ExercisePicker.tsx    Grid de ejercicios con chips por músculo y "Cargar más"
+  ExerciseThumb.tsx     <img> con fallback a ícono si el gif falla
+  SessionHud.tsx        Bloque lavanda del entrenamiento (transcurrido + descanso)
+  LogSetButton.tsx      ✓ de cada serie; dispara el evento "workout:rest-start"
+  ExerciseProgressChart.tsx  AreaChart de Recharts
+src/db/
+  schema.ts             Fuente de verdad del modelo (Drizzle)
+  index.ts              Cliente Neon lazy
+  queries.ts            getRoutineSummaries (conteos + gif del primer ejercicio)
+src/lib/
+  session.ts            createSession / destroySession / getCurrentUserId / requireUserId
+  password.ts           scrypt hash + verify
+  body-parts.ts         Etiquetas en español de los grupos musculares
+scripts/seed-exercises.ts   Carga el catálogo desde ExerciseDB (con backoff por rate limit)
+```
+
+## 11. Registro de cambios (2026-09-03)
+
+Todo el trabajo fue en un solo día; el historial fino está en `git log`. Resumen por commit:
+
+| Commit | Qué |
+|---|---|
+| `df991ae` | Scaffold Next.js, shell mobile con nav, schema Drizzle, manifest PWA |
+| `5a8bd4c` | Seed de 1,500 ejercicios, CRUD de rutinas, buscador, modo entrenamiento, progreso |
+| `a9f2739` | Cliente de DB lazy (fix del build en Vercel) |
+| `0a1ee79` | Gráficas de progreso por ejercicio |
+| `a627a10` | Explorador visual de ejercicios + primer pase de diseño |
+| `57e077b` | Cuentas reales (usuario + contraseña) y fallback de gifs rotos |
+| `f2f0fa6` | Reordenar ejercicios + rest timer — MVP cerrado |
+| `c84a1c5` | Rediseño completo con el sistema lavanda / píldora (Outfit, `ui.tsx`, `SessionHud`) |
+| `6d96b3c` | Renombrar / eliminar rutinas conservando historial; ownership en acciones |
+| `9eb4e8c` | Fix botón de confirmar eliminación invisible en dark mode |
+| `7651ede` | Editor inline de series/reps/peso; default 2 series |
+| `7224b05` | Ocultar spinners numéricos en el editor inline |
 
 ---
 

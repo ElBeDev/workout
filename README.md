@@ -1,30 +1,51 @@
 ## Workout
 
-App web mobile-first para llevar rutinas de ejercicio: armar rutinas, ver
-video/gif de cómo se hace cada ejercicio, y registrar peso/reps por serie
-durante el entrenamiento.
+App web mobile-first para llevar rutinas de gym: armar rutinas con
+ejercicios del catálogo (1,500 con gif), entrenar registrando kg/reps por
+serie con rest timer, y ver el progreso por ejercicio.
 
-Ver [PLAN.md](./PLAN.md) para el plan completo (features, modelo de datos,
-roadmap).
+En línea: https://workout-eight-neon.vercel.app (deploy automático en cada
+push a `main`).
+
+Ver [PLAN.md](./PLAN.md) para el plan completo, estado actual, mapa del
+código, notas de infra y registro de cambios.
 
 ### Stack
 
-- Next.js (App Router) + TypeScript + Tailwind CSS
-- Drizzle ORM + Neon (Postgres)
-- Vercel (deploy) + Vercel Blob (storage, cuando se necesite)
+- Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 + `lucide-react`
+- Drizzle ORM + Neon (Postgres serverless)
+- Auth propia: usuario + contraseña (scrypt), sesión en cookie httpOnly
+- Recharts para las gráficas
+- Vercel (deploy). Vercel Blob está configurado pero sin usar todavía.
 
 ### Desarrollo local
 
 ```bash
 npm install
-cp .env.example .env.local   # y llenar DATABASE_URL
+cp .env.example .env.local   # llenar DATABASE_URL (la de Neon, pooled)
 npm run dev
+```
+
+Scripts útiles:
+
+```bash
+npm run lint
+npm run build
+npm run db:push            # aplica src/db/schema.ts a la base (pide TTY si hay datos)
+npm run db:studio          # UI de Drizzle para ver la base
+node --env-file=.env.local ./node_modules/.bin/tsx scripts/seed-exercises.ts   # recargar catálogo
 ```
 
 ### Base de datos
 
-El schema vive en `src/db/schema.ts`. Para aplicarlo a la base de datos:
+`src/db/schema.ts` es la fuente de verdad. Cuando `db:push` pide
+confirmación interactiva (tablas con datos) y no hay terminal, aplicar el
+cambio con SQL directo y luego volver a correr `db:push` para confirmar que
+no queda diferencia. Ver las notas de infra en `PLAN.md` para los casos que
+ya pasaron.
 
-```bash
-npm run db:push
-```
+### Probar sin tocar la cuenta real
+
+Crear un usuario QA directo en la base, recorrer la app (a mano o con
+Playwright) y al final `delete from users where username = '...'` — el
+cascade se lleva rutinas, sesiones y sets de esa cuenta.
