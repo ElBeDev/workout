@@ -14,12 +14,15 @@ Lo que ya funciona de punta a punta:
 - [x] Modo entrenamiento: loguear peso y reps por serie, con el dato de la sesión anterior como referencia.
 - [x] Terminar sesión → aparece en Progreso (lista de sesiones completadas).
 
+- [x] Login real (usuario + contraseña, sesión guardada en cookie).
+- [x] Explorador visual de ejercicios (grid con gif, filtro por grupo muscular) al agregar a una rutina.
+- [x] Gráficas de progreso por ejercicio (peso máximo por sesión, Recharts).
+- [x] Fallback a un ícono cuando el gif de un ejercicio no carga.
+
 Lo que falta del MVP (ver sección 3):
 
-- [ ] Auth real (por ahora es de un solo usuario fijo, sin pantalla de login).
 - [ ] Reordenar ejercicios dentro de una rutina.
 - [ ] Rest timer entre series.
-- [ ] Gráficas de progreso por ejercicio (hoy Progreso solo es una lista, sin gráfica).
 
 Notas de infra que ya no hay que repetir:
 - El cliente de DB (`src/db/index.ts`) es "lazy" a propósito — si se inicializa en el import top-level, `next build` truena en Vercel al analizar rutas aunque `DATABASE_URL` sí exista en el entorno de runtime.
@@ -49,7 +52,7 @@ Conclusión: el patrón ganador es **"planner + tracker"**: armas la rutina una 
 
 ## 3. Features — MVP (fase 1)
 
-1. **Auth simple** (login con email/Google) — 1 solo usuario o multiusuario básico. ⏳ pendiente (hoy hay un usuario "owner" fijo, sin login).
+1. **Auth simple** ✅ — usuario + contraseña (sin email/Google), multiusuario real vía `sessions` cookie.
 2. **Catálogo de ejercicios** ✅
    - Nombre, músculo objetivo, equipo necesario, gif/video demo, instrucciones cortas.
    - Se puede alimentar de una API pública (ver sección 5) en lugar de armar el catálogo a mano.
@@ -115,7 +118,7 @@ SetLog (cada serie registrada durante la sesión)
 
 - **Frontend**: Next.js 16 (App Router) + TypeScript + Tailwind CSS — mobile-first, con `app/manifest.ts` para que sea instalable como app en el celular.
 - **Backend/DB**: Neon (Postgres serverless) + Drizzle ORM. Ajustamos el plan original de Supabase por Neon porque el deploy es en Vercel y Neon se integra nativo ahí (Storage tab del proyecto).
-- **Auth**: pendiente — hoy no hay login (usuario único fijo vía `src/db/current-user.ts`).
+- **Auth**: usuario + contraseña propios (scrypt vía `node:crypto`, sin dependencias extra), sesión en cookie httpOnly respaldada por tabla `sessions` (`src/lib/session.ts`, `src/lib/password.ts`).
 - **Gráficas de progreso**: Recharts (todavía no implementado, sección 3.5 pendiente).
 - **Gifs/videos de ejercicios**: ExerciseDB, cacheados en nuestra propia tabla `exercises` (script `scripts/seed-exercises.ts`).
 - **Storage de archivos**: Vercel Blob — ya está la variable `BLOB_READ_WRITE_TOKEN` configurada en Vercel, sin usar todavía (se necesitará cuando haya fotos de progreso o ejercicios custom del usuario).
@@ -135,8 +138,9 @@ SetLog (cada serie registrada durante la sesión)
 - ~~Semana 1: setup del proyecto (Next.js + DB + PWA), modelo de datos~~ ✅
 - ~~Semana 2: catálogo de ejercicios (ExerciseDB) + CRUD de rutinas~~ ✅
 - ~~Semana 3: modo entrenamiento (logueo de series) + guardado de sesiones~~ ✅
-- **Siguiente**: gráficas de progreso por ejercicio (Recharts), reordenar ejercicios en una rutina, rest timer.
-- **Después**: auth real (para poder usarla desde varios dispositivos/personas), body weight tracking.
+- ~~Gráficas de progreso, explorador visual de ejercicios, auth real (usuario + contraseña)~~ ✅
+- **Siguiente**: reordenar ejercicios en una rutina, rest timer.
+- **Después**: body weight tracking, notas por sesión.
 
 ---
 
