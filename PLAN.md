@@ -1,5 +1,30 @@
 # Plan: App Web de Ejercicio (mobile-first) — estilo TrainWise
 
+## 0. Estado actual (2026-09-03)
+
+🟢 **Ya está en línea**: https://workout-eight-neon.vercel.app — repo en [github.com/ElBeDev/workout](https://github.com/ElBeDev/workout), deploy automático a Vercel en cada push a `main`.
+
+Lo que ya funciona de punta a punta:
+
+- [x] Proyecto Next.js + TypeScript + Tailwind, mobile-first, instalable como PWA.
+- [x] Base de datos en Neon (Postgres) con el modelo completo (usuarios, ejercicios, rutinas, sesiones, sets).
+- [x] Catálogo de **1,500 ejercicios con gif** cargado desde ExerciseDB.
+- [x] Crear / listar / borrar rutinas.
+- [x] Buscar y agregar ejercicios a una rutina (con gif, series/reps/peso objetivo).
+- [x] Modo entrenamiento: loguear peso y reps por serie, con el dato de la sesión anterior como referencia.
+- [x] Terminar sesión → aparece en Progreso (lista de sesiones completadas).
+
+Lo que falta del MVP (ver sección 3):
+
+- [ ] Auth real (por ahora es de un solo usuario fijo, sin pantalla de login).
+- [ ] Reordenar ejercicios dentro de una rutina.
+- [ ] Rest timer entre series.
+- [ ] Gráficas de progreso por ejercicio (hoy Progreso solo es una lista, sin gráfica).
+
+Notas de infra que ya no hay que repetir:
+- El cliente de DB (`src/db/index.ts`) es "lazy" a propósito — si se inicializa en el import top-level, `next build` truena en Vercel al analizar rutas aunque `DATABASE_URL` sí exista en el entorno de runtime.
+- En Vercel, la integración de Neon prefija sus variables como `DATABASE_URL_*` si ya existe una variable llamada `DATABASE_URL` — la que de verdad lee el código es la que se llama exactamente `DATABASE_URL` (sin prefijo).
+
 ## 1. Visión
 
 Web app optimizada para celular (PWA) para llevar el gym de forma digital:
@@ -24,24 +49,24 @@ Conclusión: el patrón ganador es **"planner + tracker"**: armas la rutina una 
 
 ## 3. Features — MVP (fase 1)
 
-1. **Auth simple** (login con email/Google) — 1 solo usuario o multiusuario básico.
-2. **Catálogo de ejercicios**
+1. **Auth simple** (login con email/Google) — 1 solo usuario o multiusuario básico. ⏳ pendiente (hoy hay un usuario "owner" fijo, sin login).
+2. **Catálogo de ejercicios** ✅
    - Nombre, músculo objetivo, equipo necesario, gif/video demo, instrucciones cortas.
    - Se puede alimentar de una API pública (ver sección 5) en lugar de armar el catálogo a mano.
 3. **Rutinas (armar/editar)**
-   - Crear rutina con nombre (ej. "Push Day", "Piernas").
-   - Agregar ejercicios a la rutina, definir series objetivo, reps objetivo, y opcional peso objetivo.
-   - Reordenar / eliminar ejercicios.
-   - Puede haber varias rutinas y organizarlas por día de la semana o por "programa" (ej. rutina de 4 días).
-4. **Modo entrenamiento (ejecutar rutina)**
+   - Crear rutina con nombre (ej. "Push Day", "Piernas"). ✅
+   - Agregar ejercicios a la rutina, definir series objetivo, reps objetivo, y opcional peso objetivo. ✅
+   - Reordenar / eliminar ejercicios. — eliminar ✅, reordenar ⏳ pendiente.
+   - Puede haber varias rutinas y organizarlas por día de la semana o por "programa" (ej. rutina de 4 días). ✅ (varias rutinas sí; agrupar por "programa" queda para después)
+4. **Modo entrenamiento (ejecutar rutina)** ✅
    - Entras a la rutina del día, ves el primer ejercicio con su gif.
-   - Por cada serie: input rápido de **peso** y **reps**, botón "listo" para marcar la serie.
-   - Se muestra automáticamente lo que hiciste la última vez en ese mismo ejercicio/serie (referencia para progressive overload).
-   - Rest timer entre series (opcional pero muy usado).
-   - Al terminar, la rutina queda guardada como "sesión completada" con fecha.
+   - Por cada serie: input rápido de **peso** y **reps**, botón "listo" para marcar la serie. ✅
+   - Se muestra automáticamente lo que hiciste la última vez en ese mismo ejercicio/serie (referencia para progressive overload). ✅
+   - Rest timer entre series (opcional pero muy usado). ⏳ pendiente.
+   - Al terminar, la rutina queda guardada como "sesión completada" con fecha. ✅
 5. **Historial / progreso**
-   - Por ejercicio: gráfica simple de peso máximo o volumen a través del tiempo.
-   - Calendario/lista de sesiones completadas.
+   - Por ejercicio: gráfica simple de peso máximo o volumen a través del tiempo. ⏳ pendiente.
+   - Calendario/lista de sesiones completadas. ✅
 
 ## 4. Features — fase 2 (nice to have)
 
@@ -86,15 +111,15 @@ SetLog (cada serie registrada durante la sesión)
 
 `SetLog` es la tabla clave: de ahí sale todo el historial y las gráficas de progreso.
 
-## 7. Stack técnico sugerido
+## 7. Stack técnico (real, ya implementado)
 
-- **Frontend**: Next.js (React) + TypeScript + Tailwind CSS — mobile-first, con `next-pwa` para que sea instalable como app en el celular (PWA: ícono, splash screen, funciona sin abrir el navegador).
-- **Backend/DB**: Supabase (Postgres + Auth + Storage) — resuelve login, base de datos y hosting de imágenes en un solo servicio, ideal para armar esto rápido sin levantar un backend aparte.
-- **Gráficas de progreso**: Recharts.
-- **Gifs/videos de ejercicios**: ExerciseDB (o cache local en Supabase Storage de los gifs más usados).
-- **Deploy**: Vercel (integra directo con Next.js).
-
-Esta combinación permite tener login, base de datos y PWA funcionando en celular sin manejar servidores propios.
+- **Frontend**: Next.js 16 (App Router) + TypeScript + Tailwind CSS — mobile-first, con `app/manifest.ts` para que sea instalable como app en el celular.
+- **Backend/DB**: Neon (Postgres serverless) + Drizzle ORM. Ajustamos el plan original de Supabase por Neon porque el deploy es en Vercel y Neon se integra nativo ahí (Storage tab del proyecto).
+- **Auth**: pendiente — hoy no hay login (usuario único fijo vía `src/db/current-user.ts`).
+- **Gráficas de progreso**: Recharts (todavía no implementado, sección 3.5 pendiente).
+- **Gifs/videos de ejercicios**: ExerciseDB, cacheados en nuestra propia tabla `exercises` (script `scripts/seed-exercises.ts`).
+- **Storage de archivos**: Vercel Blob — ya está la variable `BLOB_READ_WRITE_TOKEN` configurada en Vercel, sin usar todavía (se necesitará cuando haya fotos de progreso o ejercicios custom del usuario).
+- **Deploy**: Vercel, deploy automático en cada push a `main`.
 
 ## 8. Pantallas principales
 
@@ -105,12 +130,13 @@ Esta combinación permite tener login, base de datos y PWA funcionando en celula
 5. **Historial** — lista de sesiones pasadas + gráfica de progreso por ejercicio.
 6. **Perfil** — datos del usuario, peso corporal (fase 2).
 
-## 9. Roadmap sugerido
+## 9. Roadmap
 
-- **Semana 1**: setup del proyecto (Next.js + Supabase + PWA), modelo de datos, auth.
-- **Semana 2**: catálogo de ejercicios (integración con ExerciseDB) + CRUD de rutinas.
-- **Semana 3**: modo entrenamiento (logueo de series) + guardado de sesiones.
-- **Semana 4**: historial + gráficas de progreso, pulir UX mobile, convertir a PWA instalable.
+- ~~Semana 1: setup del proyecto (Next.js + DB + PWA), modelo de datos~~ ✅
+- ~~Semana 2: catálogo de ejercicios (ExerciseDB) + CRUD de rutinas~~ ✅
+- ~~Semana 3: modo entrenamiento (logueo de series) + guardado de sesiones~~ ✅
+- **Siguiente**: gráficas de progreso por ejercicio (Recharts), reordenar ejercicios en una rutina, rest timer.
+- **Después**: auth real (para poder usarla desde varios dispositivos/personas), body weight tracking.
 
 ---
 
