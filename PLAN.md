@@ -45,6 +45,8 @@ Fase 2 (hecha en la segunda tanda del mismo día):
 
 Tercera ronda (sección 12, misma fecha): sugerencia de peso, corregir series pasadas, ejercicios propios, gifs en Blob, cola offline, descanso configurable, heatmap, CSV, bloqueo de login, suite de humo. Todo hecho.
 
+Cuarta ronda (sección 13, misma fecha): auditoría completa del código y arreglo de todos los hallazgos altos y medios (fechas en hora MX, sesiones huérfanas / terminadas / doble tap, consulta única del entrenamiento + índices, SW sin HTML redirigido y purga al cerrar sesión, cola offline validada y por usuario, ownership en ejercicios propios). Lo que sigue abierto está en la sección 9.
+
 Notas de infra que ya no hay que repetir:
 - El cliente de DB (`src/db/index.ts`) es "lazy" a propósito — si se inicializa en el import top-level, `next build` truena en Vercel al analizar rutas aunque `DATABASE_URL` sí exista en el entorno de runtime.
 - En Vercel, la integración de Neon prefija sus variables como `DATABASE_URL_*` si ya existe una variable llamada `DATABASE_URL` — la que de verdad lee el código es la que se llama exactamente `DATABASE_URL` (sin prefijo).
@@ -104,16 +106,16 @@ Conclusión: el patrón ganador es **"planner + tracker"**: armas la rutina una 
    - Rest timer entre series (opcional pero muy usado). ✅
    - Al terminar, la rutina queda guardada como "sesión completada" con fecha. ✅
 5. **Historial / progreso** ✅
-   - Por ejercicio: gráfica simple de peso máximo o volumen a través del tiempo. ✅ (peso máximo; volumen queda para después)
+   - Por ejercicio: gráfica de peso máximo / reps máximas / volumen a través del tiempo. ✅
    - Calendario/lista de sesiones completadas. ✅
 
 ## 4. Features — fase 2 (nice to have)
 
-- Sugerencia automática de peso/reps para la próxima sesión (progressive overload asistido). ⏳
+- ~~Sugerencia automática de peso/reps para la próxima sesión~~ ✅ (`src/lib/suggest.ts`, píldora "Sube a / Repite" con botón Usar)
 - ~~Notas por sesión~~ ✅
-- ~~Body weight tracking~~ ✅ (fotos de progreso ⏳ — necesitaría Vercel Blob)
+- ~~Body weight tracking~~ ✅ (fotos de progreso ⏳ — Vercel Blob ya está listo para ello)
 - Compartir rutina con un link. ⏳
-- ~~Modo offline (PWA) para gimnasios sin señal~~ ✅ lectura; escritura sin señal ⏳
+- ~~Modo offline (PWA) para gimnasios sin señal~~ ✅ lectura y escritura (cola de series sincronizada al reconectar)
 - Recordatorios / notificaciones ("hoy toca pierna"). ⏳ (ya existe "Hoy toca" dentro de la app; faltarían push notifications)
 
 ## 5. Videos/gifs de ejercicios — de dónde sacarlos
@@ -170,9 +172,11 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 - **Diseño**: sistema propio inspirado en [este shot de Dribbble](https://dribbble.com/shots/26265316-Ai-Powered-Smarter-Home-Workout-App-Design). Tokens en `src/app/globals.css` (`--background` lavanda, `--surface`, `--primary` casi negro, `--accent` lavanda fuerte, `--danger`, con variante dark). Primitivas en `src/components/ui.tsx`: `Card`, `PrimaryButton`, `SecondaryButton`, `CircleButton`, `Chip`, `Input`, `PageHeader`, `BackButton`, `SectionTitle`. Fuente Outfit vía `next/font`. Iconos `lucide-react`.
 - **Backend/DB**: Neon (Postgres serverless) + Drizzle ORM. Ajustamos el plan original de Supabase por Neon porque el deploy es en Vercel y Neon se integra nativo ahí (Storage tab del proyecto).
 - **Auth**: usuario + contraseña propios (scrypt vía `node:crypto`, sin dependencias extra), sesión en cookie httpOnly respaldada por tabla `sessions` (`src/lib/session.ts`, `src/lib/password.ts`).
-- **Gráficas de progreso**: Recharts — peso máximo por sesión, por ejercicio.
-- **Gifs/videos de ejercicios**: ExerciseDB, cacheados en nuestra propia tabla `exercises` (script `scripts/seed-exercises.ts`).
-- **Storage de archivos**: Vercel Blob — ya está la variable `BLOB_READ_WRITE_TOKEN` configurada en Vercel, sin usar todavía (se necesitará cuando haya fotos de progreso o ejercicios custom del usuario).
+- **Gráficas**: Recharts — por ejercicio (peso máx / reps máx / volumen por sesión) y peso corporal; heatmap propio en SVG/CSS.
+- **Catálogo de ejercicios**: ExerciseDB (1,500 con gif) copiado a nuestra tabla `exercises` (`scripts/seed-exercises.ts`), con nombre en español generado por reglas (`scripts/translate-exercises.ts`) y ejercicios propios por usuario.
+- **Storage de archivos**: Vercel Blob — copia de los gifs en uso (`gif_blob_url`, se llena al agregar un ejercicio a una rutina) y fotos de ejercicios propios. En producción el token ya está; en local es opcional (todo es no-op sin él).
+- **Offline**: service worker propio (`public/sw.js`) + cola de series en `localStorage`.
+- **Pruebas**: Playwright (`tests/smoke.mjs`, `npm run smoke`) con cuenta desechable.
 - **Deploy**: Vercel, deploy automático en cada push a `main`.
 
 ## 8. Pantallas principales
@@ -196,8 +200,15 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 - ~~Reordenar ejercicios en una rutina, rest timer~~ ✅
 
 - ~~Fase 2: sesión en curso, feedback al guardar, series extra, notas, instrucciones, nombres en español, detalle de sesión, gráfica peso/reps/volumen, "Hoy toca", racha, duplicar, contraseña, peso corporal, ícono, offline de lectura~~ ✅
+- ~~Tercera ronda (sección 12): sugerencia de peso, corregir series pasadas, ejercicios propios, gifs en Blob, cola offline, descanso configurable, heatmap, CSV, bloqueo de login, suite de humo~~ ✅
+- ~~Cuarta ronda (sección 13): auditoría y arreglo de los hallazgos altos y medios~~ ✅
 
-**Queda (sin prisa):** cola offline para guardar series sin señal, sugerencia automática de peso/reps, compartir rutina por link, push notifications, fotos de progreso (Vercel Blob), traducir instrucciones.
+**Queda abierto (sin prisa), en este orden sugerido:**
+1. Correr `scripts/mirror-gifs.ts` una vez con `BLOB_READ_WRITE_TOKEN` (barrido inicial de gifs).
+2. Migraciones versionadas (`drizzle-kit generate` + carpeta `drizzle/`) para que el repo pruebe que producción coincide con `schema.ts`.
+3. Throttle de login por IP (hoy el bloqueo es por cuenta).
+4. Accesibilidad de la hoja "cómo se hace" (focus trap, `aria-labelledby`) y consolidar helpers duplicados (`requireOwnedSession`, `fieldClass`, `REST_SECONDS`).
+5. Producto: récords personales con aviso, plantillas de rutina (Push/Pull/Legs), compartir rutina por link, push notifications, fotos de progreso, traducir las instrucciones paso a paso.
 
 ## 10. Mapa del código
 

@@ -1,8 +1,10 @@
 ## Workout
 
-App web mobile-first para llevar rutinas de gym: armar rutinas con
-ejercicios del catálogo (1,500 con gif), entrenar registrando kg/reps por
-serie con rest timer, y ver el progreso por ejercicio.
+App web mobile-first (PWA) para llevar rutinas de gym: armar rutinas con
+ejercicios del catálogo (1,500 con gif, nombres en español) o propios,
+entrenar registrando kg/reps por serie con sugerencia de peso y cronómetro
+de descanso (funciona sin señal), y ver el progreso por ejercicio, por
+sesión y por semana. Multiusuario con cuentas propias.
 
 En línea: https://workout-eight-neon.vercel.app (deploy automático en cada
 push a `main`).
@@ -14,9 +16,11 @@ código, notas de infra y registro de cambios.
 
 - Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 + `lucide-react`
 - Drizzle ORM + Neon (Postgres serverless)
-- Auth propia: usuario + contraseña (scrypt), sesión en cookie httpOnly
+- Auth propia: usuario + contraseña (scrypt), sesión en cookie httpOnly, bloqueo tras 8 fallos
 - Recharts para las gráficas
-- Vercel (deploy). Vercel Blob está configurado pero sin usar todavía.
+- Vercel (deploy) + Vercel Blob (copia de gifs en uso y fotos de ejercicios propios)
+- Service worker propio + cola offline de series en `localStorage`
+- Playwright para la suite de humo (`tests/smoke.mjs`)
 
 ### Desarrollo local
 
