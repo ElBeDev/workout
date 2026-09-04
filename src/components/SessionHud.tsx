@@ -20,12 +20,19 @@ export function SessionHud({
   completed: number;
   total: number;
 }) {
-  const [now, setNow] = useState(() => Date.now());
+  // Start from the session's own timestamp so server and client render the
+  // same text (no hydration mismatch); the clock catches up on mount.
+  const [now, setNow] = useState(startedAtMs);
   const [rest, setRest] = useState<number | null>(null);
 
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
+    const tick = () => setNow(Date.now());
+    const id = setInterval(tick, 1000);
+    const first = setTimeout(tick, 0);
+    return () => {
+      clearInterval(id);
+      clearTimeout(first);
+    };
   }, []);
 
   useEffect(() => {

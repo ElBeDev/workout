@@ -7,7 +7,9 @@ import {
   boolean,
   timestamp,
   uniqueIndex,
+  index,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -24,12 +26,16 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const sessions = pgTable("sessions", {
-  token: text("token").primaryKey(),
-  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+export const sessions = pgTable(
+  "sessions",
+  {
+    token: text("token").primaryKey(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [index("sessions_expires_idx").on(table.expiresAt)]
+);
 
 export const exercises = pgTable(
   "exercises",
@@ -49,7 +55,10 @@ export const exercises = pgTable(
     userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
     isCustom: boolean("is_custom").notNull().default(false),
   },
-  (table) => [uniqueIndex("exercises_external_id_idx").on(table.externalId)]
+  (table) => [
+    uniqueIndex("exercises_external_id_idx").on(table.externalId),
+    index("exercises_user_idx").on(table.userId),
+  ]
 );
 
 export const routines = pgTable("routines", {
@@ -69,27 +78,41 @@ export const bodyWeights = pgTable("body_weights", {
   loggedAt: timestamp("logged_at").defaultNow().notNull(),
 });
 
-export const routineExercises = pgTable("routine_exercises", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  routineId: uuid("routine_id").notNull().references(() => routines.id, { onDelete: "cascade" }),
-  exerciseId: uuid("exercise_id").notNull().references(() => exercises.id),
-  sortOrder: integer("sort_order").default(0).notNull(),
-  targetSets: integer("target_sets").notNull(),
-  targetReps: integer("target_reps").notNull(),
-  targetWeight: numeric("target_weight"),
-  // Per-exercise rest override; null = the user's default.
-  restSeconds: integer("rest_seconds"),
-});
+export const routineExercises = pgTable(
+  "routine_exercises",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    routineId: uuid("routine_id").notNull().references(() => routines.id, { onDelete: "cascade" }),
+    exerciseId: uuid("exercise_id").notNull().references(() => exercises.id),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    targetSets: integer("target_sets").notNull(),
+    targetReps: integer("target_reps").notNull(),
+    targetWeight: numeric("target_weight"),
+    // Per-exercise rest override; null = the user's default.
+    restSeconds: integer("rest_seconds"),
+  },
+  (table) => [index("routine_exercises_routine_idx").on(table.routineId)]
+);
 
-export const workoutSessions = pgTable("workout_sessions", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  // Nullable + SET NULL so deleting a routine keeps the session history.
-  routineId: uuid("routine_id").references(() => routines.id, { onDelete: "set null" }),
-  startedAt: timestamp("started_at").defaultNow().notNull(),
-  finishedAt: timestamp("finished_at"),
-  notes: text("notes"),
-});
+export const workoutSessions = pgTable(
+  "workout_sessions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    // Nullable + SET NULL so deleting a routine keeps the session history.
+    routineId: uuid("routine_id").references(() => routines.id, { onDelete: "set null" }),
+    startedAt: timestamp("started_at").defaultNow().notNull(),
+    finishedAt: timestamp("finished_at"),
+    notes: text("notes"),
+  },
+  (table) => [
+    index("workout_sessions_user_finished_idx").on(table.userId, table.finishedAt),
+    // At most one open session per routine per user (double-tap on "Empezar").
+    uniqueIndex("workout_sessions_one_open_idx")
+      .on(table.userId, table.routineId)
+      .where(sql`finished_at is null`),
+  ]
+);
 
 export const setLogs = pgTable(
   "set_logs",
@@ -109,5 +132,6 @@ export const setLogs = pgTable(
       table.exerciseId,
       table.setNumber
     ),
+    index("set_logs_exercise_idx").on(table.exerciseId),
   ]
 );

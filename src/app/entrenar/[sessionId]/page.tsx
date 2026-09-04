@@ -8,8 +8,8 @@ import {
   users,
 } from "@/db/schema";
 import { exerciseGif } from "@/db/exercise-gif";
-import { and, eq, desc, ne } from "drizzle-orm";
-import { notFound } from "next/navigation";
+import { and, eq, desc, ne, inArray, isNotNull, or, isNull } from "drizzle-orm";
+import { notFound, redirect } from "next/navigation";
 import { Flag, Plus, Repeat } from "lucide-react";
 import { requireUserId } from "@/lib/session";
 import { Card, PageHeader, PrimaryButton } from "@/components/ui";
@@ -26,40 +26,54 @@ import { finishSession, addExtraSet } from "./actions";
 
 type LastSet = { weight: string | null; reps: number | null };
 
+/**
+ * For each exercise, the sets of the most recent *finished* session (other
+ * than this one) — two queries total instead of one per exercise.
+ */
 async function getLastTimeSets(
   userId: string,
-  exerciseId: string,
+  exerciseIds: string[],
   excludeSessionId: string
-): Promise<Map<number, LastSet>> {
-  const rows = await db
-    .select({
+): Promise<Map<string, Map<number, LastSet>>> {
+  const result = new Map<string, Map<number, LastSet>>();
+  if (exerciseIds.length === 0) return result;
+
+  const latest = await db
+    .selectDistinctOn([setLogs.exerciseId], {
+      exerciseId: setLogs.exerciseId,
       sessionId: setLogs.sessionId,
-      setNumber: setLogs.setNumber,
-      weight: setLogs.weight,
-      reps: setLogs.reps,
-      startedAt: workoutSessions.startedAt,
     })
     .from(setLogs)
     .innerJoin(workoutSessions, eq(setLogs.sessionId, workoutSessions.id))
     .where(
       and(
-        eq(setLogs.exerciseId, exerciseId),
+        inArray(setLogs.exerciseId, exerciseIds),
         eq(workoutSessions.userId, userId),
+        isNotNull(workoutSessions.finishedAt),
         ne(setLogs.sessionId, excludeSessionId),
         eq(setLogs.completed, true)
       )
     )
-    .orderBy(desc(workoutSessions.startedAt));
+    .orderBy(setLogs.exerciseId, desc(workoutSessions.startedAt));
 
-  if (rows.length === 0) return new Map();
+  if (latest.length === 0) return result;
 
-  const lastSessionId = rows[0].sessionId;
-  const map = new Map<number, LastSet>();
+  const pairs = latest.map((l) => and(eq(setLogs.exerciseId, l.exerciseId), eq(setLogs.sessionId, l.sessionId))!);
+  const rows = await db
+    .select({
+      exerciseId: setLogs.exerciseId,
+      setNumber: setLogs.setNumber,
+      weight: setLogs.weight,
+      reps: setLogs.reps,
+    })
+    .from(setLogs)
+    .where(and(eq(setLogs.completed, true), or(...pairs)));
+
   for (const row of rows) {
-    if (row.sessionId !== lastSessionId) continue;
-    map.set(row.setNumber, { weight: row.weight, reps: row.reps });
+    if (!result.has(row.exerciseId)) result.set(row.exerciseId, new Map());
+    result.get(row.exerciseId)!.set(row.setNumber, { weight: row.weight, reps: row.reps });
   }
-  return map;
+  return result;
 }
 
 export default async function EntrenarPage({
@@ -73,8 +87,21 @@ export default async function EntrenarPage({
   const [session] = await db
     .select()
     .from(workoutSessions)
-    .where(eq(workoutSessions.id, sessionId));
-  if (!session || session.userId !== userId || !session.routineId) notFound();
+    .where(and(eq(workoutSessions.id, sessionId), eq(workoutSessions.userId, userId)));
+  if (!session) notFound();
+
+  // Already finished: nothing to log here, show the summary instead.
+  if (session.finishedAt) redirect(`/progreso/sesion/${sessionId}`);
+
+  // Its routine was deleted while it was open: close it with what it has
+  // instead of leaving it stuck (its sets are intact).
+  if (!session.routineId) {
+    await db
+      .update(workoutSessions)
+      .set({ finishedAt: new Date() })
+      .where(and(eq(workoutSessions.id, sessionId), isNull(workoutSessions.finishedAt)));
+    redirect(`/progreso/sesion/${sessionId}`);
+  }
 
   const [routine] = await db
     .select()
@@ -100,24 +127,20 @@ export default async function EntrenarPage({
     .where(eq(routineExercises.routineId, routine.id))
     .orderBy(routineExercises.sortOrder);
 
-  const [me] = await db.select({ restSeconds: users.restSeconds }).from(users).where(eq(users.id, userId));
+  const [me, currentLogs, lastTimeByExercise] = await Promise.all([
+    db.select({ restSeconds: users.restSeconds }).from(users).where(eq(users.id, userId)).then((r) => r[0]),
+    db.select().from(setLogs).where(eq(setLogs.sessionId, sessionId)),
+    getLastTimeSets(
+      userId,
+      items.map((i) => i.exerciseId),
+      sessionId
+    ),
+  ]);
   const defaultRest = me?.restSeconds ?? 90;
 
-  const currentLogs = await db
-    .select()
-    .from(setLogs)
-    .where(eq(setLogs.sessionId, sessionId));
   const currentMap = new Map(
     currentLogs.map((log) => [`${log.exerciseId}-${log.setNumber}`, log])
   );
-
-  const lastTimeByExercise = new Map<string, Map<number, LastSet>>();
-  for (const item of items) {
-    lastTimeByExercise.set(
-      item.exerciseId,
-      await getLastTimeSets(session.userId, item.exerciseId, sessionId)
-    );
-  }
 
   // Rows per exercise = target sets, plus any extra sets added on the fly.
   const rowCount = new Map<string, number>();
@@ -141,13 +164,14 @@ export default async function EntrenarPage({
         total={totalSets}
       />
 
-      <PendingSync sessionId={sessionId} />
+      <PendingSync userId={userId} sessionId={sessionId} />
 
       <div className="flex flex-col gap-4">
         {items.map((item) => {
           const lastTime = lastTimeByExercise.get(item.exerciseId) ?? new Map<number, LastSet>();
           const rows = rowCount.get(item.exerciseId) ?? item.targetSets;
           const suggestion = suggestNext(lastTime, item.targetSets, item.targetReps);
+          const rest = item.restSeconds ?? defaultRest;
           return (
             <Card key={item.exerciseId} className="p-3">
               <div className="mb-3 flex items-center gap-3">
@@ -175,7 +199,7 @@ export default async function EntrenarPage({
                   <p className="mt-0.5 inline-flex items-center gap-1 text-[13px] text-muted">
                     <Repeat className="h-3.5 w-3.5" />
                     {item.targetSets} × {item.targetReps} reps
-                    <span className="opacity-70"> · descanso {item.restSeconds ?? defaultRest}s</span>
+                    <span className="opacity-70"> · descanso {rest}s</span>
                   </p>
                 </div>
               </div>
@@ -189,6 +213,7 @@ export default async function EntrenarPage({
                   return (
                     <SetRow
                       key={setNumber}
+                      userId={userId}
                       sessionId={sessionId}
                       exerciseId={item.exerciseId}
                       setNumber={setNumber}
@@ -198,7 +223,7 @@ export default async function EntrenarPage({
                       reps={existing?.reps ?? null}
                       weightPlaceholder={last?.weight ? `${last.weight} kg` : "kg"}
                       repsPlaceholder={last?.reps ? `${last.reps} reps` : `${item.targetReps} reps`}
-                      restSeconds={item.restSeconds ?? defaultRest}
+                      restSeconds={rest}
                     />
                   );
                 })}

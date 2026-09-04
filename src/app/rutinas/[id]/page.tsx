@@ -20,10 +20,13 @@ export const dynamic = "force-dynamic";
 
 export default async function RutinaDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const { id } = await params;
+  const { error } = await searchParams;
   const userId = await requireUserId();
 
   const [routine] = await db.select().from(routines).where(eq(routines.id, id));
@@ -54,6 +57,12 @@ export default async function RutinaDetailPage({
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title={routine.name} backHref="/rutinas" />
+
+      {error === "open-session" && (
+        <p className="rounded-2xl bg-danger/10 px-4 py-3 text-[13px] font-medium text-danger">
+          Tienes un entrenamiento en curso con esta rutina. Termínalo o descártalo desde Hoy antes de eliminarla.
+        </p>
+      )}
 
       <div className="rounded-[1.5rem] bg-accent p-5 text-accent-foreground">
         <div className="grid grid-cols-3 divide-x divide-black/10 dark:divide-white/15">

@@ -91,7 +91,7 @@ export function ExercisePicker({
         />
       </div>
 
-      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 scrollbar-none">
+      <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Chip active={bodyPart === ""} onClick={() => setBodyPart("")}>
           Todos
         </Chip>

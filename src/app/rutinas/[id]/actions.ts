@@ -3,10 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { routines, routineExercises } from "@/db/schema";
+import { routines, routineExercises, workoutSessions, exercises } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
 import { mirrorExerciseGif } from "@/lib/blob";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNull, or, sql } from "drizzle-orm";
 
 async function requireOwnedRoutine(routineId: string) {
   const userId = await requireUserId();
@@ -63,6 +63,7 @@ export async function duplicateRoutine(routineId: string) {
         targetSets: i.targetSets,
         targetReps: i.targetReps,
         targetWeight: i.targetWeight,
+        restSeconds: i.restSeconds,
       }))
     );
   }
@@ -73,24 +74,46 @@ export async function duplicateRoutine(routineId: string) {
 
 export async function deleteRoutine(routineId: string) {
   await requireOwnedRoutine(routineId);
+
+  // An open session would be stranded (routine_id → null, nothing to render).
+  const [open] = await db
+    .select({ id: workoutSessions.id })
+    .from(workoutSessions)
+    .where(and(eq(workoutSessions.routineId, routineId), isNull(workoutSessions.finishedAt)))
+    .limit(1);
+  if (open) redirect(`/rutinas/${routineId}?error=open-session`);
+
   await db.delete(routines).where(eq(routines.id, routineId));
   revalidatePath("/rutinas");
   revalidatePath("/");
   redirect("/rutinas");
 }
 
+function positiveInt(value: FormDataEntryValue | null, fallback: number) {
+  const n = Number(String(value ?? "").trim());
+  return Number.isFinite(n) && n >= 1 ? Math.round(n) : fallback;
+}
+
 export async function addExerciseToRoutine(formData: FormData) {
   const routineId = String(formData.get("routineId"));
   const exerciseId = String(formData.get("exerciseId"));
-  const targetSets = Number(formData.get("targetSets") ?? 3);
-  const targetReps = Number(formData.get("targetReps") ?? 10);
+  const targetSets = positiveInt(formData.get("targetSets"), 2);
+  const targetReps = positiveInt(formData.get("targetReps"), 10);
   const targetWeightRaw = formData.get("targetWeight");
   const targetWeight =
     targetWeightRaw && String(targetWeightRaw).trim() !== ""
       ? String(targetWeightRaw)
       : null;
 
+  const userId = await requireUserId();
   await requireOwnedRoutine(routineId);
+
+  // Catalog exercise or one of this user's own — never someone else's custom row.
+  const [exercise] = await db
+    .select({ id: exercises.id })
+    .from(exercises)
+    .where(and(eq(exercises.id, exerciseId), or(isNull(exercises.userId), eq(exercises.userId, userId))));
+  if (!exercise) return;
 
   const [{ nextOrder }] = await db
     .select({ nextOrder: sql<number>`coalesce(max(${routineExercises.sortOrder}), -1) + 1` })

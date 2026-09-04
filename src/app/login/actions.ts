@@ -14,7 +14,7 @@ export async function loginAction(formData: FormData) {
   const username = String(formData.get("username") ?? "")
     .trim()
     .toLowerCase();
-  const password = String(formData.get("password") ?? "");
+  const password = String(formData.get("password") ?? "").slice(0, 128);
 
   const [user] = await db.select().from(users).where(eq(users.username, username));
 

@@ -2,7 +2,8 @@ import { db } from "@/db";
 import { setLogs, workoutSessions, exercises } from "@/db/schema";
 import { pickGif } from "@/db/exercise-gif";
 import { requireUserId } from "@/lib/session";
-import { and, eq, asc } from "drizzle-orm";
+import { and, eq, asc, isNull, or } from "drizzle-orm";
+import { fmtDate } from "@/lib/dates";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { TrendingUp } from "lucide-react";
@@ -24,7 +25,7 @@ export default async function ExerciseProgressPage({
   const [exercise] = await db
     .select()
     .from(exercises)
-    .where(eq(exercises.id, exerciseId));
+    .where(and(eq(exercises.id, exerciseId), or(isNull(exercises.userId), eq(exercises.userId, userId))));
   if (!exercise) notFound();
 
   const sets = await db
@@ -69,7 +70,7 @@ export default async function ExerciseProgressPage({
   }
 
   const chartData = rows.map((r) => ({
-    date: new Intl.DateTimeFormat("es-MX", { day: "2-digit", month: "short" }).format(r.startedAt),
+    date: fmtDate(r.startedAt, { day: "2-digit", month: "short" }),
     maxWeight: r.maxWeight,
     maxReps: r.maxReps,
     volume: r.volume !== null ? Math.round(r.volume) : null,
@@ -141,7 +142,7 @@ export default async function ExerciseProgressPage({
                 <Link href={`/progreso/sesion/${r.sessionId}`}>
                   <Card className="flex items-center justify-between px-4 py-3 text-[14px] transition active:scale-[0.99]">
                     <span className="text-muted">
-                      {new Intl.DateTimeFormat("es-MX", { dateStyle: "medium" }).format(r.startedAt)}
+                      {fmtDate(r.startedAt, { dateStyle: "medium" })}
                     </span>
                     <span className="flex items-center gap-3 tabular-nums">
                       <span className="text-muted">{r.sets} series</span>

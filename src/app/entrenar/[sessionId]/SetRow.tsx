@@ -1,14 +1,23 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Check, CloudOff, Loader2 } from "lucide-react";
+import { AlertCircle, Check, CloudOff, Loader2 } from "lucide-react";
 import { enqueueSet, findPendingSet } from "@/lib/offline-queue";
 import { logSet } from "./actions";
 
 const fieldClass =
   "w-full rounded-2xl border border-border bg-surface-2 px-3 py-3 text-[15px] text-foreground outline-none focus:ring-2 focus:ring-accent [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none";
 
+type Status = "idle" | "saving" | "done" | "queued" | "error";
+
+function isNetworkError(err: unknown) {
+  if (typeof navigator !== "undefined" && !navigator.onLine) return true;
+  const msg = err instanceof Error ? `${err.name} ${err.message}`.toLowerCase() : String(err).toLowerCase();
+  return msg.includes("fetch failed") || msg.includes("failed to fetch") || msg.includes("networkerror") || msg.includes("load failed");
+}
+
 export function SetRow({
+  userId,
   sessionId,
   exerciseId,
   setNumber,
@@ -20,6 +29,7 @@ export function SetRow({
   repsPlaceholder,
   restSeconds = 90,
 }: {
+  userId: string;
   sessionId: string;
   exerciseId: string;
   setNumber: number;
@@ -31,36 +41,37 @@ export function SetRow({
   repsPlaceholder: string;
   restSeconds?: number;
 }) {
-  const [status, setStatus] = useState<"idle" | "saving" | "done" | "queued">(
-    completed ? "done" : "idle"
-  );
+  const [status, setStatus] = useState<Status>(completed ? "done" : "idle");
   const [, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
 
+  function fill(w: string | null, r: number | null) {
+    const form = formRef.current;
+    if (!form) return;
+    const wi = form.querySelector<HTMLInputElement>('input[name="weight"]');
+    const ri = form.querySelector<HTMLInputElement>('input[name="reps"]');
+    if (wi) wi.value = w ?? "";
+    if (ri) ri.value = r !== null ? String(r) : "";
+  }
+
   // If this set was queued offline earlier (e.g. after a reload), show it.
   useEffect(() => {
-    const pending = findPendingSet(sessionId, exerciseId, setNumber);
+    const pending = findPendingSet(userId, sessionId, exerciseId, setNumber);
     if (!pending) return;
     const id = setTimeout(() => {
       setStatus("queued");
-      const form = formRef.current;
-      if (form) {
-        const w = form.querySelector<HTMLInputElement>('input[name="weight"]');
-        const r = form.querySelector<HTMLInputElement>('input[name="reps"]');
-        if (w && pending.weight !== null) w.value = pending.weight;
-        if (r && pending.reps !== null) r.value = String(pending.reps);
-      }
+      fill(pending.weight, pending.reps);
     }, 0);
     return () => clearTimeout(id);
-  }, [sessionId, exerciseId, setNumber]);
+  }, [userId, sessionId, exerciseId, setNumber]);
 
   useEffect(() => {
     const onQueueChange = () => {
-      if (!findPendingSet(sessionId, exerciseId, setNumber) && status === "queued") setStatus("done");
+      if (status === "queued" && !findPendingSet(userId, sessionId, exerciseId, setNumber)) setStatus("done");
     };
     window.addEventListener("workout:queue-changed", onQueueChange);
     return () => window.removeEventListener("workout:queue-changed", onQueueChange);
-  }, [sessionId, exerciseId, setNumber, status]);
+  }, [userId, sessionId, exerciseId, setNumber, status]);
 
   // Dispatched from the button's onClick, not from the action: inside a
   // form action React batches the listener's setState into the transition
@@ -82,22 +93,14 @@ export function SetRow({
       weight: weightRaw === "" ? null : weightRaw,
       reps: repsRaw === "" ? null : Number(repsRaw),
     };
-
     // React resets an uncontrolled form after its action runs; put the
-    // values back so a queued set still shows what was typed.
-    const restore = () => {
-      const form = formRef.current;
-      if (!form) return;
-      const w = form.querySelector<HTMLInputElement>('input[name="weight"]');
-      const r = form.querySelector<HTMLInputElement>('input[name="reps"]');
-      if (w) w.value = entry.weight ?? "";
-      if (r) r.value = entry.reps !== null ? String(entry.reps) : "";
-    };
+    // values back so the row still shows what was typed.
+    const restore = () => setTimeout(() => fill(entry.weight, entry.reps), 0);
 
     if (!navigator.onLine) {
-      enqueueSet(entry);
+      enqueueSet(userId, entry);
       setStatus("queued");
-      setTimeout(restore, 0);
+      restore();
       return;
     }
 
@@ -106,11 +109,15 @@ export function SetRow({
       try {
         await logSet(formData);
         setStatus("done");
-      } catch {
-        enqueueSet(entry);
-        setStatus("queued");
+      } catch (err) {
+        if (isNetworkError(err)) {
+          enqueueSet(userId, entry);
+          setStatus("queued");
+        } else {
+          setStatus("error");
+        }
       }
-      setTimeout(restore, 0);
+      restore();
     });
   }
 
@@ -119,7 +126,18 @@ export function SetRow({
       ? "bg-primary text-primary-foreground"
       : status === "queued"
         ? "bg-amber-400 text-black"
-        : "border border-border bg-surface-2 text-muted";
+        : status === "error"
+          ? "bg-danger text-white"
+          : "border border-border bg-surface-2 text-muted";
+
+  const label =
+    status === "saving"
+      ? "Guardando serie"
+      : status === "queued"
+        ? "Serie pendiente de sincronizar"
+        : status === "error"
+          ? "No se pudo guardar, toca para reintentar"
+          : "Marcar serie";
 
   return (
     <form ref={formRef} action={submit} data-exercise={exerciseId} className="flex items-center gap-2">
@@ -140,6 +158,7 @@ export function SetRow({
         inputMode="decimal"
         defaultValue={weight ?? undefined}
         placeholder={weightPlaceholder}
+        aria-label={`Peso serie ${setNumber} (kg)`}
         className={fieldClass}
       />
       <input
@@ -148,6 +167,7 @@ export function SetRow({
         inputMode="numeric"
         defaultValue={reps ?? undefined}
         placeholder={repsPlaceholder}
+        aria-label={`Repeticiones serie ${setNumber}`}
         className={fieldClass}
       />
 
@@ -155,13 +175,7 @@ export function SetRow({
         type="submit"
         onClick={startRest}
         disabled={status === "saving"}
-        aria-label={
-          status === "saving"
-            ? "Guardando serie"
-            : status === "queued"
-              ? "Serie pendiente de sincronizar"
-              : "Marcar serie"
-        }
+        aria-label={label}
         title={status === "queued" ? "Se guardará al reconectar" : undefined}
         className={`ml-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:scale-95 disabled:opacity-70 ${buttonClass}`}
       >
@@ -169,6 +183,8 @@ export function SetRow({
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : status === "queued" ? (
           <CloudOff className="h-4 w-4" />
+        ) : status === "error" ? (
+          <AlertCircle className="h-4 w-4" />
         ) : (
           <Check className="h-4 w-4" strokeWidth={2.5} />
         )}

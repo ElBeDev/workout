@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { WifiOff } from "lucide-react";
 
-const PAGE_CACHE = "pages-v1";
+// Must match `pages-${VERSION}` in public/sw.js.
+const PAGE_CACHE = "pages-v3";
 
 /**
  * Registers the service worker, keeps the current page in the offline

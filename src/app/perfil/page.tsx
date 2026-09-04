@@ -1,11 +1,12 @@
 import { desc, eq } from "drizzle-orm";
-import { LogOut, KeyRound, Scale, Trash2, Plus, ShieldAlert, Timer, Check, Download } from "lucide-react";
+import { KeyRound, Scale, Trash2, Plus, ShieldAlert, Timer, Check, Download } from "lucide-react";
 import { db } from "@/db";
 import { users, bodyWeights } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
-import { Card, Input, PageHeader, PrimaryButton, SecondaryButton, SectionTitle } from "@/components/ui";
+import { fmtDate } from "@/lib/dates";
+import { Card, Input, PageHeader, PrimaryButton, SectionTitle } from "@/components/ui";
 import { BodyWeightChart } from "@/components/BodyWeightChart";
-import { logoutAction } from "../login/actions";
+import { LogoutButton } from "@/components/LogoutButton";
 import { changePasswordAction, addBodyWeight, deleteBodyWeight, setDefaultRest } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -36,7 +37,7 @@ export default async function PerfilPage({
   const chart = [...weights]
     .reverse()
     .map((w) => ({
-      date: new Intl.DateTimeFormat("es-MX", { day: "2-digit", month: "short" }).format(w.loggedAt),
+      date: fmtDate(w.loggedAt, { day: "2-digit", month: "short" }),
       weight: Number(w.weight),
     }));
   const latest = weights[0] ? Number(weights[0].weight) : null;
@@ -56,9 +57,7 @@ export default async function PerfilPage({
           {user?.createdAt && (
             <p className="text-[13px] text-muted">
               Desde{" "}
-              {new Intl.DateTimeFormat("es-MX", { month: "long", year: "numeric" }).format(
-                user.createdAt
-              )}
+              {fmtDate(user.createdAt, { month: "long", year: "numeric" })}
             </p>
           )}
         </div>
@@ -114,7 +113,7 @@ export default async function PerfilPage({
             {weights.slice(0, 5).map((w) => (
               <li key={w.id} className="flex items-center justify-between text-[14px]">
                 <span className="text-muted">
-                  {new Intl.DateTimeFormat("es-MX", { dateStyle: "medium" }).format(w.loggedAt)}
+                  {fmtDate(w.loggedAt, { dateStyle: "medium" })}
                 </span>
                 <span className="flex items-center gap-2">
                   <span className="font-semibold tabular-nums">{Number(w.weight)} kg</span>
@@ -201,12 +200,7 @@ export default async function PerfilPage({
         Exportar historial (CSV)
       </a>
 
-      <form action={logoutAction}>
-        <SecondaryButton type="submit" className="w-full text-danger">
-          <LogOut className="h-4 w-4" />
-          Cerrar sesión
-        </SecondaryButton>
-      </form>
+      <LogoutButton />
     </div>
   );
 }

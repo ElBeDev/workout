@@ -51,6 +51,11 @@ export function daysAgo(date: Date, now = new Date()): number {
   return Math.round((b.getTime() - a.getTime()) / 86400000);
 }
 
+/** Format for display, always in the app's time zone (the server runs in UTC). */
+export function fmtDate(date: Date, options: Intl.DateTimeFormatOptions): string {
+  return new Intl.DateTimeFormat("es-MX", { timeZone: APP_TIME_ZONE, ...options }).format(date);
+}
+
 export function daysAgoLabel(date: Date | null): string {
   if (!date) return "Nunca";
   const n = daysAgo(date);

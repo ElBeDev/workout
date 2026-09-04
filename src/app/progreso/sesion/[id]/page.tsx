@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Clock, Layers, Weight, NotebookPen } from "lucide-react";
 import { requireUserId } from "@/lib/session";
 import { bodyPartLabel } from "@/lib/body-parts";
+import { fmtDate } from "@/lib/dates";
 import { Card, PageHeader, SectionTitle } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { SetRowEditor } from "./SetRowEditor";
@@ -84,9 +85,7 @@ export default async function SessionDetailPage({
       <PageHeader
         title={session.routineName ?? "Rutina eliminada"}
         backHref="/progreso"
-        subtitle={new Intl.DateTimeFormat("es-MX", { dateStyle: "full", timeStyle: "short" }).format(
-          session.startedAt
-        )}
+        subtitle={fmtDate(session.startedAt, { dateStyle: "full", timeStyle: "short" })}
       />
 
       <div className="rounded-[1.5rem] bg-accent p-5 text-accent-foreground">

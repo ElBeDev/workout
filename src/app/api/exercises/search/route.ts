@@ -15,7 +15,8 @@ export async function GET(req: NextRequest) {
 
   const q = req.nextUrl.searchParams.get("q")?.trim() ?? "";
   const bodyPart = req.nextUrl.searchParams.get("bodyPart")?.trim() ?? "";
-  const offset = Number(req.nextUrl.searchParams.get("offset") ?? 0);
+  const offsetRaw = Number(req.nextUrl.searchParams.get("offset") ?? 0);
+  const offset = Number.isFinite(offsetRaw) && offsetRaw > 0 ? Math.min(Math.floor(offsetRaw), 5000) : 0;
 
   if (q.length > 0 && q.length < 2) {
     return NextResponse.json({ items: [], hasMore: false });
@@ -43,7 +44,7 @@ export async function GET(req: NextRequest) {
     })
     .from(exercises)
     .where(and(...conditions))
-    .orderBy(desc(exercises.isCustom), asc(exercises.nameEs), asc(exercises.name))
+    .orderBy(desc(exercises.isCustom), asc(exercises.nameEs), asc(exercises.name), asc(exercises.id))
     .limit(PAGE_SIZE + 1)
     .offset(offset);
 

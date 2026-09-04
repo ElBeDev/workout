@@ -4,7 +4,7 @@ import { Card, Input, PrimaryButton } from "@/components/ui";
 import { registerAction } from "./actions";
 
 const ERROR_MESSAGES: Record<string, string> = {
-  invalid: "El usuario debe tener al menos 3 letras y la contraseña 4.",
+  invalid: "Usuario de 3 a 40 caracteres (letras, números, . _ @ -) y contraseña de 4 a 128.",
   taken: "Ese usuario ya existe, elige otro.",
 };
 

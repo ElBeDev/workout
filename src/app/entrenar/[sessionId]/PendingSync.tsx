@@ -1,25 +1,31 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CloudOff, RefreshCw } from "lucide-react";
 import { getPendingSets, removePendingSets } from "@/lib/offline-queue";
 import { syncSets } from "./actions";
 
 /** Replays queued sets when the connection comes back; shows how many are waiting. */
-export function PendingSync({ sessionId }: { sessionId: string }) {
+export function PendingSync({ userId, sessionId }: { userId: string; sessionId: string }) {
   const [count, setCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
+  const inFlight = useRef(false);
   const router = useRouter();
 
-  const refreshCount = useCallback(() => setCount(getPendingSets(sessionId).length), [sessionId]);
+  const refreshCount = useCallback(
+    () => setCount(getPendingSets(userId, sessionId).length),
+    [userId, sessionId]
+  );
 
   const sync = useCallback(async () => {
-    const pending = getPendingSets();
+    if (inFlight.current) return;
+    const pending = getPendingSets(userId);
     if (pending.length === 0 || !navigator.onLine) return;
+    inFlight.current = true;
     setSyncing(true);
     try {
-      const saved = await syncSets(
+      const { saved, rejected } = await syncSets(
         pending.map(({ sessionId, exerciseId, setNumber, weight, reps }) => ({
           sessionId,
           exerciseId,
@@ -28,14 +34,15 @@ export function PendingSync({ sessionId }: { sessionId: string }) {
           reps,
         }))
       );
-      removePendingSets(saved.map((s) => ({ ...s, queuedAt: 0 })));
+      removePendingSets(userId, [...saved, ...rejected]);
       if (saved.length > 0) router.refresh();
     } catch {
       // still offline or server unreachable; keep the queue
     } finally {
+      inFlight.current = false;
       setSyncing(false);
     }
-  }, [router]);
+  }, [userId, router]);
 
   useEffect(() => {
     const id = setTimeout(() => {
@@ -47,7 +54,7 @@ export function PendingSync({ sessionId }: { sessionId: string }) {
     window.addEventListener("workout:queue-changed", refreshCount);
     // Some browsers/PWAs don't fire "online" reliably; retry on a timer too.
     const interval = setInterval(() => {
-      if (getPendingSets().length > 0) void sync();
+      if (getPendingSets(userId).length > 0) void sync();
     }, 15000);
     return () => {
       clearTimeout(id);
@@ -55,7 +62,7 @@ export function PendingSync({ sessionId }: { sessionId: string }) {
       window.removeEventListener("online", onOnline);
       window.removeEventListener("workout:queue-changed", refreshCount);
     };
-  }, [sync, refreshCount]);
+  }, [sync, refreshCount, userId]);
 
   if (count === 0) return null;
 

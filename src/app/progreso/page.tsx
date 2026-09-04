@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronRight, CalendarClock, CalendarDays } from "lucide-react";
 import { TrainingHeatmap } from "@/components/TrainingHeatmap";
+import { fmtDate } from "@/lib/dates";
 import { db } from "@/db";
 import { workoutSessions, routines, setLogs, exercises } from "@/db/schema";
 import { exerciseGif } from "@/db/exercise-gif";
@@ -124,10 +125,7 @@ export default async function ProgresoPage() {
                         {s.routineName ?? "Rutina eliminada"}
                       </p>
                       <p className="text-[13px] text-muted">
-                        {new Intl.DateTimeFormat("es-MX", {
-                          dateStyle: "medium",
-                          timeStyle: "short",
-                        }).format(s.startedAt)}
+                        {fmtDate(s.startedAt, { dateStyle: "medium", timeStyle: "short" })}
                       </p>
                     </div>
                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2">

@@ -6,7 +6,9 @@ import { getCurrentUserId } from "@/lib/session";
 import { APP_TIME_ZONE } from "@/lib/dates";
 
 function csvCell(value: string | number | null | undefined) {
-  const s = value === null || value === undefined ? "" : String(value);
+  let s = value === null || value === undefined ? "" : String(value);
+  // Neutralize spreadsheet formula injection in free text (=, +, -, @, tab, CR).
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 

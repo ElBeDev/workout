@@ -43,6 +43,9 @@ export async function mirrorExerciseGif(exerciseId: string): Promise<string | nu
 export async function uploadExercisePhoto(userId: string, file: File): Promise<string | null> {
   if (!blobConfigured() || file.size === 0) return null;
   if (file.size > 8 * 1024 * 1024) throw new Error("La foto pesa más de 8 MB.");
+  if (!/^image\/(jpeg|png|webp|gif|heic|heif)$/.test(file.type)) {
+    throw new Error("Solo se aceptan imágenes (JPG, PNG, WebP, GIF, HEIC).");
+  }
   const ext = (file.type.split("/")[1] || "jpg").replace("jpeg", "jpg");
   const blob = await put(`custom/${userId}/${crypto.randomUUID()}.${ext}`, file, {
     access: "public",

@@ -27,6 +27,7 @@ export function SessionNotes({
           rows={3}
           placeholder="¿Cómo te sentiste? ¿Algo que ajustar la próxima vez?"
           onBlur={(e) => {
+            if (!navigator.onLine) return; // keep the text; it saves on the next blur with signal
             if (e.target.value.trim() !== (notes ?? "")) formRef.current?.requestSubmit();
           }}
           className="w-full resize-none rounded-2xl border border-border bg-surface-2 px-4 py-3 text-[15px] text-foreground outline-none focus:ring-2 focus:ring-accent"

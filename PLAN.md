@@ -48,7 +48,7 @@ Tercera ronda (sección 12, misma fecha): sugerencia de peso, corregir series pa
 Notas de infra que ya no hay que repetir:
 - El cliente de DB (`src/db/index.ts`) es "lazy" a propósito — si se inicializa en el import top-level, `next build` truena en Vercel al analizar rutas aunque `DATABASE_URL` sí exista en el entorno de runtime.
 - En Vercel, la integración de Neon prefija sus variables como `DATABASE_URL_*` si ya existe una variable llamada `DATABASE_URL` — la que de verdad lee el código es la que se llama exactamente `DATABASE_URL` (sin prefijo).
-- El primer registro en `/registro` reclamó el usuario placeholder que existía antes del login (así la rutina "Espalda" no se perdió). Ya pasó: la cuenta es `bener`. El código en `src/app/registro/actions.ts` sigue ahí pero ya no aplica a nadie; se puede borrar cuando se quiera.
+- El primer registro en `/registro` reclamó el usuario placeholder que existía antes del login (así la rutina "Espalda" no se perdió). Ya pasó: la cuenta es `bener`, y ese código ya se eliminó de `src/app/registro/actions.ts`.
 - `npm run db:push` (drizzle-kit) pide confirmación interactiva cuando la tabla tiene datos y no funciona sin TTY (p. ej. desde un agente). Las últimas migraciones (`username`/`password_hash`/`sessions`, y `workout_sessions.routine_id` nullable con `ON DELETE SET NULL`) se aplicaron con SQL a mano contra Neon y luego se verificó que `db:push` no detectara diferencias. El `schema.ts` es la fuente de verdad.
 - Ya hay más usuarios reales además de `bener` (se registraron dos personas más). Cualquier script contra la base debe filtrar por usuario; nunca borrar en masa.
 - La segunda ronda de migraciones (`routines.days int[]`, `workout_sessions.notes`, `exercises.name_es`, tabla `body_weights`) también se aplicó con SQL a mano y luego `db:push` confirmó cero diferencias.
@@ -56,6 +56,8 @@ Notas de infra que ya no hay que repetir:
 - El service worker (`public/sw.js`) tiene un `VERSION`; si cambia la estrategia de cache hay que subir ese número para que los clientes descarten el cache viejo.
 - "Hoy" y "esta semana" se calculan en `America/Mexico_City` (`src/lib/dates.ts`) porque Vercel corre en UTC.
 - Tercera ronda de migraciones a mano (mismo método): `exercises.gif_blob_url / user_id / is_custom`, `users.rest_seconds / failed_logins / locked_until`, `routine_exercises.rest_seconds`.
+- Cuarta ronda de migraciones a mano: índices (`set_logs(exercise_id)`, `workout_sessions(user_id, finished_at)`, `sessions(expires_at)`, `exercises(user_id)`, `routine_exercises(routine_id)`) y el índice único parcial `workout_sessions(user_id, routine_id) WHERE finished_at IS NULL` (una sola sesión abierta por rutina). Todos declarados también en `schema.ts`.
+- Al cerrar sesión, `LogoutButton` borra los caches `pages-*` y las colas `workout:*` de `localStorage`, y avisa al SW (`purge-pages`). El SW (v3) no cachea respuestas redirigidas ni `/login`.
 - Vercel Blob: en producción el token ya está y el gif se copia solo al agregar un ejercicio a una rutina. Para el barrido inicial (`scripts/mirror-gifs.ts`) hace falta `BLOB_READ_WRITE_TOKEN` en `.env.local` — pendiente de correr una vez.
 - Eventos del cronómetro: `workout:rest-start` se dispara desde el `onClick` del botón, no desde la acción del formulario (dentro de la acción React agrupa el setState del HUD en la transición y el refresh lo pierde).
 - Para probar en local se usa una cuenta QA desechable creada directo en la base (`insert into users ...` con hash scrypt), se recorre la app con Playwright (`npx playwright` + Chromium) y al final se borra el usuario — el `ON DELETE CASCADE` se lleva rutinas y sesiones. Nunca se toca la cuenta real.
@@ -310,39 +312,39 @@ Por orden de prioridad; se va tachando conforme se sube.
 
 ## 13. Revisión de código (2026-09-03) — hallazgos pendientes
 
-Auditoría completa de `src/`, `public/sw.js`, `scripts/` y `tests/` con lint y `tsc` limpios. Nada de esto está arreglado todavía; se lista por severidad para atacarlo en orden.
+Auditoría completa de `src/`, `public/sw.js`, `scripts/` y `tests/` con lint y `tsc` limpios. Los cuatro altos, los medios de sesiones / cola offline / SW y varios bajos se arreglaron el mismo día (ver registro de cambios); lo que sigue con `[ ]` queda abierto.
 
 **Altos (afectan al usuario hoy)**
-- [ ] **Fechas en UTC.** Todos los `Intl.DateTimeFormat("es-MX", …)` de Progreso, detalle de sesión, gráfica y Perfil no pasan `timeZone`, así que en Vercel una sesión de las 9 pm sale como el día siguiente a las 03:00. El heatmap y "Hoy toca" sí usan `APP_TIME_ZONE`, por lo que el mismo entrenamiento aparece en dos días distintos. Fix: helper `fmtDate()` en `src/lib/dates.ts` y usarlo en todos lados.
-- [ ] **Borrar una rutina con sesión abierta la deja atrapada.** `routine_id` pasa a null, el entrenamiento hace `notFound()`, no se puede terminar y la única salida (descartar) borra las series del día. Fix: renderizar la sesión desde sus `set_logs` o auto-terminarla; o impedir borrar la rutina mientras tenga sesión abierta.
-- [ ] **Service worker cachea HTML autenticado sin purgar al cerrar sesión**, y cachea la redirección a `/login` bajo la URL protegida. En un teléfono compartido, el usuario anterior queda visible offline. Fix: no guardar respuestas `redirected`, y borrar el cache `pages-*` al hacer logout.
-- [ ] **El entrenamiento hace una consulta por ejercicio, sin `LIMIT`, y se re-ejecuta en cada ✓** (`getLastTimeSets` en bucle + `revalidatePath` en `logSet`). Fix: una sola consulta con `DISTINCT ON`, quitar el `revalidatePath` de `logSet` (SetRow ya refleja el estado) y añadir índices.
+- [x] **Fechas en UTC.** Todos los `Intl.DateTimeFormat("es-MX", …)` de Progreso, detalle de sesión, gráfica y Perfil no pasan `timeZone`, así que en Vercel una sesión de las 9 pm sale como el día siguiente a las 03:00. El heatmap y "Hoy toca" sí usan `APP_TIME_ZONE`, por lo que el mismo entrenamiento aparece en dos días distintos. Fix: helper `fmtDate()` en `src/lib/dates.ts` y usarlo en todos lados.
+- [x] **Borrar una rutina con sesión abierta la deja atrapada.** `routine_id` pasa a null, el entrenamiento hace `notFound()`, no se puede terminar y la única salida (descartar) borra las series del día. Fix: renderizar la sesión desde sus `set_logs` o auto-terminarla; o impedir borrar la rutina mientras tenga sesión abierta.
+- [x] **Service worker cachea HTML autenticado sin purgar al cerrar sesión**, y cachea la redirección a `/login` bajo la URL protegida. En un teléfono compartido, el usuario anterior queda visible offline. Fix: no guardar respuestas `redirected`, y borrar el cache `pages-*` al hacer logout.
+- [x] **El entrenamiento hace una consulta por ejercicio, sin `LIMIT`, y se re-ejecuta en cada ✓** (`getLastTimeSets` en bucle + `revalidatePath` en `logSet`). Fix: una sola consulta con `DISTINCT ON`, quitar el `revalidatePath` de `logSet` (SetRow ya refleja el estado) y añadir índices.
 
 **Medios**
-- [ ] Dos nombres de cache distintos: `Connectivity` calienta `pages-v1`, el SW usa `pages-v2`. Unificar la constante.
-- [ ] Cola offline: entradas de sesiones descartadas nunca se purgan (reintento cada 15 s para siempre); una entrada malformada aborta toda la sincronización; la cola no está separada por usuario; cualquier error del servidor se trata como "sin señal". Fix: `syncSets` devuelve `{saved, rejected}`, validar con zod por entrada, clave por usuario, distinguir error de red.
-- [ ] Sesiones terminadas se pueden reabrir y re-terminar desde la URL vieja. Fix: redirigir a `/progreso/sesion/[id]` si `finishedAt` existe.
-- [ ] Doble tap en "Empezar" puede crear dos sesiones abiertas (check-then-insert sin transacción; `neon-http` no soporta transacciones). Fix: índice único parcial `(user_id, routine_id) WHERE finished_at IS NULL`. Mismo problema en `duplicateRoutine` y `moveRoutineExercise` (varias sentencias no atómicas).
-- [ ] `addExerciseToRoutine` acepta 0 series/reps (`Number("")` → 0); `duplicateRoutine` no copia `rest_seconds`.
-- [ ] Un ejercicio propio ajeno se puede ver y agregar si se conoce su UUID (`progreso/[exerciseId]` y `addExerciseToRoutine` no filtran por dueño).
-- [ ] Gifs: respuestas opacas fallidas (404) quedan cacheadas para siempre; sin límite de tamaño del cache. Cambiar a stale-while-revalidate y acotar.
-- [ ] `maximumScale: 1` en el viewport bloquea el zoom (accesibilidad).
-- [ ] Cualquiera puede bloquear la cuenta de otro con 8 intentos; sin throttle por IP; registro sin límite de intentos ni formato de usuario; contraseña sin tope de longitud (scrypt sobre 1 MB).
-- [ ] Notas / agregar serie / terminar sin señal mandan a la pantalla de error y se pierde lo escrito.
+- [x] Dos nombres de cache distintos: `Connectivity` calienta `pages-v1`, el SW usa `pages-v2`. Unificar la constante.
+- [x] Cola offline: entradas de sesiones descartadas nunca se purgan (reintento cada 15 s para siempre); una entrada malformada aborta toda la sincronización; la cola no está separada por usuario; cualquier error del servidor se trata como "sin señal". Fix: `syncSets` devuelve `{saved, rejected}`, validar con zod por entrada, clave por usuario, distinguir error de red.
+- [x] Sesiones terminadas se pueden reabrir y re-terminar desde la URL vieja. Fix: redirigir a `/progreso/sesion/[id]` si `finishedAt` existe.
+- [x] Doble tap en "Empezar" puede crear dos sesiones abiertas (check-then-insert sin transacción; `neon-http` no soporta transacciones). Fix: índice único parcial `(user_id, routine_id) WHERE finished_at IS NULL`. Mismo problema en `duplicateRoutine` y `moveRoutineExercise` (varias sentencias no atómicas).
+- [x] `addExerciseToRoutine` acepta 0 series/reps (`Number("")` → 0); `duplicateRoutine` no copia `rest_seconds`.
+- [x] Un ejercicio propio ajeno se puede ver y agregar si se conoce su UUID (`progreso/[exerciseId]` y `addExerciseToRoutine` no filtran por dueño).
+- [x] Gifs: respuestas opacas fallidas (404) quedan cacheadas para siempre; sin límite de tamaño del cache. Cambiar a stale-while-revalidate y acotar.
+- [x] `maximumScale: 1` en el viewport bloquea el zoom (accesibilidad).
+- [~] Bloqueo por cuenta (no por IP) sigue igual — pendiente throttle por IP. Hecho: formato/longitud de usuario (`^[a-z0-9._@-]{3,40}$`), tope de contraseña 128, carrera del registro capturada.
+- [x] Notas / agregar serie / terminar sin señal mandan a la pantalla de error y se pierde lo escrito.
 
 **Bajos**
-- [ ] Duplicados: dos `requireOwnedSession`, `fieldClass` en 5 archivos, `REST_SECONDS` en 3 lugares; código muerto del "legacy owner" en registro; `scrollbar-none` no existe en Tailwind v4; `users.email/name` sin uso.
-- [ ] `SessionHud` inicializa `now` con `Date.now()` → hydration mismatch en cada carga del entrenamiento.
+- [~] Duplicados: dos `requireOwnedSession`, `fieldClass` en 5 archivos, `REST_SECONDS` en 3 lugares; `users.email/name` sin uso. Hecho: código muerto del "legacy owner" eliminado; `scrollbar-none` reemplazado.
+- [x] `SessionHud` inicializa `now` con `Date.now()` → hydration mismatch en cada carga del entrenamiento.
 - [ ] `ExerciseInfoSheet` sin focus trap ni `aria-labelledby`; inputs de kg/reps sin label; heatmap depende de `title`.
-- [ ] Búsqueda: `offset` sin validar; `ORDER BY` sin desempate por `id` (paginación puede duplicar/saltar); `%`/`_` actúan como comodines.
-- [ ] CSV sin protección contra fórmulas (`=`, `+`, `-`, `@` al inicio).
-- [ ] Foto de ejercicio propio no valida MIME en servidor. `mirrorExerciseGif` corre inline en la acción (mover a `after()`).
+- [x] Búsqueda: `offset` sin validar; `ORDER BY` sin desempate por `id` (paginación puede duplicar/saltar); `%`/`_` actúan como comodines.
+- [x] CSV sin protección contra fórmulas (`=`, `+`, `-`, `@` al inicio).
+- [x] Foto de ejercicio propio no valida MIME en servidor. `mirrorExerciseGif` corre inline en la acción (mover a `after()`).
 - [ ] Cambiar contraseña no cierra las demás sesiones; `/login` no redirige si ya hay sesión.
-- [ ] `getLastTimeSets` incluye sets de sesiones abandonadas (filtra `completed`, no `finished_at`).
+- [x] `getLastTimeSets` incluye sets de sesiones abandonadas (filtra `completed`, no `finished_at`).
 
 **Datos**
 - [ ] Sin historial de migraciones: `drizzle/` no existe; nada en el repo prueba que producción coincide con `schema.ts`. Fix: `drizzle-kit generate` una vez y commitear.
-- [ ] Faltan índices: `set_logs(exercise_id)`, `workout_sessions(user_id, finished_at)`, `sessions(expires_at)`, `exercises(user_id)`, y `pg_trgm` para el `ilike` de nombres.
+- [x] Faltan índices: `set_logs(exercise_id)`, `workout_sessions(user_id, finished_at)`, `sessions(expires_at)`, `exercises(user_id)`, y `pg_trgm` para el `ilike` de nombres.
 - [ ] `timestamp` sin `withTimezone`; `users.username/password_hash` siguen nullable aunque ya no hace falta.
 
 **Orden sugerido:** fechas → cola offline + SW → sesión huérfana / reabrir / doble tap → consulta del entrenamiento + índices → el resto.

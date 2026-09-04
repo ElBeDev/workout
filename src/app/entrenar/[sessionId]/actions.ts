@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { setLogs, workoutSessions } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
-import { and, eq, max } from "drizzle-orm";
+import { and, eq, isNull, max } from "drizzle-orm";
+import { z } from "zod";
 
 async function requireOwnedSession(sessionId: string) {
   const userId = await requireUserId();
@@ -41,43 +42,71 @@ export async function logSet(formData: FormData) {
   revalidatePath(`/entrenar/${sessionId}`);
 }
 
-export type SyncEntry = {
-  sessionId: string;
-  exerciseId: string;
-  setNumber: number;
-  weight: string | null;
-  reps: number | null;
-};
+const syncEntrySchema = z.object({
+  sessionId: z.string().uuid(),
+  exerciseId: z.string().uuid(),
+  setNumber: z.number().int().min(1).max(50),
+  weight: z.string().max(10).nullable(),
+  reps: z.number().int().min(0).max(1000).nullable(),
+});
 
-/** Replays sets queued while offline. Returns the entries that were saved. */
-export async function syncSets(entries: SyncEntry[]): Promise<SyncEntry[]> {
+export type SyncEntry = z.infer<typeof syncEntrySchema>;
+type SyncKey = Pick<SyncEntry, "sessionId" | "exerciseId" | "setNumber">;
+
+/**
+ * Replays sets queued while offline. `saved` were written; `rejected` are
+ * invalid or belong to a session that no longer exists / isn't the user's —
+ * the client should drop both from its queue.
+ */
+export async function syncSets(
+  raw: unknown[]
+): Promise<{ saved: SyncKey[]; rejected: SyncKey[] }> {
   const userId = await requireUserId();
-  const saved: SyncEntry[] = [];
-  const owned = new Set<string>();
+  const saved: SyncKey[] = [];
+  const rejected: SyncKey[] = [];
+  const sessionOk = new Map<string, boolean>();
 
-  for (const e of entries.slice(0, 200)) {
-    if (!owned.has(e.sessionId)) {
+  for (const item of raw.slice(0, 200)) {
+    const parsed = syncEntrySchema.safeParse(item);
+    if (!parsed.success) {
+      const k = item as Partial<SyncKey>;
+      if (k && typeof k.sessionId === "string" && typeof k.exerciseId === "string" && typeof k.setNumber === "number") {
+        rejected.push({ sessionId: k.sessionId, exerciseId: k.exerciseId, setNumber: k.setNumber });
+      }
+      continue;
+    }
+    const e = parsed.data;
+    const key: SyncKey = { sessionId: e.sessionId, exerciseId: e.exerciseId, setNumber: e.setNumber };
+
+    if (!sessionOk.has(e.sessionId)) {
       const [s] = await db
         .select({ id: workoutSessions.id })
         .from(workoutSessions)
         .where(and(eq(workoutSessions.id, e.sessionId), eq(workoutSessions.userId, userId)));
-      if (!s) continue;
-      owned.add(e.sessionId);
+      sessionOk.set(e.sessionId, Boolean(s));
     }
-    const weight = e.weight !== null && Number.isFinite(Number(e.weight)) ? String(e.weight) : null;
-    const reps = e.reps !== null && Number.isFinite(Number(e.reps)) ? Number(e.reps) : null;
-    await db
-      .insert(setLogs)
-      .values({ sessionId: e.sessionId, exerciseId: e.exerciseId, setNumber: e.setNumber, weight, reps, completed: true })
-      .onConflictDoUpdate({
-        target: [setLogs.sessionId, setLogs.exerciseId, setLogs.setNumber],
-        set: { weight, reps, completed: true, loggedAt: new Date() },
-      });
-    saved.push(e);
+    if (!sessionOk.get(e.sessionId)) {
+      rejected.push(key);
+      continue;
+    }
+
+    const weight = e.weight !== null && Number.isFinite(Number(e.weight)) ? e.weight : null;
+    try {
+      await db
+        .insert(setLogs)
+        .values({ ...key, weight, reps: e.reps, completed: true })
+        .onConflictDoUpdate({
+          target: [setLogs.sessionId, setLogs.exerciseId, setLogs.setNumber],
+          set: { weight, reps: e.reps, completed: true, loggedAt: new Date() },
+        });
+      saved.push(key);
+    } catch {
+      rejected.push(key);
+    }
   }
 
-  for (const id of owned) revalidatePath(`/entrenar/${id}`);
-  return saved;
+  for (const [id, ok] of sessionOk) if (ok) revalidatePath(`/entrenar/${id}`);
+  return { saved, rejected };
 }
 
 export async function addExtraSet(sessionId: string, exerciseId: string, currentCount: number) {
@@ -109,7 +138,7 @@ export async function finishSession(sessionId: string) {
   await db
     .update(workoutSessions)
     .set({ finishedAt: new Date() })
-    .where(eq(workoutSessions.id, sessionId));
+    .where(and(eq(workoutSessions.id, sessionId), isNull(workoutSessions.finishedAt)));
 
   revalidatePath("/");
   redirect("/progreso");
