@@ -127,10 +127,15 @@ export async function updateRoutineExercise(
     targetWeightRaw && String(targetWeightRaw).trim() !== ""
       ? String(targetWeightRaw)
       : null;
+  const restRaw = String(formData.get("restSeconds") ?? "").trim();
+  const restSeconds =
+    restRaw !== "" && Number.isFinite(Number(restRaw)) && Number(restRaw) > 0
+      ? Math.min(900, Math.round(Number(restRaw)))
+      : null;
 
   await db
     .update(routineExercises)
-    .set({ targetSets, targetReps, targetWeight })
+    .set({ targetSets, targetReps, targetWeight, restSeconds })
     .where(
       and(
         eq(routineExercises.id, routineExerciseId),

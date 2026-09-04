@@ -50,7 +50,7 @@ export function Connectivity() {
     <div className="pointer-events-none fixed inset-x-0 top-0 z-70 flex justify-center px-5 pt-[max(0.75rem,env(safe-area-inset-top))]">
       <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground shadow-[0_8px_24px_rgba(21,21,31,0.25)]">
         <WifiOff className="h-4 w-4" />
-        Sin conexión — los cambios no se guardan hasta reconectar
+        Sin conexión — las series se guardan aquí y se envían al reconectar
       </div>
     </div>
   );

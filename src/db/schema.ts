@@ -18,6 +18,9 @@ export const users = pgTable("users", {
   passwordHash: text("password_hash"),
   email: text("email").unique(),
   name: text("name"),
+  restSeconds: integer("rest_seconds").notNull().default(90),
+  failedLogins: integer("failed_logins").notNull().default(0),
+  lockedUntil: timestamp("locked_until"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -74,6 +77,8 @@ export const routineExercises = pgTable("routine_exercises", {
   targetSets: integer("target_sets").notNull(),
   targetReps: integer("target_reps").notNull(),
   targetWeight: numeric("target_weight"),
+  // Per-exercise rest override; null = the user's default.
+  restSeconds: integer("rest_seconds"),
 });
 
 export const workoutSessions = pgTable("workout_sessions", {

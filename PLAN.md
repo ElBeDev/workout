@@ -266,11 +266,13 @@ Por orden de prioridad; se va tachando conforme se sube.
 5. [x] Cola offline: cada serie se intenta guardar; sin señal (o si el servidor falla) se encola en `localStorage` (`src/lib/offline-queue.ts`), la fila se marca en ámbar, y `PendingSync` la reenvía al reconectar (evento `online` + reintento cada 15 s) con `syncSets`. Sobrevive a recargar la página.
 
 **Chicas**
-6. [ ] Descanso configurable (por defecto y por ejercicio).
-7. [ ] Calendario / heatmap de días entrenados en Progreso.
-8. [ ] Exportar historial a CSV.
-9. [ ] Limpiar sesiones de login expiradas; limitar intentos de login.
-10. [ ] Meter las pruebas Playwright al repo como suite de humo.
+6. [x] Descanso configurable: por defecto en Perfil (`users.rest_seconds`) y por ejercicio en el editor inline de la rutina (`routine_exercises.rest_seconds`). El ✓ de cada serie manda los segundos al HUD.
+7. [x] Heatmap de 16 semanas en Progreso (`TrainingHeatmap`, zona horaria MX).
+8. [x] Exportar CSV desde Perfil (`/api/export`: fecha, rutina, ejercicio es/en, serie, kg, reps, notas).
+9. [x] Sesiones expiradas se borran al crear una nueva; 8 contraseñas fallidas bloquean la cuenta 15 min (`users.failed_logins`, `locked_until`).
+10. [x] `npm run smoke` (`tests/smoke.mjs`): crea una cuenta desechable en la base, recorre login → rutina → ejercicio → entrenar → terminar → borrar, y elimina la cuenta. `BASE_URL=https://… npm run smoke` para probar producción.
+
+**Todo lo acordado en esta ronda está hecho.**
 
 ---
 

@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { randomBytes } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { eq, lt } from "drizzle-orm";
 import { db } from "@/db";
 import { sessions } from "@/db/schema";
 
@@ -12,6 +12,8 @@ export async function createSession(userId: string) {
   const token = randomBytes(32).toString("hex");
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
 
+  // Opportunistic cleanup so the table doesn't grow forever.
+  await db.delete(sessions).where(lt(sessions.expiresAt, new Date()));
   await db.insert(sessions).values({ token, userId, expiresAt });
 
   const cookieStore = await cookies();

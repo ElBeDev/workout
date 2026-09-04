@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { ChevronRight, CalendarClock } from "lucide-react";
+import { ChevronRight, CalendarClock, CalendarDays } from "lucide-react";
+import { TrainingHeatmap } from "@/components/TrainingHeatmap";
 import { db } from "@/db";
 import { workoutSessions, routines, setLogs, exercises } from "@/db/schema";
 import { exerciseGif } from "@/db/exercise-gif";
 import { requireUserId } from "@/lib/session";
-import { and, desc, eq, isNotNull } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull } from "drizzle-orm";
 import { bodyPartLabel } from "@/lib/body-parts";
 import { Card, PageHeader, SectionTitle } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
@@ -26,6 +27,19 @@ export default async function ProgresoPage() {
     .where(and(eq(workoutSessions.userId, userId), isNotNull(workoutSessions.finishedAt)))
     .orderBy(desc(workoutSessions.startedAt))
     .limit(30);
+
+  const since = new Date();
+  since.setDate(since.getDate() - 16 * 7);
+  const heatDates = await db
+    .select({ startedAt: workoutSessions.startedAt })
+    .from(workoutSessions)
+    .where(
+      and(
+        eq(workoutSessions.userId, userId),
+        isNotNull(workoutSessions.finishedAt),
+        gte(workoutSessions.startedAt, since)
+      )
+    );
 
   const trainedExercises = await db
     .selectDistinct({
@@ -51,6 +65,15 @@ export default async function ProgresoPage() {
             : `${sessions.length} sesiones completadas`
         }
       />
+
+      {sessions.length > 0 && (
+        <Card className="p-4">
+          <SectionTitle className="mb-3 flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-muted" /> Días entrenados
+          </SectionTitle>
+          <TrainingHeatmap sessionDates={heatDates.map((h) => h.startedAt)} />
+        </Card>
+      )}
 
       {trainedExercises.length > 0 && (
         <section className="flex flex-col gap-3">

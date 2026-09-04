@@ -35,6 +35,7 @@ export default async function RutinaDetailPage({
       targetSets: routineExercises.targetSets,
       targetReps: routineExercises.targetReps,
       targetWeight: routineExercises.targetWeight,
+      restSeconds: routineExercises.restSeconds,
       exerciseName: exercises.name,
       exerciseNameEs: exercises.nameEs,
       gifUrl: exerciseGif,
@@ -109,6 +110,7 @@ export default async function RutinaDetailPage({
                       targetSets={item.targetSets}
                       targetReps={item.targetReps}
                       targetWeight={item.targetWeight}
+                      restSeconds={item.restSeconds}
                     />
                     <p className="mt-0.5 text-[12px] text-muted/80">
                       {bodyPartLabel(item.bodyPart)}

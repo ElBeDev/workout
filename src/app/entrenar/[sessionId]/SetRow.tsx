@@ -18,6 +18,7 @@ export function SetRow({
   reps,
   weightPlaceholder,
   repsPlaceholder,
+  restSeconds = 90,
 }: {
   sessionId: string;
   exerciseId: string;
@@ -28,6 +29,7 @@ export function SetRow({
   reps: number | null;
   weightPlaceholder: string;
   repsPlaceholder: string;
+  restSeconds?: number;
 }) {
   const [status, setStatus] = useState<"idle" | "saving" | "done" | "queued">(
     completed ? "done" : "idle"
@@ -60,8 +62,14 @@ export function SetRow({
     return () => window.removeEventListener("workout:queue-changed", onQueueChange);
   }, [sessionId, exerciseId, setNumber, status]);
 
+  // Dispatched from the button's onClick, not from the action: inside a
+  // form action React batches the listener's setState into the transition
+  // and the RSC refresh after saving can swallow it.
+  function startRest() {
+    window.dispatchEvent(new CustomEvent("workout:rest-start", { detail: { seconds: restSeconds } }));
+  }
+
   function submit(formData: FormData) {
-    window.dispatchEvent(new CustomEvent("workout:rest-start"));
     formData.set("sessionId", sessionId);
     formData.set("exerciseId", exerciseId);
     formData.set("setNumber", String(setNumber));
@@ -75,9 +83,21 @@ export function SetRow({
       reps: repsRaw === "" ? null : Number(repsRaw),
     };
 
+    // React resets an uncontrolled form after its action runs; put the
+    // values back so a queued set still shows what was typed.
+    const restore = () => {
+      const form = formRef.current;
+      if (!form) return;
+      const w = form.querySelector<HTMLInputElement>('input[name="weight"]');
+      const r = form.querySelector<HTMLInputElement>('input[name="reps"]');
+      if (w) w.value = entry.weight ?? "";
+      if (r) r.value = entry.reps !== null ? String(entry.reps) : "";
+    };
+
     if (!navigator.onLine) {
       enqueueSet(entry);
       setStatus("queued");
+      setTimeout(restore, 0);
       return;
     }
 
@@ -90,6 +110,7 @@ export function SetRow({
         enqueueSet(entry);
         setStatus("queued");
       }
+      setTimeout(restore, 0);
     });
   }
 
@@ -132,6 +153,7 @@ export function SetRow({
 
       <button
         type="submit"
+        onClick={startRest}
         disabled={status === "saving"}
         aria-label={
           status === "saving"

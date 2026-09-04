@@ -5,6 +5,7 @@ import {
   routineExercises,
   exercises,
   setLogs,
+  users,
 } from "@/db/schema";
 import { exerciseGif } from "@/db/exercise-gif";
 import { and, eq, desc, ne } from "drizzle-orm";
@@ -92,11 +93,15 @@ export default async function EntrenarPage({
       instructions: exercises.instructions,
       targetSets: routineExercises.targetSets,
       targetReps: routineExercises.targetReps,
+      restSeconds: routineExercises.restSeconds,
     })
     .from(routineExercises)
     .innerJoin(exercises, eq(routineExercises.exerciseId, exercises.id))
     .where(eq(routineExercises.routineId, routine.id))
     .orderBy(routineExercises.sortOrder);
+
+  const [me] = await db.select({ restSeconds: users.restSeconds }).from(users).where(eq(users.id, userId));
+  const defaultRest = me?.restSeconds ?? 90;
 
   const currentLogs = await db
     .select()
@@ -170,6 +175,7 @@ export default async function EntrenarPage({
                   <p className="mt-0.5 inline-flex items-center gap-1 text-[13px] text-muted">
                     <Repeat className="h-3.5 w-3.5" />
                     {item.targetSets} × {item.targetReps} reps
+                    <span className="opacity-70"> · descanso {item.restSeconds ?? defaultRest}s</span>
                   </p>
                 </div>
               </div>
@@ -192,6 +198,7 @@ export default async function EntrenarPage({
                       reps={existing?.reps ?? null}
                       weightPlaceholder={last?.weight ? `${last.weight} kg` : "kg"}
                       repsPlaceholder={last?.reps ? `${last.reps} reps` : `${item.targetReps} reps`}
+                      restSeconds={item.restSeconds ?? defaultRest}
                     />
                   );
                 })}

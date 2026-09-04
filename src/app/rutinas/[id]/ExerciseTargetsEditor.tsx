@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Layers, Pencil, Repeat, X } from "lucide-react";
+import { Check, Layers, Pencil, Repeat, Timer, X } from "lucide-react";
 import { updateRoutineExercise } from "./actions";
 
 const fieldClass =
-  "w-full rounded-xl border border-border bg-surface-2 px-1.5 py-2 text-center text-[14px] text-foreground outline-none focus:ring-2 focus:ring-accent [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
+  "w-full rounded-xl border border-border bg-surface-2 px-1 py-2 text-center text-[14px] text-foreground outline-none focus:ring-2 focus:ring-accent [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 
 export function ExerciseTargetsEditor({
   routineId,
@@ -13,12 +13,14 @@ export function ExerciseTargetsEditor({
   targetSets,
   targetReps,
   targetWeight,
+  restSeconds,
 }: {
   routineId: string;
   routineExerciseId: string;
   targetSets: number;
   targetReps: number;
   targetWeight: string | null;
+  restSeconds: number | null;
 }) {
   const [editing, setEditing] = useState(false);
 
@@ -39,6 +41,12 @@ export function ExerciseTargetsEditor({
           {targetReps} reps
           {targetWeight ? ` · ${targetWeight} kg` : ""}
         </span>
+        {restSeconds !== null && (
+          <span className="inline-flex items-center gap-1">
+            <Timer className="h-3.5 w-3.5" />
+            {restSeconds}s
+          </span>
+        )}
         <Pencil className="h-3 w-3 opacity-60" />
       </button>
     );
@@ -52,7 +60,7 @@ export function ExerciseTargetsEditor({
       }}
       className="mt-2 flex flex-col gap-2"
     >
-      <div className="grid grid-cols-3 gap-1.5">
+      <div className="grid grid-cols-4 gap-1.5">
         <label className="text-[10px] font-medium text-muted">
           Series
           <input name="targetSets" type="number" min={1} defaultValue={targetSets} className={fieldClass} />
@@ -69,6 +77,18 @@ export function ExerciseTargetsEditor({
             step="0.5"
             defaultValue={targetWeight ?? undefined}
             placeholder="—"
+            className={fieldClass}
+          />
+        </label>
+        <label className="text-[10px] font-medium text-muted">
+          Desc. s
+          <input
+            name="restSeconds"
+            type="number"
+            min={10}
+            step={5}
+            defaultValue={restSeconds ?? undefined}
+            placeholder="90"
             className={fieldClass}
           />
         </label>

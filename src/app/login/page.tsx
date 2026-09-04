@@ -5,6 +5,7 @@ import { loginAction } from "./actions";
 
 const ERROR_MESSAGES: Record<string, string> = {
   invalid: "Usuario o contraseña incorrectos.",
+  locked: "Demasiados intentos. Espera 15 minutos e inténtalo de nuevo.",
 };
 
 export default async function LoginPage({

@@ -1,12 +1,12 @@
 import { desc, eq } from "drizzle-orm";
-import { LogOut, KeyRound, Scale, Trash2, Plus, ShieldAlert } from "lucide-react";
+import { LogOut, KeyRound, Scale, Trash2, Plus, ShieldAlert, Timer, Check, Download } from "lucide-react";
 import { db } from "@/db";
 import { users, bodyWeights } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
 import { Card, Input, PageHeader, PrimaryButton, SecondaryButton, SectionTitle } from "@/components/ui";
 import { BodyWeightChart } from "@/components/BodyWeightChart";
 import { logoutAction } from "../login/actions";
-import { changePasswordAction, addBodyWeight, deleteBodyWeight } from "./actions";
+import { changePasswordAction, addBodyWeight, deleteBodyWeight, setDefaultRest } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -136,6 +136,35 @@ export default async function PerfilPage({
 
       <Card className="flex flex-col gap-3 p-4">
         <SectionTitle className="flex items-center gap-2">
+          <Timer className="h-4 w-4 text-muted" /> Descanso entre series
+        </SectionTitle>
+        <p className="text-[13px] text-muted">
+          Tiempo por defecto del cronómetro. Cada ejercicio puede tener el suyo desde la rutina.
+        </p>
+        <form action={setDefaultRest} className="flex gap-2">
+          <Input
+            name="restSeconds"
+            type="number"
+            min={10}
+            max={900}
+            step={5}
+            inputMode="numeric"
+            defaultValue={user?.restSeconds ?? 90}
+            className="flex-1 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+          />
+          <span className="flex items-center text-[14px] text-muted">segundos</span>
+          <button
+            type="submit"
+            aria-label="Guardar descanso"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
+          >
+            <Check className="h-5 w-5" strokeWidth={2.5} />
+          </button>
+        </form>
+      </Card>
+
+      <Card className="flex flex-col gap-3 p-4">
+        <SectionTitle className="flex items-center gap-2">
           <KeyRound className="h-4 w-4 text-muted" /> Cambiar contraseña
         </SectionTitle>
 
@@ -162,6 +191,15 @@ export default async function PerfilPage({
           No pedimos correo, así que no hay forma de recuperar la contraseña si la olvidas. Guárdala en un lugar seguro.
         </p>
       </Card>
+
+      <a
+        href="/api/export"
+        download
+        className="flex items-center justify-center gap-2 rounded-full border border-border bg-surface px-5 py-3.5 text-[15px] font-medium text-foreground"
+      >
+        <Download className="h-4 w-4" />
+        Exportar historial (CSV)
+      </a>
 
       <form action={logoutAction}>
         <SecondaryButton type="submit" className="w-full text-danger">
