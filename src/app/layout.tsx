@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Outfit } from "next/font/google";
 import { BottomNav } from "@/components/BottomNav";
+import { Connectivity } from "@/components/Connectivity";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -41,6 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="es" className={`${outfit.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-background text-foreground">
+        <Connectivity />
         <main className="mx-auto w-full max-w-md flex-1 px-5 pb-28 pt-5">
           {children}
         </main>

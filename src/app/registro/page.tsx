@@ -60,6 +60,10 @@ export default async function RegistroPage({
           <PrimaryButton type="submit" className="mt-1">
             Crear cuenta
           </PrimaryButton>
+
+          <p className="text-center text-[12px] text-muted">
+            No pedimos correo: si olvidas la contraseña no hay forma de recuperarla. Guárdala bien.
+          </p>
         </form>
       </Card>
 
