@@ -1,15 +1,19 @@
 import { desc, eq } from "drizzle-orm";
-import { KeyRound, Scale, Trash2, Plus, ShieldAlert, Timer, Check, Download } from "lucide-react";
+import { KeyRound, Scale, Trash2, Plus, ShieldAlert, Timer, Check, Download, Images } from "lucide-react";
 import { db } from "@/db";
 import { users, bodyWeights } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
 import { fmtDate } from "@/lib/dates";
+import { blobConfigured, pendingGifIds } from "@/lib/blob";
 import { Card, Input, PageHeader, PrimaryButton, SectionTitle } from "@/components/ui";
 import { BodyWeightChart } from "@/components/BodyWeightChart";
 import { LogoutButton } from "@/components/LogoutButton";
+import { MirrorGifsButton } from "@/components/MirrorGifsButton";
 import { changePasswordAction, addBodyWeight, deleteBodyWeight, setDefaultRest } from "./actions";
 
 export const dynamic = "force-dynamic";
+// Each mirror batch downloads a few gifs from ExerciseDB before returning.
+export const maxDuration = 30;
 
 const ERRORS: Record<string, string> = {
   short: "La contraseña nueva debe tener al menos 4 caracteres.",
@@ -40,6 +44,8 @@ export default async function PerfilPage({
       date: fmtDate(w.loggedAt, { day: "2-digit", month: "short" }),
       weight: Number(w.weight),
     }));
+  const pendingGifs = blobConfigured() ? (await pendingGifIds(userId)).length : 0;
+
   const latest = weights[0] ? Number(weights[0].weight) : null;
   const first = weights.length > 1 ? Number(weights[weights.length - 1].weight) : null;
   const delta = latest !== null && first !== null ? Math.round((latest - first) * 10) / 10 : null;
@@ -189,6 +195,22 @@ export default async function PerfilPage({
           <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           No pedimos correo, así que no hay forma de recuperar la contraseña si la olvidas. Guárdala en un lugar seguro.
         </p>
+      </Card>
+
+      <Card className="flex flex-col gap-3 p-4">
+        <SectionTitle className="flex items-center gap-2">
+          <Images className="h-4 w-4 text-muted" /> Imágenes de ejercicios
+        </SectionTitle>
+        <p className="text-[13px] text-muted">
+          Los gifs vienen de un servidor externo. Guardar una copia en nuestro almacenamiento evita
+          que se pierdan si ese servidor deja de funcionar. Se copian solos al agregar un ejercicio;
+          esto copia los que ya tenías.
+        </p>
+        {blobConfigured() ? (
+          <MirrorGifsButton pending={pendingGifs} />
+        ) : (
+          <p className="text-[12px] text-muted">Disponible solo en producción (Vercel Blob).</p>
+        )}
       </Card>
 
       <a

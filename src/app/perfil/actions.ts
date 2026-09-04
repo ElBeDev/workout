@@ -7,6 +7,7 @@ import { db } from "@/db";
 import { users, bodyWeights } from "@/db/schema";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { requireUserId } from "@/lib/session";
+import { blobConfigured, mirrorExerciseGif, pendingGifIds } from "@/lib/blob";
 
 export async function changePasswordAction(formData: FormData) {
   const userId = await requireUserId();
@@ -24,6 +25,26 @@ export async function changePasswordAction(formData: FormData) {
 
   await db.update(users).set({ passwordHash: hashPassword(next) }).where(eq(users.id, userId));
   redirect("/perfil?ok=password");
+}
+
+/**
+ * Copies to Vercel Blob the gifs of the exercises this user actually uses
+ * (in a routine or logged) that don't have a copy yet, a few per call so it
+ * fits a serverless invocation. The client calls it until remaining = 0.
+ */
+export async function mirrorMyGifs(): Promise<{ mirrored: number; remaining: number; enabled: boolean }> {
+  const userId = await requireUserId();
+  if (!blobConfigured()) return { mirrored: 0, remaining: 0, enabled: false };
+
+  const pending = await pendingGifIds(userId);
+  const batch = pending.slice(0, 6);
+  let mirrored = 0;
+  for (const id of batch) {
+    if (await mirrorExerciseGif(id)) mirrored += 1;
+  }
+  const remaining = (await pendingGifIds(userId)).length;
+  revalidatePath("/perfil");
+  return { mirrored, remaining, enabled: true };
 }
 
 export async function setDefaultRest(formData: FormData) {
