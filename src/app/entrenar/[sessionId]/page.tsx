@@ -14,6 +14,8 @@ import { Card, PageHeader, PrimaryButton } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { ExerciseInfoSheet } from "@/components/ExerciseInfoSheet";
 import { SessionHud } from "@/components/SessionHud";
+import { SuggestionPill } from "@/components/SuggestionPill";
+import { suggestNext } from "@/lib/suggest";
 import { LogSetButton } from "@/components/LogSetButton";
 import { DiscardSessionButton } from "@/components/DiscardSessionButton";
 import { SessionNotes } from "./SessionNotes";
@@ -170,13 +172,25 @@ export default async function EntrenarPage({
                 </div>
               </div>
 
+              {(() => {
+                const suggestion = suggestNext(lastTime, item.targetSets, item.targetReps);
+                return suggestion ? (
+                  <SuggestionPill exerciseId={item.exerciseId} suggestion={suggestion} />
+                ) : null;
+              })()}
+
               <div className="flex flex-col gap-2">
                 {Array.from({ length: rows }, (_, i) => i + 1).map((setNumber) => {
                   const existing = currentMap.get(`${item.exerciseId}-${setNumber}`);
                   const last = lastTime.get(setNumber);
                   const extra = setNumber > item.targetSets;
                   return (
-                    <form key={setNumber} action={logSet} className="flex items-center gap-2">
+                    <form
+                      key={setNumber}
+                      action={logSet}
+                      data-exercise={item.exerciseId}
+                      className="flex items-center gap-2"
+                    >
                       <input type="hidden" name="sessionId" value={sessionId} />
                       <input type="hidden" name="exerciseId" value={item.exerciseId} />
                       <input type="hidden" name="setNumber" value={setNumber} />

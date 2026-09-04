@@ -8,6 +8,7 @@ import { requireUserId } from "@/lib/session";
 import { bodyPartLabel } from "@/lib/body-parts";
 import { Card, PageHeader, SectionTitle } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
+import { SetRowEditor } from "./SetRowEditor";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,7 @@ export default async function SessionDetailPage({
       nameEs: exercises.nameEs,
       gifUrl: exercises.gifUrl,
       bodyPart: exercises.bodyPart,
+      setId: setLogs.id,
       setNumber: setLogs.setNumber,
       weight: setLogs.weight,
       reps: setLogs.reps,
@@ -61,7 +63,7 @@ export default async function SessionDetailPage({
     nameEs: string | null;
     gifUrl: string | null;
     bodyPart: string | null;
-    sets: { setNumber: number; weight: string | null; reps: number | null }[];
+    sets: { setId: string; setNumber: number; weight: string | null; reps: number | null }[];
   };
   const groups: Group[] = [];
   for (const s of sets) {
@@ -70,7 +72,7 @@ export default async function SessionDetailPage({
       g = { exerciseId: s.exerciseId, name: s.name, nameEs: s.nameEs, gifUrl: s.gifUrl, bodyPart: s.bodyPart, sets: [] };
       groups.push(g);
     }
-    g.sets.push({ setNumber: s.setNumber, weight: s.weight, reps: s.reps });
+    g.sets.push({ setId: s.setId, setNumber: s.setNumber, weight: s.weight, reps: s.reps });
   }
   for (const g of groups) g.sets.sort((a, b) => a.setNumber - b.setNumber);
 
@@ -112,14 +114,14 @@ export default async function SessionDetailPage({
               </Link>
               <ul className="mt-3 flex flex-col gap-1.5">
                 {g.sets.map((s) => (
-                  <li key={s.setNumber} className="flex items-center gap-3 text-[14px]">
-                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/40 text-[12px] font-semibold text-accent-strong">
-                      {s.setNumber}
-                    </span>
-                    <span className="font-semibold tabular-nums">{s.weight ? `${s.weight} kg` : "—"}</span>
-                    <span className="text-muted">×</span>
-                    <span className="tabular-nums">{s.reps ?? "—"} reps</span>
-                  </li>
+                  <SetRowEditor
+                    key={s.setId}
+                    sessionId={session.id}
+                    setId={s.setId}
+                    setNumber={s.setNumber}
+                    weight={s.weight}
+                    reps={s.reps}
+                  />
                 ))}
               </ul>
             </Card>

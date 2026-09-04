@@ -254,6 +254,24 @@ Todo el trabajo fue en un solo día; el historial fino está en `git log`. Resum
 | `363c650` | Detalle de sesión, gráfica peso/reps/volumen, "Hoy toca", racha semanal, duplicar rutina |
 | `dbee217` | Cambiar contraseña, peso corporal, ícono real, offline básico |
 
+## 12. Siguiente ronda (acordada 2026-09-03)
+
+Por orden de prioridad; se va tachando conforme se sube.
+
+**Uso diario**
+1. [x] Corregir / borrar series de una sesión pasada desde el detalle de sesión.
+2. [x] Sugerencia de peso: si la sesión anterior cumplió todas las series con las reps objetivo, proponer +2.5 kg (o +1 rep en ejercicios sin peso); si no, proponer repetir. Botón "Usar" que rellena las series. (`src/lib/suggest.ts`)
+3. [ ] Ejercicios propios (nombre, músculo, equipo, foto opcional en Vercel Blob).
+4. [ ] Copiar los gifs usados a Vercel Blob para no depender de `static.exercisedb.dev`.
+5. [ ] Cola offline: guardar series sin señal y sincronizar al reconectar.
+
+**Chicas**
+6. [ ] Descanso configurable (por defecto y por ejercicio).
+7. [ ] Calendario / heatmap de días entrenados en Progreso.
+8. [ ] Exportar historial a CSV.
+9. [ ] Limpiar sesiones de login expiradas; limitar intentos de login.
+10. [ ] Meter las pruebas Playwright al repo como suite de humo.
+
 ---
 
 **Fuentes consultadas:**
