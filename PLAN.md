@@ -60,7 +60,7 @@ Notas de infra que ya no hay que repetir:
 - Tercera ronda de migraciones a mano (mismo método): `exercises.gif_blob_url / user_id / is_custom`, `users.rest_seconds / failed_logins / locked_until`, `routine_exercises.rest_seconds`.
 - Cuarta ronda de migraciones a mano: índices (`set_logs(exercise_id)`, `workout_sessions(user_id, finished_at)`, `sessions(expires_at)`, `exercises(user_id)`, `routine_exercises(routine_id)`) y el índice único parcial `workout_sessions(user_id, routine_id) WHERE finished_at IS NULL` (una sola sesión abierta por rutina). Todos declarados también en `schema.ts`.
 - Al cerrar sesión, `LogoutButton` borra los caches `pages-*` y las colas `workout:*` de `localStorage`, y avisa al SW (`purge-pages`). El SW (v3) no cachea respuestas redirigidas ni `/login`.
-- Vercel Blob: en producción el token ya está y el gif se copia solo al agregar un ejercicio a una rutina. Para el barrido inicial (`scripts/mirror-gifs.ts`) hace falta `BLOB_READ_WRITE_TOKEN` en `.env.local` — pendiente de correr una vez.
+- Vercel Blob: `BLOB_READ_WRITE_TOKEN` es un secreto de solo escritura en Vercel (no se puede revelar ni bajar con `vercel env pull`), así que el barrido de gifs se hace desde la app: Perfil → "Imágenes de ejercicios" → botón que copia en tandas de 6 los gifs de los ejercicios que usas. Cada gif nuevo se copia solo al agregarlo a una rutina. `scripts/mirror-gifs.ts` sigue ahí por si algún día se tiene el token local.
 - Eventos del cronómetro: `workout:rest-start` se dispara desde el `onClick` del botón, no desde la acción del formulario (dentro de la acción React agrupa el setState del HUD en la transición y el refresh lo pierde).
 - Para probar en local se usa una cuenta QA desechable creada directo en la base (`insert into users ...` con hash scrypt), se recorre la app con Playwright (`npx playwright` + Chromium) y al final se borra el usuario — el `ON DELETE CASCADE` se lleva rutinas y sesiones. Nunca se toca la cuenta real.
 
@@ -204,7 +204,7 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 - ~~Cuarta ronda (sección 13): auditoría y arreglo de los hallazgos altos y medios~~ ✅
 
 **Queda abierto (sin prisa), en este orden sugerido:**
-1. Correr `scripts/mirror-gifs.ts` una vez con `BLOB_READ_WRITE_TOKEN` (barrido inicial de gifs).
+1. Pulsar "Copiar gifs" en Perfil (producción) una vez por usuario; después es automático.
 2. Migraciones versionadas (`drizzle-kit generate` + carpeta `drizzle/`) para que el repo pruebe que producción coincide con `schema.ts`.
 3. Throttle de login por IP (hoy el bloqueo es por cuenta).
 4. Accesibilidad de la hoja "cómo se hace" (focus trap, `aria-labelledby`) y consolidar helpers duplicados (`requireOwnedSession`, `fieldClass`, `REST_SECONDS`).
@@ -232,7 +232,7 @@ src/app/
                         cola offline), PendingSync, SessionNotes, error.tsx
   progreso/             Lista de sesiones, heatmap y ejercicios; [exerciseId] = gráfica;
                         sesion/[id] = detalle (SetRowEditor para corregir/borrar series)
-  perfil/               Usuario, descanso por defecto, peso corporal, contraseña, CSV, logout
+  perfil/               Usuario, descanso por defecto, peso corporal, contraseña, copiar gifs a Blob, CSV, logout
   ejercicios/actions.ts createCustomExercise
   api/exercises/search  Búsqueda/browse (q en es/en, bodyPart, offset); catálogo + propios del usuario
   api/export            CSV del historial del usuario
@@ -265,7 +265,7 @@ src/lib/
   translate-exercise.ts Traductor por reglas de nombres de ejercicio
   suggest.ts            Regla de progresión (+2.5 kg / +1 rep / repetir)
   offline-queue.ts      Cola de series en localStorage
-  blob.ts               mirrorExerciseGif, uploadExercisePhoto (no-op sin token)
+  blob.ts               mirrorExerciseGif, pendingGifIds, uploadExercisePhoto (no-op sin token)
 public/sw.js            Service worker (app shell + páginas visitadas + gifs; VERSION v2)
 scripts/
   seed-exercises.ts     Carga el catálogo desde ExerciseDB (con backoff por rate limit)
@@ -301,6 +301,8 @@ Todo el trabajo fue en un solo día; el historial fino está en `git log`. Resum
 | `377199c` | Cola offline para series (localStorage + `syncSets`) |
 | `6b1fc9f` | Descanso configurable, heatmap, exportar CSV, bloqueo de login, `npm run smoke` |
 | `f46d61e` | PLAN: modelo de datos y pantallas al día, sección 13 con la auditoría |
+| `9ccbedf` | Foto de ejercicio propio alineada al tope de 4.5 MB de Vercel (`bodySizeLimit`) |
+| `13effb8` | Botón en Perfil para copiar los gifs a Blob desde producción (el token es secreto de solo escritura) |
 | `853fbc2` | Arreglo de la auditoría: fechas en hora MX, sesiones huérfanas/terminadas/doble tap, consulta única del entrenamiento + índices, SW v3 sin HTML redirigido y purga al cerrar sesión, cola offline validada y por usuario, ownership en ejercicios propios, varios bajos |
 
 ## 12. Siguiente ronda (acordada 2026-09-03)
