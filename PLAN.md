@@ -40,8 +40,10 @@ Fase 2 (hecha en la segunda tanda del mismo día):
 - [x] Home: "Hoy toca" según días asignados a cada rutina, "Última vez" por rutina, sesiones de la semana y racha de semanas (zona horaria Ciudad de México).
 - [x] Duplicar rutina. Cambiar contraseña. Peso corporal (registro + gráfica). Aviso de que no hay recuperación de contraseña.
 - [x] Ícono real de la app. Offline básico: páginas visitadas abren sin señal; los cambios siguen necesitando conexión.
-- [ ] Offline con cola de escrituras (guardar series sin señal y sincronizar después) — lo único grande que queda.
+- [x] Offline con cola de escrituras (ver sección 12).
 - [ ] Traducir las instrucciones paso a paso (hoy en inglés).
+
+Tercera ronda (sección 12, misma fecha): sugerencia de peso, corregir series pasadas, ejercicios propios, gifs en Blob, cola offline, descanso configurable, heatmap, CSV, bloqueo de login, suite de humo. Todo hecho.
 
 Notas de infra que ya no hay que repetir:
 - El cliente de DB (`src/db/index.ts`) es "lazy" a propósito — si se inicializa en el import top-level, `next build` truena en Vercel al analizar rutas aunque `DATABASE_URL` sí exista en el entorno de runtime.
@@ -53,6 +55,9 @@ Notas de infra que ya no hay que repetir:
 - `name_es` se regenera con `node --env-file=.env.local ./node_modules/.bin/tsx scripts/translate-exercises.ts` (idempotente); `scripts/preview-translations.ts` muestra una muestra antes de escribir.
 - El service worker (`public/sw.js`) tiene un `VERSION`; si cambia la estrategia de cache hay que subir ese número para que los clientes descarten el cache viejo.
 - "Hoy" y "esta semana" se calculan en `America/Mexico_City` (`src/lib/dates.ts`) porque Vercel corre en UTC.
+- Tercera ronda de migraciones a mano (mismo método): `exercises.gif_blob_url / user_id / is_custom`, `users.rest_seconds / failed_logins / locked_until`, `routine_exercises.rest_seconds`.
+- Vercel Blob: en producción el token ya está y el gif se copia solo al agregar un ejercicio a una rutina. Para el barrido inicial (`scripts/mirror-gifs.ts`) hace falta `BLOB_READ_WRITE_TOKEN` en `.env.local` — pendiente de correr una vez.
+- Eventos del cronómetro: `workout:rest-start` se dispara desde el `onClick` del botón, no desde la acción del formulario (dentro de la acción React agrupa el setState del HUD en la transición y el refresh lo pierde).
 - Para probar en local se usa una cuenta QA desechable creada directo en la base (`insert into users ...` con hash scrypt), se recorre la app con Playwright (`npx playwright` + Chromium) y al final se borra el usuario — el `ON DELETE CASCADE` se lleva rutinas y sesiones. Nunca se toca la cuenta real.
 
 ## 1. Visión
@@ -196,12 +201,15 @@ src/app/
                         requireOwnedRoutine), AddExerciseForm, ExerciseTargetsEditor,
                         RoutineSettings (nombre, días, duplicar, eliminar)
   entrenar/actions.ts   startSession (reanuda si hay abierta), discardSession
-  entrenar/[sessionId]/ page, actions (logSet upsert, addExtraSet, saveNotes,
-                        finishSession — con requireOwnedSession), SessionNotes, error.tsx
-  progreso/             Lista de sesiones y ejercicios; [exerciseId] = gráfica;
-                        sesion/[id] = detalle de una sesión
-  perfil/               Usuario, peso corporal, cambiar contraseña, logout (actions.ts)
-  api/exercises/search  Búsqueda/browse del catálogo (q en es/en, bodyPart, offset); requiere sesión
+  entrenar/[sessionId]/ page, actions (logSet upsert, syncSets, addExtraSet, saveNotes,
+                        finishSession — con requireOwnedSession), SetRow (guardado online /
+                        cola offline), PendingSync, SessionNotes, error.tsx
+  progreso/             Lista de sesiones, heatmap y ejercicios; [exerciseId] = gráfica;
+                        sesion/[id] = detalle (SetRowEditor para corregir/borrar series)
+  perfil/               Usuario, descanso por defecto, peso corporal, contraseña, CSV, logout
+  ejercicios/actions.ts createCustomExercise
+  api/exercises/search  Búsqueda/browse (q en es/en, bodyPart, offset); catálogo + propios del usuario
+  api/export            CSV del historial del usuario
 src/components/
   ui.tsx                Primitivas del sistema de diseño
   BottomNav.tsx         Nav flotante (oculto en /login y /registro)
@@ -215,20 +223,29 @@ src/components/
   DiscardSessionButton.tsx  Descartar sesión con confirmación inline
   ExerciseProgressChart.tsx AreaChart con toggle peso/reps/volumen
   BodyWeightChart.tsx   AreaChart del peso corporal
+  TrainingHeatmap.tsx   Días entrenados (16 semanas)
+  SuggestionPill.tsx    "Sube a X kg" / "Repite" con botón Usar
+  CustomExerciseForm.tsx  Alta de ejercicio propio dentro del explorador
 src/db/
   schema.ts             Fuente de verdad del modelo (Drizzle)
   index.ts              Cliente Neon lazy
+  exercise-gif.ts       coalesce(gif_blob_url, gif_url)
   queries.ts            getRoutineSummaries, getOpenSession, getWeeklyStats
 src/lib/
-  session.ts            createSession / destroySession / getCurrentUserId / requireUserId
+  session.ts            createSession (purga expiradas) / destroySession / getCurrentUserId / requireUserId
   password.ts           scrypt hash + verify
   body-parts.ts         Etiquetas en español de los grupos musculares
   dates.ts              Zona horaria MX, día de la semana, clave de semana, "hace N días"
   translate-exercise.ts Traductor por reglas de nombres de ejercicio
-public/sw.js            Service worker (app shell + páginas visitadas + gifs)
+  suggest.ts            Regla de progresión (+2.5 kg / +1 rep / repetir)
+  offline-queue.ts      Cola de series en localStorage
+  blob.ts               mirrorExerciseGif, uploadExercisePhoto (no-op sin token)
+public/sw.js            Service worker (app shell + páginas visitadas + gifs; VERSION v2)
 scripts/
   seed-exercises.ts     Carga el catálogo desde ExerciseDB (con backoff por rate limit)
   translate-exercises.ts / preview-translations.ts   name_es
+  mirror-gifs.ts        Copia gifs a Vercel Blob (necesita BLOB_READ_WRITE_TOKEN)
+tests/smoke.mjs         Suite de humo (`npm run smoke`)
 ```
 
 ## 11. Registro de cambios (2026-09-03)
@@ -253,6 +270,10 @@ Todo el trabajo fue en un solo día; el historial fino está en `git log`. Resum
 | `1280c01` | Nombres en español + hoja "cómo se hace" |
 | `363c650` | Detalle de sesión, gráfica peso/reps/volumen, "Hoy toca", racha semanal, duplicar rutina |
 | `dbee217` | Cambiar contraseña, peso corporal, ícono real, offline básico |
+| `3e548ab` | Sugerencia de peso en el entrenamiento; editar/borrar series de sesiones pasadas |
+| `3d4fae0` | Ejercicios propios; gifs espejados a Vercel Blob (`coalesce(gif_blob_url, gif_url)`) |
+| `377199c` | Cola offline para series (localStorage + `syncSets`) |
+| `6b1fc9f` | Descanso configurable, heatmap, exportar CSV, bloqueo de login, `npm run smoke` |
 
 ## 12. Siguiente ronda (acordada 2026-09-03)
 

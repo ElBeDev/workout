@@ -38,8 +38,15 @@ node --env-file=.env.local ./node_modules/.bin/tsx scripts/preview-translations.
 node --env-file=.env.local ./node_modules/.bin/tsx scripts/translate-exercises.ts   # regenerar name_es
 ```
 
-Offline: `public/sw.js` cachea el shell y las páginas visitadas. Si cambias
-la estrategia, sube `VERSION` dentro del archivo.
+```bash
+npm run smoke                                   # suite de humo contra localhost:3000 (crea y borra su propia cuenta)
+BASE_URL=https://workout-eight-neon.vercel.app npm run smoke
+node --env-file=.env.local ./node_modules/.bin/tsx scripts/mirror-gifs.ts   # copia gifs en uso a Vercel Blob (necesita BLOB_READ_WRITE_TOKEN)
+```
+
+Offline: `public/sw.js` cachea el shell y las páginas visitadas; las series
+marcadas sin señal se encolan en `localStorage` y se sincronizan al
+reconectar. Si cambias la estrategia del SW, sube `VERSION` dentro del archivo.
 
 ### Base de datos
 
