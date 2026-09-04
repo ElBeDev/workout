@@ -83,7 +83,7 @@ export function CustomExerciseForm({
       {photoEnabled ? (
         <label className="flex cursor-pointer items-center gap-2 rounded-2xl border border-dashed border-border px-4 py-3 text-[14px] text-muted">
           <Camera className="h-4 w-4" />
-          Foto (opcional)
+          Foto (opcional, máx. 4.5 MB)
           <input name="photo" type="file" accept="image/*" capture="environment" className="sr-only" />
         </label>
       ) : (

@@ -42,7 +42,8 @@ export async function mirrorExerciseGif(exerciseId: string): Promise<string | nu
 /** Uploads a user photo for a custom exercise. Returns null when Blob isn't configured. */
 export async function uploadExercisePhoto(userId: string, file: File): Promise<string | null> {
   if (!blobConfigured() || file.size === 0) return null;
-  if (file.size > 8 * 1024 * 1024) throw new Error("La foto pesa más de 8 MB.");
+  // Vercel limits server-side uploads to 4.5 MB (client uploads would be needed beyond that).
+  if (file.size > 4.5 * 1024 * 1024) throw new Error("La foto pesa más de 4.5 MB; bájale la resolución.");
   if (!/^image\/(jpeg|png|webp|gif|heic|heif)$/.test(file.type)) {
     throw new Error("Solo se aceptan imágenes (JPG, PNG, WebP, GIF, HEIC).");
   }
