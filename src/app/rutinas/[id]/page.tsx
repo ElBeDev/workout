@@ -7,6 +7,7 @@ import { bodyPartLabel } from "@/lib/body-parts";
 import { requireUserId } from "@/lib/session";
 import { Card, PageHeader, PrimaryButton, SectionTitle } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
+import { ExerciseInfoSheet } from "@/components/ExerciseInfoSheet";
 import { AddExerciseForm } from "./AddExerciseForm";
 import { RoutineSettings } from "./RoutineSettings";
 import { ExerciseTargetsEditor } from "./ExerciseTargetsEditor";
@@ -33,8 +34,11 @@ export default async function RutinaDetailPage({
       targetReps: routineExercises.targetReps,
       targetWeight: routineExercises.targetWeight,
       exerciseName: exercises.name,
+      exerciseNameEs: exercises.nameEs,
       gifUrl: exercises.gifUrl,
       bodyPart: exercises.bodyPart,
+      equipment: exercises.equipment,
+      instructions: exercises.instructions,
     })
     .from(routineExercises)
     .innerJoin(exercises, eq(routineExercises.exerciseId, exercises.id))
@@ -76,16 +80,26 @@ export default async function RutinaDetailPage({
             {items.map((item, index) => (
               <li key={item.id}>
                 <Card className="flex items-center gap-3 p-3">
-                  <div className="h-18 w-18 shrink-0 overflow-hidden rounded-2xl">
+                  <ExerciseInfoSheet
+                    exercise={{
+                      name: item.exerciseName,
+                      nameEs: item.exerciseNameEs,
+                      gifUrl: item.gifUrl,
+                      bodyPart: item.bodyPart,
+                      equipment: item.equipment,
+                      instructions: item.instructions,
+                    }}
+                    className="h-18 w-18 shrink-0 overflow-hidden rounded-2xl"
+                  >
                     <ExerciseThumb
                       src={item.gifUrl}
-                      alt={item.exerciseName}
+                      alt={item.exerciseNameEs ?? item.exerciseName}
                       className="h-full w-full"
                     />
-                  </div>
+                  </ExerciseInfoSheet>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[15px] font-semibold capitalize">
-                      {item.exerciseName}
+                      {item.exerciseNameEs ?? item.exerciseName}
                     </p>
                     <ExerciseTargetsEditor
                       routineId={routine.id}

@@ -59,9 +59,11 @@ export default async function ExerciseProgressPage({
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        title={exercise.name}
+        title={exercise.nameEs ?? exercise.name}
         backHref="/progreso"
-        subtitle={bodyPartLabel(exercise.bodyPart)}
+        subtitle={[bodyPartLabel(exercise.bodyPart), exercise.nameEs ? exercise.name : null]
+          .filter(Boolean)
+          .join(" · ")}
         capitalize
       />
 

@@ -1,17 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Search, Loader2 } from "lucide-react";
+import { Search, Loader2, Info } from "lucide-react";
 import { BODY_PARTS, bodyPartLabel } from "@/lib/body-parts";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
+import { ExerciseInfoSheet } from "@/components/ExerciseInfoSheet";
 import { Chip, SecondaryButton } from "@/components/ui";
 
-type ExerciseResult = {
+export type ExerciseResult = {
   id: string;
   name: string;
+  nameEs: string | null;
   bodyPart: string | null;
   equipment: string | null;
   gifUrl: string | null;
+  instructions: string | null;
 };
 
 export function ExercisePicker({
@@ -79,7 +82,7 @@ export function ExercisePicker({
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar ejercicio"
+          placeholder="Buscar (ej. press de banca, curl)"
           className="w-full rounded-2xl border border-border bg-surface-2 py-3.5 pl-11 pr-4 text-[15px] text-foreground outline-none focus:ring-2 focus:ring-accent"
         />
       </div>
@@ -101,24 +104,37 @@ export function ExercisePicker({
 
       <div className="grid grid-cols-2 gap-3">
         {items.map((ex) => (
-          <button
+          <div
             key={ex.id}
-            type="button"
-            onClick={() => onSelect(ex)}
-            className="flex flex-col gap-2 rounded-[1.25rem] border border-border bg-surface-2 p-2 text-left transition active:scale-[0.98]"
+            className="relative flex flex-col gap-2 rounded-[1.25rem] border border-border bg-surface-2 p-2"
           >
-            <div className="aspect-square w-full overflow-hidden rounded-2xl bg-surface">
-              <ExerciseThumb src={ex.gifUrl} alt={ex.name} className="h-full w-full" />
-            </div>
-            <div className="flex flex-col gap-0.5 px-1 pb-1">
-              <span className="line-clamp-2 text-[13px] font-semibold capitalize leading-tight">
-                {ex.name}
-              </span>
-              <span className="text-[11px] text-muted">
-                {[bodyPartLabel(ex.bodyPart), ex.equipment].filter(Boolean).join(" · ")}
-              </span>
-            </div>
-          </button>
+            <button
+              type="button"
+              onClick={() => onSelect(ex)}
+              className="flex flex-col gap-2 text-left transition active:scale-[0.98]"
+            >
+              <div className="aspect-square w-full overflow-hidden rounded-2xl bg-surface">
+                <ExerciseThumb src={ex.gifUrl} alt={ex.nameEs ?? ex.name} className="h-full w-full" />
+              </div>
+              <div className="flex flex-col gap-0.5 px-1 pb-1">
+                <span className="line-clamp-2 text-[13px] font-semibold capitalize leading-tight">
+                  {ex.nameEs ?? ex.name}
+                </span>
+                {ex.nameEs && (
+                  <span className="line-clamp-1 text-[11px] capitalize text-muted/80">{ex.name}</span>
+                )}
+                <span className="text-[11px] text-muted">
+                  {[bodyPartLabel(ex.bodyPart), ex.equipment].filter(Boolean).join(" · ")}
+                </span>
+              </div>
+            </button>
+            <ExerciseInfoSheet
+              exercise={ex}
+              className="absolute right-3 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-surface/90 text-foreground shadow-[0_2px_8px_rgba(21,21,31,0.12)]"
+            >
+              <Info className="h-4 w-4" />
+            </ExerciseInfoSheet>
+          </div>
         ))}
       </div>
 

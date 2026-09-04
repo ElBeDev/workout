@@ -9,6 +9,7 @@ import { addExerciseToRoutine } from "./actions";
 type SelectedExercise = {
   id: string;
   name: string;
+  nameEs?: string | null;
   gifUrl: string | null;
 };
 
@@ -45,9 +46,14 @@ export function AddExerciseForm({ routineId }: { routineId: string }) {
             <img src={selected.gifUrl} alt="" className="h-full w-full object-cover" />
           )}
         </div>
-        <p className="min-w-0 flex-1 truncate text-[16px] font-semibold capitalize">
-          {selected.name}
-        </p>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[16px] font-semibold capitalize">
+            {selected.nameEs ?? selected.name}
+          </p>
+          {selected.nameEs && (
+            <p className="truncate text-[12px] capitalize text-muted">{selected.name}</p>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-2">

@@ -12,6 +12,7 @@ import { Flag, Plus, Repeat } from "lucide-react";
 import { requireUserId } from "@/lib/session";
 import { Card, PageHeader, PrimaryButton } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
+import { ExerciseInfoSheet } from "@/components/ExerciseInfoSheet";
 import { SessionHud } from "@/components/SessionHud";
 import { LogSetButton } from "@/components/LogSetButton";
 import { DiscardSessionButton } from "@/components/DiscardSessionButton";
@@ -83,7 +84,11 @@ export default async function EntrenarPage({
     .select({
       exerciseId: exercises.id,
       exerciseName: exercises.name,
+      exerciseNameEs: exercises.nameEs,
       gifUrl: exercises.gifUrl,
+      bodyPart: exercises.bodyPart,
+      equipment: exercises.equipment,
+      instructions: exercises.instructions,
       targetSets: routineExercises.targetSets,
       targetReps: routineExercises.targetReps,
     })
@@ -137,16 +142,26 @@ export default async function EntrenarPage({
           return (
             <Card key={item.exerciseId} className="p-3">
               <div className="mb-3 flex items-center gap-3">
-                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl">
+                <ExerciseInfoSheet
+                  exercise={{
+                    name: item.exerciseName,
+                    nameEs: item.exerciseNameEs,
+                    gifUrl: item.gifUrl,
+                    bodyPart: item.bodyPart,
+                    equipment: item.equipment,
+                    instructions: item.instructions,
+                  }}
+                  className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl"
+                >
                   <ExerciseThumb
                     src={item.gifUrl}
-                    alt={item.exerciseName}
+                    alt={item.exerciseNameEs ?? item.exerciseName}
                     className="h-full w-full"
                   />
-                </div>
+                </ExerciseInfoSheet>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[15px] font-semibold capitalize">
-                    {item.exerciseName}
+                    {item.exerciseNameEs ?? item.exerciseName}
                   </p>
                   <p className="mt-0.5 inline-flex items-center gap-1 text-[13px] text-muted">
                     <Repeat className="h-3.5 w-3.5" />

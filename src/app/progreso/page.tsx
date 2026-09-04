@@ -30,6 +30,7 @@ export default async function ProgresoPage() {
     .selectDistinct({
       id: exercises.id,
       name: exercises.name,
+      nameEs: exercises.nameEs,
       bodyPart: exercises.bodyPart,
       gifUrl: exercises.gifUrl,
     })
@@ -59,10 +60,10 @@ export default async function ProgresoPage() {
                 <Link href={`/progreso/${ex.id}`}>
                   <Card className="flex items-center gap-3 p-3 transition active:scale-[0.99]">
                     <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl">
-                      <ExerciseThumb src={ex.gifUrl} alt={ex.name} className="h-full w-full" />
+                      <ExerciseThumb src={ex.gifUrl} alt={ex.nameEs ?? ex.name} className="h-full w-full" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[15px] font-semibold capitalize">{ex.name}</p>
+                      <p className="truncate text-[15px] font-semibold capitalize">{ex.nameEs ?? ex.name}</p>
                       <p className="text-[13px] text-muted">{bodyPartLabel(ex.bodyPart)}</p>
                     </div>
                     <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2">
