@@ -8,13 +8,15 @@ import {
 } from "@/db/schema";
 import { and, eq, desc, ne } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import { Flag, Repeat } from "lucide-react";
+import { Flag, Plus, Repeat } from "lucide-react";
 import { requireUserId } from "@/lib/session";
 import { Card, PageHeader, PrimaryButton } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { SessionHud } from "@/components/SessionHud";
 import { LogSetButton } from "@/components/LogSetButton";
-import { logSet, finishSession } from "./actions";
+import { DiscardSessionButton } from "@/components/DiscardSessionButton";
+import { SessionNotes } from "./SessionNotes";
+import { logSet, finishSession, addExtraSet } from "./actions";
 
 type LastSet = { weight: string | null; reps: number | null };
 
@@ -37,7 +39,8 @@ async function getLastTimeSets(
       and(
         eq(setLogs.exerciseId, exerciseId),
         eq(workoutSessions.userId, userId),
-        ne(setLogs.sessionId, excludeSessionId)
+        ne(setLogs.sessionId, excludeSessionId),
+        eq(setLogs.completed, true)
       )
     )
     .orderBy(desc(workoutSessions.startedAt));
@@ -54,7 +57,7 @@ async function getLastTimeSets(
 }
 
 const fieldClass =
-  "w-full rounded-2xl border border-border bg-surface-2 px-3 py-3 text-[15px] text-foreground outline-none focus:ring-2 focus:ring-accent";
+  "w-full rounded-2xl border border-border bg-surface-2 px-3 py-3 text-[15px] text-foreground outline-none focus:ring-2 focus:ring-accent [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none";
 
 export default async function EntrenarPage({
   params,
@@ -105,7 +108,16 @@ export default async function EntrenarPage({
     );
   }
 
-  const totalSets = items.reduce((sum, i) => sum + i.targetSets, 0);
+  // Rows per exercise = target sets, plus any extra sets added on the fly.
+  const rowCount = new Map<string, number>();
+  for (const item of items) {
+    const logged = currentLogs
+      .filter((l) => l.exerciseId === item.exerciseId)
+      .reduce((m, l) => Math.max(m, l.setNumber), 0);
+    rowCount.set(item.exerciseId, Math.max(item.targetSets, logged));
+  }
+
+  const totalSets = Array.from(rowCount.values()).reduce((a, b) => a + b, 0);
   const completedSets = currentLogs.filter((l) => l.completed).length;
 
   return (
@@ -121,6 +133,7 @@ export default async function EntrenarPage({
       <div className="flex flex-col gap-4">
         {items.map((item) => {
           const lastTime = lastTimeByExercise.get(item.exerciseId) ?? new Map();
+          const rows = rowCount.get(item.exerciseId) ?? item.targetSets;
           return (
             <Card key={item.exerciseId} className="p-3">
               <div className="mb-3 flex items-center gap-3">
@@ -143,52 +156,65 @@ export default async function EntrenarPage({
               </div>
 
               <div className="flex flex-col gap-2">
-                {Array.from({ length: item.targetSets }, (_, i) => i + 1).map(
-                  (setNumber) => {
-                    const existing = currentMap.get(`${item.exerciseId}-${setNumber}`);
-                    const last = lastTime.get(setNumber);
-                    return (
-                      <form
-                        key={setNumber}
-                        action={logSet}
-                        className="flex items-center gap-2"
+                {Array.from({ length: rows }, (_, i) => i + 1).map((setNumber) => {
+                  const existing = currentMap.get(`${item.exerciseId}-${setNumber}`);
+                  const last = lastTime.get(setNumber);
+                  const extra = setNumber > item.targetSets;
+                  return (
+                    <form key={setNumber} action={logSet} className="flex items-center gap-2">
+                      <input type="hidden" name="sessionId" value={sessionId} />
+                      <input type="hidden" name="exerciseId" value={item.exerciseId} />
+                      <input type="hidden" name="setNumber" value={setNumber} />
+
+                      <span
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold ${
+                          extra
+                            ? "border border-dashed border-accent-strong text-accent-strong"
+                            : "bg-accent/40 text-accent-strong"
+                        }`}
                       >
-                        <input type="hidden" name="sessionId" value={sessionId} />
-                        <input type="hidden" name="exerciseId" value={item.exerciseId} />
-                        <input type="hidden" name="setNumber" value={setNumber} />
+                        {setNumber}
+                      </span>
 
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/40 text-[12px] font-semibold text-accent-strong">
-                          {setNumber}
-                        </span>
+                      <input
+                        name="weight"
+                        type="number"
+                        step="0.5"
+                        inputMode="decimal"
+                        defaultValue={existing?.weight ?? undefined}
+                        placeholder={last ? `${last.weight ?? "-"} kg` : "kg"}
+                        className={fieldClass}
+                      />
+                      <input
+                        name="reps"
+                        type="number"
+                        inputMode="numeric"
+                        defaultValue={existing?.reps ?? undefined}
+                        placeholder={last ? `${last.reps ?? "-"} reps` : `${item.targetReps} reps`}
+                        className={fieldClass}
+                      />
 
-                        <input
-                          name="weight"
-                          type="number"
-                          step="0.5"
-                          inputMode="decimal"
-                          defaultValue={existing?.weight ?? undefined}
-                          placeholder={last ? `${last.weight ?? "-"} kg` : "kg"}
-                          className={fieldClass}
-                        />
-                        <input
-                          name="reps"
-                          type="number"
-                          inputMode="numeric"
-                          defaultValue={existing?.reps ?? undefined}
-                          placeholder={last ? `${last.reps ?? "-"} reps` : `${item.targetReps} reps`}
-                          className={fieldClass}
-                        />
+                      <LogSetButton completed={Boolean(existing?.completed)} />
+                    </form>
+                  );
+                })}
 
-                        <LogSetButton completed={Boolean(existing?.completed)} />
-                      </form>
-                    );
-                  }
-                )}
+                <form action={addExtraSet.bind(null, sessionId, item.exerciseId, rows)}>
+                  <button
+                    type="submit"
+                    className="mt-1 inline-flex items-center gap-1 text-[13px] font-medium text-muted"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Agregar serie
+                  </button>
+                </form>
               </div>
             </Card>
           );
         })}
       </div>
+
+      <SessionNotes sessionId={sessionId} notes={session.notes} />
 
       <form action={finishSession.bind(null, sessionId)}>
         <PrimaryButton type="submit">
@@ -196,6 +222,8 @@ export default async function EntrenarPage({
           Terminar entrenamiento
         </PrimaryButton>
       </form>
+
+      <DiscardSessionButton sessionId={sessionId} />
     </div>
   );
 }

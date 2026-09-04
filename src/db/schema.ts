@@ -33,6 +33,7 @@ export const exercises = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     name: text("name").notNull(),
+    nameEs: text("name_es"),
     bodyPart: text("body_part"),
     equipment: text("equipment"),
     gifUrl: text("gif_url"),
@@ -47,7 +48,16 @@ export const routines = pgTable("routines", {
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   sortOrder: integer("sort_order").default(0).notNull(),
+  // Weekdays this routine is planned for: 0 = domingo … 6 = sábado.
+  days: integer("days").array().notNull().default([]),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const bodyWeights = pgTable("body_weights", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  weight: numeric("weight").notNull(),
+  loggedAt: timestamp("logged_at").defaultNow().notNull(),
 });
 
 export const routineExercises = pgTable("routine_exercises", {
@@ -67,6 +77,7 @@ export const workoutSessions = pgTable("workout_sessions", {
   routineId: uuid("routine_id").references(() => routines.id, { onDelete: "set null" }),
   startedAt: timestamp("started_at").defaultNow().notNull(),
   finishedAt: timestamp("finished_at"),
+  notes: text("notes"),
 });
 
 export const setLogs = pgTable(

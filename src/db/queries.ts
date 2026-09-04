@@ -1,6 +1,29 @@
-import { asc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "@/db";
-import { routines, routineExercises, exercises } from "@/db/schema";
+import { routines, routineExercises, exercises, workoutSessions } from "@/db/schema";
+
+export type OpenSession = {
+  id: string;
+  startedAt: Date;
+  routineId: string | null;
+  routineName: string | null;
+};
+
+export async function getOpenSession(userId: string): Promise<OpenSession | null> {
+  const [row] = await db
+    .select({
+      id: workoutSessions.id,
+      startedAt: workoutSessions.startedAt,
+      routineId: workoutSessions.routineId,
+      routineName: routines.name,
+    })
+    .from(workoutSessions)
+    .leftJoin(routines, eq(workoutSessions.routineId, routines.id))
+    .where(and(eq(workoutSessions.userId, userId), isNull(workoutSessions.finishedAt)))
+    .orderBy(desc(workoutSessions.startedAt))
+    .limit(1);
+  return row ?? null;
+}
 
 export type RoutineSummary = {
   id: string;

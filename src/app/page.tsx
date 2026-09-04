@@ -1,20 +1,32 @@
 import Link from "next/link";
 import { eq } from "drizzle-orm";
-import { Play, Plus, Dumbbell, Layers, User } from "lucide-react";
+import { Play, Plus, Dumbbell, Layers, User, Timer } from "lucide-react";
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import { getRoutineSummaries } from "@/db/queries";
+import { getRoutineSummaries, getOpenSession } from "@/db/queries";
 import { requireUserId } from "@/lib/session";
 import { Card, SectionTitle, CircleButton } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
+import { DiscardSessionButton } from "@/components/DiscardSessionButton";
 import { startSession } from "./entrenar/actions";
 
 export const dynamic = "force-dynamic";
 
+function timeAgo(date: Date) {
+  const minutes = Math.max(1, Math.round((Date.now() - date.getTime()) / 60000));
+  if (minutes < 60) return `hace ${minutes} min`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 48) return `hace ${hours} h`;
+  return `hace ${Math.round(hours / 24)} días`;
+}
+
 export default async function HomePage() {
   const userId = await requireUserId();
   const [user] = await db.select().from(users).where(eq(users.id, userId));
-  const myRoutines = await getRoutineSummaries(userId);
+  const [myRoutines, openSession] = await Promise.all([
+    getRoutineSummaries(userId),
+    getOpenSession(userId),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -33,6 +45,33 @@ export default async function HomePage() {
           <User className="h-5 w-5" />
         </Link>
       </header>
+
+      {openSession && (
+        <div className="flex flex-col gap-3 rounded-[1.5rem] bg-accent p-4 text-accent-foreground shadow-[0_10px_30px_rgba(21,21,31,0.10)]">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface/70 text-foreground">
+              <Timer className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[12px] opacity-70">Entrenamiento en curso</p>
+              <p className="truncate text-[16px] font-semibold">
+                {openSession.routineName ?? "Rutina eliminada"}
+                <span className="font-normal opacity-70"> · {timeAgo(openSession.startedAt)}</span>
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <DiscardSessionButton sessionId={openSession.id} compact />
+            <Link
+              href={`/entrenar/${openSession.id}`}
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-[14px] font-semibold text-primary-foreground"
+            >
+              <Play className="h-4 w-4" fill="currentColor" />
+              Continuar
+            </Link>
+          </div>
+        </div>
+      )}
 
       <section className="flex flex-col gap-3">
         <div className="flex items-baseline justify-between">
