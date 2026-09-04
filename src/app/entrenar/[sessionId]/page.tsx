@@ -17,10 +17,11 @@ import { ExerciseInfoSheet } from "@/components/ExerciseInfoSheet";
 import { SessionHud } from "@/components/SessionHud";
 import { SuggestionPill } from "@/components/SuggestionPill";
 import { suggestNext } from "@/lib/suggest";
-import { LogSetButton } from "@/components/LogSetButton";
 import { DiscardSessionButton } from "@/components/DiscardSessionButton";
 import { SessionNotes } from "./SessionNotes";
-import { logSet, finishSession, addExtraSet } from "./actions";
+import { SetRow } from "./SetRow";
+import { PendingSync } from "./PendingSync";
+import { finishSession, addExtraSet } from "./actions";
 
 type LastSet = { weight: string | null; reps: number | null };
 
@@ -59,9 +60,6 @@ async function getLastTimeSets(
   }
   return map;
 }
-
-const fieldClass =
-  "w-full rounded-2xl border border-border bg-surface-2 px-3 py-3 text-[15px] text-foreground outline-none focus:ring-2 focus:ring-accent [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none";
 
 export default async function EntrenarPage({
   params,
@@ -138,10 +136,13 @@ export default async function EntrenarPage({
         total={totalSets}
       />
 
+      <PendingSync sessionId={sessionId} />
+
       <div className="flex flex-col gap-4">
         {items.map((item) => {
-          const lastTime = lastTimeByExercise.get(item.exerciseId) ?? new Map();
+          const lastTime = lastTimeByExercise.get(item.exerciseId) ?? new Map<number, LastSet>();
           const rows = rowCount.get(item.exerciseId) ?? item.targetSets;
+          const suggestion = suggestNext(lastTime, item.targetSets, item.targetReps);
           return (
             <Card key={item.exerciseId} className="p-3">
               <div className="mb-3 flex items-center gap-3">
@@ -173,59 +174,25 @@ export default async function EntrenarPage({
                 </div>
               </div>
 
-              {(() => {
-                const suggestion = suggestNext(lastTime, item.targetSets, item.targetReps);
-                return suggestion ? (
-                  <SuggestionPill exerciseId={item.exerciseId} suggestion={suggestion} />
-                ) : null;
-              })()}
+              {suggestion && <SuggestionPill exerciseId={item.exerciseId} suggestion={suggestion} />}
 
               <div className="flex flex-col gap-2">
                 {Array.from({ length: rows }, (_, i) => i + 1).map((setNumber) => {
                   const existing = currentMap.get(`${item.exerciseId}-${setNumber}`);
                   const last = lastTime.get(setNumber);
-                  const extra = setNumber > item.targetSets;
                   return (
-                    <form
+                    <SetRow
                       key={setNumber}
-                      action={logSet}
-                      data-exercise={item.exerciseId}
-                      className="flex items-center gap-2"
-                    >
-                      <input type="hidden" name="sessionId" value={sessionId} />
-                      <input type="hidden" name="exerciseId" value={item.exerciseId} />
-                      <input type="hidden" name="setNumber" value={setNumber} />
-
-                      <span
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold ${
-                          extra
-                            ? "border border-dashed border-accent-strong text-accent-strong"
-                            : "bg-accent/40 text-accent-strong"
-                        }`}
-                      >
-                        {setNumber}
-                      </span>
-
-                      <input
-                        name="weight"
-                        type="number"
-                        step="0.5"
-                        inputMode="decimal"
-                        defaultValue={existing?.weight ?? undefined}
-                        placeholder={last ? `${last.weight ?? "-"} kg` : "kg"}
-                        className={fieldClass}
-                      />
-                      <input
-                        name="reps"
-                        type="number"
-                        inputMode="numeric"
-                        defaultValue={existing?.reps ?? undefined}
-                        placeholder={last ? `${last.reps ?? "-"} reps` : `${item.targetReps} reps`}
-                        className={fieldClass}
-                      />
-
-                      <LogSetButton completed={Boolean(existing?.completed)} />
-                    </form>
+                      sessionId={sessionId}
+                      exerciseId={item.exerciseId}
+                      setNumber={setNumber}
+                      extra={setNumber > item.targetSets}
+                      completed={Boolean(existing?.completed)}
+                      weight={existing?.weight ?? null}
+                      reps={existing?.reps ?? null}
+                      weightPlaceholder={last?.weight ? `${last.weight} kg` : "kg"}
+                      repsPlaceholder={last?.reps ? `${last.reps} reps` : `${item.targetReps} reps`}
+                    />
                   );
                 })}
 

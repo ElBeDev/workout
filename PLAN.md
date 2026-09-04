@@ -263,7 +263,7 @@ Por orden de prioridad; se va tachando conforme se sube.
 2. [x] Sugerencia de peso: si la sesión anterior cumplió todas las series con las reps objetivo, proponer +2.5 kg (o +1 rep en ejercicios sin peso); si no, proponer repetir. Botón "Usar" que rellena las series. (`src/lib/suggest.ts`)
 3. [x] Ejercicios propios (nombre, músculo, equipo, notas, foto opcional en Vercel Blob). Solo los ve su dueño; salen primero en el explorador con la etiqueta "Propio".
 4. [x] Gifs a Vercel Blob: `exercises.gif_blob_url`; se copia solo al agregar un ejercicio a una rutina (`mirrorExerciseGif`, no-op sin token) y `scripts/mirror-gifs.ts` copia en bloque los que ya están en uso (`--all` para todo el catálogo). La app siempre prefiere la copia propia. Pendiente: correr el script una vez con `BLOB_READ_WRITE_TOKEN` en `.env.local`.
-5. [ ] Cola offline: guardar series sin señal y sincronizar al reconectar.
+5. [x] Cola offline: cada serie se intenta guardar; sin señal (o si el servidor falla) se encola en `localStorage` (`src/lib/offline-queue.ts`), la fila se marca en ámbar, y `PendingSync` la reenvía al reconectar (evento `online` + reintento cada 15 s) con `syncSets`. Sobrevive a recargar la página.
 
 **Chicas**
 6. [ ] Descanso configurable (por defecto y por ejercicio).
