@@ -33,8 +33,13 @@ npm run lint
 npm run build
 npm run db:push            # aplica src/db/schema.ts a la base (pide TTY si hay datos)
 npm run db:studio          # UI de Drizzle para ver la base
-node --env-file=.env.local ./node_modules/.bin/tsx scripts/seed-exercises.ts   # recargar catálogo
+node --env-file=.env.local ./node_modules/.bin/tsx scripts/seed-exercises.ts        # recargar catálogo
+node --env-file=.env.local ./node_modules/.bin/tsx scripts/preview-translations.ts  # muestra de nombres en español
+node --env-file=.env.local ./node_modules/.bin/tsx scripts/translate-exercises.ts   # regenerar name_es
 ```
+
+Offline: `public/sw.js` cachea el shell y las páginas visitadas. Si cambias
+la estrategia, sube `VERSION` dentro del archivo.
 
 ### Base de datos
 

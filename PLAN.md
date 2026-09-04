@@ -27,13 +27,32 @@ Lo que ya funciona de punta a punta:
 - [x] Editar series / reps / peso objetivo de un ejercicio ya agregado, sin quitarlo (tocar la línea "N series · N reps"). Default al agregar: 2 series.
 - [x] Todas las acciones sobre rutinas verifican que la rutina sea del usuario logueado.
 
-**MVP (fase 1) completo.** Lo que sigue es todo fase 2 (ver sección 4).
+**MVP (fase 1) completo.**
+
+Fase 2 (hecha en la segunda tanda del mismo día):
+
+- [x] Sesión en curso: Home muestra "Entrenamiento en curso" con Continuar / Descartar; "Empezar" reanuda la sesión abierta en vez de duplicarla.
+- [x] Feedback al guardar: spinner en el ✓ de cada serie, `error.tsx` con reintentar si falla la red.
+- [x] "Agregar serie" sobre la marcha durante el entrenamiento; notas por sesión (se guardan al salir del campo).
+- [x] Hoja "cómo se hace": tocar el gif (rutina, entrenamiento) o la "i" (explorador) abre gif grande + pasos. Los pasos vienen en inglés de ExerciseDB.
+- [x] Nombres en español (`exercises.name_es`, traductor por reglas en `src/lib/translate-exercise.ts`); la búsqueda acepta español o inglés; el nombre en inglés se muestra debajo.
+- [x] Detalle de sesión pasada (series kg × reps, duración, volumen, notas). Gráfica por ejercicio con peso máx / reps máx / volumen; ejercicios sin peso grafican reps.
+- [x] Home: "Hoy toca" según días asignados a cada rutina, "Última vez" por rutina, sesiones de la semana y racha de semanas (zona horaria Ciudad de México).
+- [x] Duplicar rutina. Cambiar contraseña. Peso corporal (registro + gráfica). Aviso de que no hay recuperación de contraseña.
+- [x] Ícono real de la app. Offline básico: páginas visitadas abren sin señal; los cambios siguen necesitando conexión.
+- [ ] Offline con cola de escrituras (guardar series sin señal y sincronizar después) — lo único grande que queda.
+- [ ] Traducir las instrucciones paso a paso (hoy en inglés).
 
 Notas de infra que ya no hay que repetir:
 - El cliente de DB (`src/db/index.ts`) es "lazy" a propósito — si se inicializa en el import top-level, `next build` truena en Vercel al analizar rutas aunque `DATABASE_URL` sí exista en el entorno de runtime.
 - En Vercel, la integración de Neon prefija sus variables como `DATABASE_URL_*` si ya existe una variable llamada `DATABASE_URL` — la que de verdad lee el código es la que se llama exactamente `DATABASE_URL` (sin prefijo).
 - El primer registro en `/registro` reclamó el usuario placeholder que existía antes del login (así la rutina "Espalda" no se perdió). Ya pasó: la cuenta es `bener`. El código en `src/app/registro/actions.ts` sigue ahí pero ya no aplica a nadie; se puede borrar cuando se quiera.
 - `npm run db:push` (drizzle-kit) pide confirmación interactiva cuando la tabla tiene datos y no funciona sin TTY (p. ej. desde un agente). Las últimas migraciones (`username`/`password_hash`/`sessions`, y `workout_sessions.routine_id` nullable con `ON DELETE SET NULL`) se aplicaron con SQL a mano contra Neon y luego se verificó que `db:push` no detectara diferencias. El `schema.ts` es la fuente de verdad.
+- Ya hay más usuarios reales además de `bener` (se registraron dos personas más). Cualquier script contra la base debe filtrar por usuario; nunca borrar en masa.
+- La segunda ronda de migraciones (`routines.days int[]`, `workout_sessions.notes`, `exercises.name_es`, tabla `body_weights`) también se aplicó con SQL a mano y luego `db:push` confirmó cero diferencias.
+- `name_es` se regenera con `node --env-file=.env.local ./node_modules/.bin/tsx scripts/translate-exercises.ts` (idempotente); `scripts/preview-translations.ts` muestra una muestra antes de escribir.
+- El service worker (`public/sw.js`) tiene un `VERSION`; si cambia la estrategia de cache hay que subir ese número para que los clientes descarten el cache viejo.
+- "Hoy" y "esta semana" se calculan en `America/Mexico_City` (`src/lib/dates.ts`) porque Vercel corre en UTC.
 - Para probar en local se usa una cuenta QA desechable creada directo en la base (`insert into users ...` con hash scrypt), se recorre la app con Playwright (`npx playwright` + Chromium) y al final se borra el usuario — el `ON DELETE CASCADE` se lleva rutinas y sesiones. Nunca se toca la cuenta real.
 
 ## 1. Visión
@@ -83,12 +102,12 @@ Conclusión: el patrón ganador es **"planner + tracker"**: armas la rutina una 
 
 ## 4. Features — fase 2 (nice to have)
 
-- Sugerencia automática de peso/reps para la próxima sesión (progressive overload asistido).
-- Notas por sesión ("me sentí cansado", "subí técnica").
-- Body weight tracking (peso corporal, fotos de progreso).
-- Compartir rutina con un link.
-- Modo offline (PWA) para gimnasios sin señal.
-- Recordatorios / notificaciones ("hoy toca pierna").
+- Sugerencia automática de peso/reps para la próxima sesión (progressive overload asistido). ⏳
+- ~~Notas por sesión~~ ✅
+- ~~Body weight tracking~~ ✅ (fotos de progreso ⏳ — necesitaría Vercel Blob)
+- Compartir rutina con un link. ⏳
+- ~~Modo offline (PWA) para gimnasios sin señal~~ ✅ lectura; escritura sin señal ⏳
+- Recordatorios / notificaciones ("hoy toca pierna"). ⏳ (ya existe "Hoy toca" dentro de la app; faltarían push notifications)
 
 ## 5. Videos/gifs de ejercicios — de dónde sacarlos
 
@@ -156,43 +175,60 @@ SetLog (cada serie registrada durante la sesión)
 - ~~Gráficas de progreso, explorador visual de ejercicios, auth real (usuario + contraseña)~~ ✅
 - ~~Reordenar ejercicios en una rutina, rest timer~~ ✅
 
-**MVP completo.** Siguiente (fase 2, sin prisa): body weight tracking, notas por sesión, sugerencia automática de peso/reps.
+- ~~Fase 2: sesión en curso, feedback al guardar, series extra, notas, instrucciones, nombres en español, detalle de sesión, gráfica peso/reps/volumen, "Hoy toca", racha, duplicar, contraseña, peso corporal, ícono, offline de lectura~~ ✅
+
+**Queda (sin prisa):** cola offline para guardar series sin señal, sugerencia automática de peso/reps, compartir rutina por link, push notifications, fotos de progreso (Vercel Blob), traducir instrucciones.
 
 ## 10. Mapa del código
 
 ```
 src/app/
-  layout.tsx            Fuente Outfit, viewport/theme-color, BottomNav
+  layout.tsx            Fuente Outfit, viewport/theme-color, Connectivity, BottomNav
   globals.css           Tokens de diseño (light/dark) y @theme de Tailwind
-  manifest.ts           PWA manifest
-  page.tsx              Home
+  manifest.ts, icon.png PWA manifest + favicon
+  error.tsx             Error global con "Reintentar"
+  offline/              Fallback del service worker para páginas no visitadas
+  page.tsx              Home: sesión en curso, stats semanales, "Hoy toca", rutinas
   login/, registro/     Auth (page + actions)
   rutinas/page.tsx      Lista + crear (actions.ts: createRoutine)
   rutinas/[id]/         Detalle: page, actions (add/remove/move/update ejercicio,
-                        rename/delete rutina — todas con requireOwnedRoutine),
-                        AddExerciseForm, ExerciseTargetsEditor, RoutineSettings
-  entrenar/actions.ts   startSession
-  entrenar/[sessionId]/ page + actions (logSet upsert, finishSession)
-  progreso/             Lista de sesiones y ejercicios; [exerciseId] = gráfica
-  perfil/               Usuario + logout
-  api/exercises/search  Búsqueda/browse del catálogo (q, bodyPart, offset)
+                        rename/delete/duplicate rutina, setRoutineDays — todas con
+                        requireOwnedRoutine), AddExerciseForm, ExerciseTargetsEditor,
+                        RoutineSettings (nombre, días, duplicar, eliminar)
+  entrenar/actions.ts   startSession (reanuda si hay abierta), discardSession
+  entrenar/[sessionId]/ page, actions (logSet upsert, addExtraSet, saveNotes,
+                        finishSession — con requireOwnedSession), SessionNotes, error.tsx
+  progreso/             Lista de sesiones y ejercicios; [exerciseId] = gráfica;
+                        sesion/[id] = detalle de una sesión
+  perfil/               Usuario, peso corporal, cambiar contraseña, logout (actions.ts)
+  api/exercises/search  Búsqueda/browse del catálogo (q en es/en, bodyPart, offset); requiere sesión
 src/components/
   ui.tsx                Primitivas del sistema de diseño
   BottomNav.tsx         Nav flotante (oculto en /login y /registro)
-  ExercisePicker.tsx    Grid de ejercicios con chips por músculo y "Cargar más"
+  Connectivity.tsx      Registra sw.js, calienta el cache de la ruta actual, banner offline
+  ExercisePicker.tsx    Grid de ejercicios con chips por músculo, "i" de info y "Cargar más"
+  ExerciseInfoSheet.tsx Bottom sheet con gif grande + pasos
   ExerciseThumb.tsx     <img> con fallback a ícono si el gif falla
   SessionHud.tsx        Bloque lavanda del entrenamiento (transcurrido + descanso)
-  LogSetButton.tsx      ✓ de cada serie; dispara el evento "workout:rest-start"
-  ExerciseProgressChart.tsx  AreaChart de Recharts
+  LogSetButton.tsx      ✓ de cada serie con spinner (useFormStatus); dispara "workout:rest-start"
+  PendingButton.tsx     Botón de submit con spinner genérico
+  DiscardSessionButton.tsx  Descartar sesión con confirmación inline
+  ExerciseProgressChart.tsx AreaChart con toggle peso/reps/volumen
+  BodyWeightChart.tsx   AreaChart del peso corporal
 src/db/
   schema.ts             Fuente de verdad del modelo (Drizzle)
   index.ts              Cliente Neon lazy
-  queries.ts            getRoutineSummaries (conteos + gif del primer ejercicio)
+  queries.ts            getRoutineSummaries, getOpenSession, getWeeklyStats
 src/lib/
   session.ts            createSession / destroySession / getCurrentUserId / requireUserId
   password.ts           scrypt hash + verify
   body-parts.ts         Etiquetas en español de los grupos musculares
-scripts/seed-exercises.ts   Carga el catálogo desde ExerciseDB (con backoff por rate limit)
+  dates.ts              Zona horaria MX, día de la semana, clave de semana, "hace N días"
+  translate-exercise.ts Traductor por reglas de nombres de ejercicio
+public/sw.js            Service worker (app shell + páginas visitadas + gifs)
+scripts/
+  seed-exercises.ts     Carga el catálogo desde ExerciseDB (con backoff por rate limit)
+  translate-exercises.ts / preview-translations.ts   name_es
 ```
 
 ## 11. Registro de cambios (2026-09-03)
@@ -213,6 +249,10 @@ Todo el trabajo fue en un solo día; el historial fino está en `git log`. Resum
 | `9eb4e8c` | Fix botón de confirmar eliminación invisible en dark mode |
 | `7651ede` | Editor inline de series/reps/peso; default 2 series |
 | `7224b05` | Ocultar spinners numéricos en el editor inline |
+| `7ddfc32` | Sesión en curso (continuar/descartar), spinner al guardar, series extra, notas, migraciones de fase 2 |
+| `1280c01` | Nombres en español + hoja "cómo se hace" |
+| `363c650` | Detalle de sesión, gráfica peso/reps/volumen, "Hoy toca", racha semanal, duplicar rutina |
+| `dbee217` | Cambiar contraseña, peso corporal, ícono real, offline básico |
 
 ---
 
