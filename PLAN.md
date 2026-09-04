@@ -289,6 +289,8 @@ Todo el trabajo fue en un solo día; el historial fino está en `git log`. Resum
 | `3d4fae0` | Ejercicios propios; gifs espejados a Vercel Blob (`coalesce(gif_blob_url, gif_url)`) |
 | `377199c` | Cola offline para series (localStorage + `syncSets`) |
 | `6b1fc9f` | Descanso configurable, heatmap, exportar CSV, bloqueo de login, `npm run smoke` |
+| `f46d61e` | PLAN: modelo de datos y pantallas al día, sección 13 con la auditoría |
+| `853fbc2` | Arreglo de la auditoría: fechas en hora MX, sesiones huérfanas/terminadas/doble tap, consulta única del entrenamiento + índices, SW v3 sin HTML redirigido y purga al cerrar sesión, cola offline validada y por usuario, ownership en ejercicios propios, varios bajos |
 
 ## 12. Siguiente ronda (acordada 2026-09-03)
 
