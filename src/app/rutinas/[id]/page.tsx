@@ -154,7 +154,7 @@ export default async function RutinaDetailPage({
         <AddExerciseForm routineId={routine.id} />
       </Card>
 
-      <RoutineSettings routineId={routine.id} name={routine.name} />
+      <RoutineSettings routineId={routine.id} name={routine.name} days={routine.days ?? []} />
     </div>
   );
 }

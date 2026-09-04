@@ -1,6 +1,7 @@
-import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, max } from "drizzle-orm";
 import { db } from "@/db";
 import { routines, routineExercises, exercises, workoutSessions } from "@/db/schema";
+import { localDate, weekKey } from "@/lib/dates";
 
 export type OpenSession = {
   id: string;
@@ -28,9 +29,11 @@ export async function getOpenSession(userId: string): Promise<OpenSession | null
 export type RoutineSummary = {
   id: string;
   name: string;
+  days: number[];
   exerciseCount: number;
   totalSets: number;
   thumbUrl: string | null;
+  lastDoneAt: Date | null;
 };
 
 export async function getRoutineSummaries(userId: string): Promise<RoutineSummary[]> {
@@ -41,6 +44,16 @@ export async function getRoutineSummaries(userId: string): Promise<RoutineSummar
     .orderBy(routines.sortOrder, routines.createdAt);
 
   if (rows.length === 0) return [];
+
+  const lastDone = await db
+    .select({
+      routineId: workoutSessions.routineId,
+      last: max(workoutSessions.startedAt),
+    })
+    .from(workoutSessions)
+    .where(and(eq(workoutSessions.userId, userId), isNotNull(workoutSessions.finishedAt)))
+    .groupBy(workoutSessions.routineId);
+  const lastDoneMap = new Map(lastDone.map((r) => [r.routineId, r.last]));
 
   const items = await db
     .select({
@@ -64,9 +77,47 @@ export async function getRoutineSummaries(userId: string): Promise<RoutineSummar
     return {
       id: routine.id,
       name: routine.name,
+      days: routine.days ?? [],
       exerciseCount: mine.length,
       totalSets: mine.reduce((sum, i) => sum + i.targetSets, 0),
       thumbUrl: mine[0]?.gifUrl ?? null,
+      lastDoneAt: lastDoneMap.get(routine.id) ?? null,
     };
   });
+}
+
+export type WeeklyStats = {
+  thisWeek: number;
+  streakWeeks: number;
+};
+
+/** Sessions this week and how many consecutive weeks (incl. this one) had ≥1 session. */
+export async function getWeeklyStats(userId: string): Promise<WeeklyStats> {
+  const since = new Date();
+  since.setDate(since.getDate() - 7 * 26);
+  const rows = await db
+    .select({ startedAt: workoutSessions.startedAt })
+    .from(workoutSessions)
+    .where(
+      and(
+        eq(workoutSessions.userId, userId),
+        isNotNull(workoutSessions.finishedAt),
+        gte(workoutSessions.startedAt, since)
+      )
+    );
+
+  const weekKeys = new Set(rows.map((r) => weekKey(localDate(r.startedAt))));
+  const now = localDate(new Date());
+  const thisWeek = rows.filter((r) => weekKey(localDate(r.startedAt)) === weekKey(now)).length;
+
+  let streakWeeks = 0;
+  const cursor = new Date(now);
+  // If this week is still empty, count the streak from last week so it doesn't
+  // reset on Monday morning.
+  if (!weekKeys.has(weekKey(cursor))) cursor.setDate(cursor.getDate() - 7);
+  while (weekKeys.has(weekKey(cursor))) {
+    streakWeeks += 1;
+    cursor.setDate(cursor.getDate() - 7);
+  }
+  return { thisWeek, streakWeeks };
 }

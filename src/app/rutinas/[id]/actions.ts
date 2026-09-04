@@ -28,6 +28,48 @@ export async function renameRoutine(routineId: string, formData: FormData) {
   revalidatePath("/");
 }
 
+export async function setRoutineDays(routineId: string, days: number[]) {
+  await requireOwnedRoutine(routineId);
+  const clean = Array.from(new Set(days.filter((d) => Number.isInteger(d) && d >= 0 && d <= 6))).sort();
+  await db.update(routines).set({ days: clean }).where(eq(routines.id, routineId));
+  revalidatePath(`/rutinas/${routineId}`);
+  revalidatePath("/");
+}
+
+export async function duplicateRoutine(routineId: string) {
+  const userId = await requireUserId();
+  const [source] = await db
+    .select()
+    .from(routines)
+    .where(and(eq(routines.id, routineId), eq(routines.userId, userId)));
+  if (!source) redirect("/rutinas");
+
+  const [copy] = await db
+    .insert(routines)
+    .values({ userId, name: `${source.name} (copia)`, days: [] })
+    .returning({ id: routines.id });
+
+  const items = await db
+    .select()
+    .from(routineExercises)
+    .where(eq(routineExercises.routineId, routineId));
+  if (items.length) {
+    await db.insert(routineExercises).values(
+      items.map((i) => ({
+        routineId: copy.id,
+        exerciseId: i.exerciseId,
+        sortOrder: i.sortOrder,
+        targetSets: i.targetSets,
+        targetReps: i.targetReps,
+        targetWeight: i.targetWeight,
+      }))
+    );
+  }
+
+  revalidatePath("/rutinas");
+  redirect(`/rutinas/${copy.id}`);
+}
+
 export async function deleteRoutine(routineId: string) {
   await requireOwnedRoutine(routineId);
   await db.delete(routines).where(eq(routines.id, routineId));
