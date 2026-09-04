@@ -128,26 +128,37 @@ No hace falta grabar ni animar nada a mano, hay APIs/bases de datos gratis:
 
 ```
 User
- └─ id, username, password_hash
+ └─ id, username, password_hash, rest_seconds (descanso por defecto),
+    failed_logins, locked_until, created_at
 
 Session (auth, no confundir con WorkoutSession)
  └─ token, user_id, expires_at
 
-Exercise
- └─ id, nombre, músculo, equipo, gif_url/video_url, instrucciones
+Exercise (catálogo + propios)
+ └─ id, name (en), name_es, body_part, equipment, gif_url (ExerciseDB),
+    gif_blob_url (copia en Vercel Blob; la app prefiere esta), instructions,
+    external_id, user_id (null = catálogo), is_custom
 
 Routine
- └─ id, user_id, nombre, orden
+ └─ id, user_id, name, sort_order, days int[] (0=dom … 6=sáb)
 
 RoutineExercise (ejercicio dentro de una rutina)
- └─ id, routine_id, exercise_id, orden, series_objetivo, reps_objetivo, peso_objetivo (opcional)
+ └─ id, routine_id, exercise_id, sort_order, target_sets, target_reps,
+    target_weight (opcional), rest_seconds (opcional, override del usuario)
 
 WorkoutSession (una ejecución real de la rutina)
- └─ id, user_id, routine_id (nullable, SET NULL al borrar la rutina), started_at, finished_at
+ └─ id, user_id, routine_id (nullable, SET NULL al borrar la rutina),
+    started_at, finished_at (null = en curso), notes
 
 SetLog (cada serie registrada durante la sesión)
- └─ id, session_id, exercise_id, numero_serie, peso, reps, completada
+ └─ id, session_id, exercise_id, set_number, weight, reps, completed, logged_at
+    único por (session_id, exercise_id, set_number)
+
+BodyWeight
+ └─ id, user_id, weight, logged_at
 ```
+
+Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ejercicios propios, sesiones de login). `routines` → cascada a `routine_exercises`; las `workout_sessions` se quedan con `routine_id = null`.
 
 `SetLog` es la tabla clave: de ahí sale todo el historial y las gráficas de progreso.
 
@@ -164,13 +175,15 @@ SetLog (cada serie registrada durante la sesión)
 
 ## 8. Pantallas principales
 
-1. **Login / Registro** — usuario + contraseña. ✅
-2. **Home** — saludo con el usuario, tarjetas de rutina (gif del primer ejercicio, nº de ejercicios y series) con botón ▶ para empezar. ✅
-3. **Mis rutinas** — lista de rutinas + crear. ✅
-4. **Detalle de rutina** — bloque lavanda con stats (ejercicios / series / músculos), CTA "Empezar entrenamiento", lista de ejercicios (editar series/reps/peso inline, subir/bajar, quitar), explorador para agregar (grid con gif, filtro por músculo), y "Ajustes de la rutina" (renombrar / eliminar). ✅
-5. **Modo entrenamiento** — bloque lavanda pegajoso (`SessionHud`) con tiempo transcurrido, barra de series completadas y el descanso en grande cuando se marca una serie (−15s / Saltar / +15s); tarjetas por ejercicio con una fila por serie (kg + reps, placeholder con lo de la sesión anterior, ✓ para marcar). ✅
-6. **Progreso** — sesiones completadas (las de rutinas borradas salen como "Rutina eliminada") + por ejercicio: mejor marca, última sesión, gráfica de área de peso máximo por sesión. ✅
-7. **Perfil** — usuario logueado, cerrar sesión. ✅ (peso corporal queda para fase 2)
+1. **Login / Registro** — usuario + contraseña; bloqueo tras 8 fallos; aviso de que no hay recuperación. ✅
+2. **Home** — saludo, tarjeta de "Entrenamiento en curso" (continuar / descartar), stats de la semana y racha, "Hoy toca" según días asignados, rutinas con gif del primer ejercicio, nº de ejercicios/series y "última vez", botón ▶. ✅
+3. **Mis rutinas** — lista + crear. ✅
+4. **Detalle de rutina** — stats (ejercicios / series / músculos), CTA, lista de ejercicios (tocar gif = cómo se hace; editar series/reps/peso/descanso inline; subir/bajar; quitar), explorador (grid con gif, chips por músculo, búsqueda es/en, "i" de info, crear ejercicio propio), y ajustes (nombre, días de la semana, duplicar, eliminar). ✅
+5. **Modo entrenamiento** — HUD lavanda pegajoso (transcurrido, barra de series, descanso en grande con −15s / Saltar / +15s), aviso de series en cola sin señal, por ejercicio: sugerencia de peso con "Usar", filas por serie (kg + reps, placeholder de la vez pasada, ✓ con spinner / ámbar si quedó en cola), "Agregar serie", notas de la sesión, terminar / descartar. ✅
+6. **Progreso** — heatmap de 16 semanas, por ejercicio (mejor marca, última sesión, gráfica peso/reps/volumen, lista de sesiones), sesiones completadas → detalle con series editables, duración, volumen y notas. ✅
+7. **Perfil** — usuario, peso corporal (registro + gráfica), descanso por defecto, cambiar contraseña, exportar CSV, cerrar sesión. ✅
+8. **Cómo se hace** (bottom sheet) — gif grande, músculo, equipo, pasos (en inglés). ✅
+9. **Offline** — banner sin conexión, páginas visitadas abren desde cache, `/offline` para las no visitadas. ✅
 
 ## 9. Roadmap
 
@@ -294,6 +307,45 @@ Por orden de prioridad; se va tachando conforme se sube.
 10. [x] `npm run smoke` (`tests/smoke.mjs`): crea una cuenta desechable en la base, recorre login → rutina → ejercicio → entrenar → terminar → borrar, y elimina la cuenta. `BASE_URL=https://… npm run smoke` para probar producción.
 
 **Todo lo acordado en esta ronda está hecho.**
+
+## 13. Revisión de código (2026-09-03) — hallazgos pendientes
+
+Auditoría completa de `src/`, `public/sw.js`, `scripts/` y `tests/` con lint y `tsc` limpios. Nada de esto está arreglado todavía; se lista por severidad para atacarlo en orden.
+
+**Altos (afectan al usuario hoy)**
+- [ ] **Fechas en UTC.** Todos los `Intl.DateTimeFormat("es-MX", …)` de Progreso, detalle de sesión, gráfica y Perfil no pasan `timeZone`, así que en Vercel una sesión de las 9 pm sale como el día siguiente a las 03:00. El heatmap y "Hoy toca" sí usan `APP_TIME_ZONE`, por lo que el mismo entrenamiento aparece en dos días distintos. Fix: helper `fmtDate()` en `src/lib/dates.ts` y usarlo en todos lados.
+- [ ] **Borrar una rutina con sesión abierta la deja atrapada.** `routine_id` pasa a null, el entrenamiento hace `notFound()`, no se puede terminar y la única salida (descartar) borra las series del día. Fix: renderizar la sesión desde sus `set_logs` o auto-terminarla; o impedir borrar la rutina mientras tenga sesión abierta.
+- [ ] **Service worker cachea HTML autenticado sin purgar al cerrar sesión**, y cachea la redirección a `/login` bajo la URL protegida. En un teléfono compartido, el usuario anterior queda visible offline. Fix: no guardar respuestas `redirected`, y borrar el cache `pages-*` al hacer logout.
+- [ ] **El entrenamiento hace una consulta por ejercicio, sin `LIMIT`, y se re-ejecuta en cada ✓** (`getLastTimeSets` en bucle + `revalidatePath` en `logSet`). Fix: una sola consulta con `DISTINCT ON`, quitar el `revalidatePath` de `logSet` (SetRow ya refleja el estado) y añadir índices.
+
+**Medios**
+- [ ] Dos nombres de cache distintos: `Connectivity` calienta `pages-v1`, el SW usa `pages-v2`. Unificar la constante.
+- [ ] Cola offline: entradas de sesiones descartadas nunca se purgan (reintento cada 15 s para siempre); una entrada malformada aborta toda la sincronización; la cola no está separada por usuario; cualquier error del servidor se trata como "sin señal". Fix: `syncSets` devuelve `{saved, rejected}`, validar con zod por entrada, clave por usuario, distinguir error de red.
+- [ ] Sesiones terminadas se pueden reabrir y re-terminar desde la URL vieja. Fix: redirigir a `/progreso/sesion/[id]` si `finishedAt` existe.
+- [ ] Doble tap en "Empezar" puede crear dos sesiones abiertas (check-then-insert sin transacción; `neon-http` no soporta transacciones). Fix: índice único parcial `(user_id, routine_id) WHERE finished_at IS NULL`. Mismo problema en `duplicateRoutine` y `moveRoutineExercise` (varias sentencias no atómicas).
+- [ ] `addExerciseToRoutine` acepta 0 series/reps (`Number("")` → 0); `duplicateRoutine` no copia `rest_seconds`.
+- [ ] Un ejercicio propio ajeno se puede ver y agregar si se conoce su UUID (`progreso/[exerciseId]` y `addExerciseToRoutine` no filtran por dueño).
+- [ ] Gifs: respuestas opacas fallidas (404) quedan cacheadas para siempre; sin límite de tamaño del cache. Cambiar a stale-while-revalidate y acotar.
+- [ ] `maximumScale: 1` en el viewport bloquea el zoom (accesibilidad).
+- [ ] Cualquiera puede bloquear la cuenta de otro con 8 intentos; sin throttle por IP; registro sin límite de intentos ni formato de usuario; contraseña sin tope de longitud (scrypt sobre 1 MB).
+- [ ] Notas / agregar serie / terminar sin señal mandan a la pantalla de error y se pierde lo escrito.
+
+**Bajos**
+- [ ] Duplicados: dos `requireOwnedSession`, `fieldClass` en 5 archivos, `REST_SECONDS` en 3 lugares; código muerto del "legacy owner" en registro; `scrollbar-none` no existe en Tailwind v4; `users.email/name` sin uso.
+- [ ] `SessionHud` inicializa `now` con `Date.now()` → hydration mismatch en cada carga del entrenamiento.
+- [ ] `ExerciseInfoSheet` sin focus trap ni `aria-labelledby`; inputs de kg/reps sin label; heatmap depende de `title`.
+- [ ] Búsqueda: `offset` sin validar; `ORDER BY` sin desempate por `id` (paginación puede duplicar/saltar); `%`/`_` actúan como comodines.
+- [ ] CSV sin protección contra fórmulas (`=`, `+`, `-`, `@` al inicio).
+- [ ] Foto de ejercicio propio no valida MIME en servidor. `mirrorExerciseGif` corre inline en la acción (mover a `after()`).
+- [ ] Cambiar contraseña no cierra las demás sesiones; `/login` no redirige si ya hay sesión.
+- [ ] `getLastTimeSets` incluye sets de sesiones abandonadas (filtra `completed`, no `finished_at`).
+
+**Datos**
+- [ ] Sin historial de migraciones: `drizzle/` no existe; nada en el repo prueba que producción coincide con `schema.ts`. Fix: `drizzle-kit generate` una vez y commitear.
+- [ ] Faltan índices: `set_logs(exercise_id)`, `workout_sessions(user_id, finished_at)`, `sessions(expires_at)`, `exercises(user_id)`, y `pg_trgm` para el `ilike` de nombres.
+- [ ] `timestamp` sin `withTimezone`; `users.username/password_hash` siguen nullable aunque ya no hace falta.
+
+**Orden sugerido:** fechas → cola offline + SW → sesión huérfana / reabrir / doble tap → consulta del entrenamiento + índices → el resto.
 
 ---
 
