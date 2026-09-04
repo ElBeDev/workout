@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, max } from "drizzle-orm";
 import { db } from "@/db";
 import { routines, routineExercises, exercises, workoutSessions } from "@/db/schema";
+import { exerciseGif } from "@/db/exercise-gif";
 import { localDate, weekKey } from "@/lib/dates";
 
 export type OpenSession = {
@@ -60,7 +61,7 @@ export async function getRoutineSummaries(userId: string): Promise<RoutineSummar
       routineId: routineExercises.routineId,
       sortOrder: routineExercises.sortOrder,
       targetSets: routineExercises.targetSets,
-      gifUrl: exercises.gifUrl,
+      gifUrl: exerciseGif,
     })
     .from(routineExercises)
     .innerJoin(exercises, eq(routineExercises.exerciseId, exercises.id))

@@ -1,5 +1,6 @@
 import { db } from "@/db";
 import { workoutSessions, routines, setLogs, exercises } from "@/db/schema";
+import { exerciseGif } from "@/db/exercise-gif";
 import { and, asc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -44,7 +45,7 @@ export default async function SessionDetailPage({
       exerciseId: exercises.id,
       name: exercises.name,
       nameEs: exercises.nameEs,
-      gifUrl: exercises.gifUrl,
+      gifUrl: exerciseGif,
       bodyPart: exercises.bodyPart,
       setId: setLogs.id,
       setNumber: setLogs.setNumber,

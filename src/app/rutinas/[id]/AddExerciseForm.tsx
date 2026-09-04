@@ -16,14 +16,20 @@ type SelectedExercise = {
 const fieldClass =
   "mt-1 w-full rounded-2xl border border-border bg-surface-2 px-3 py-3 text-[15px] text-foreground outline-none focus:ring-2 focus:ring-accent";
 
-export function AddExerciseForm({ routineId }: { routineId: string }) {
+export function AddExerciseForm({
+  routineId,
+  photoEnabled = false,
+}: {
+  routineId: string;
+  photoEnabled?: boolean;
+}) {
   const [selected, setSelected] = useState<SelectedExercise | null>(null);
 
   if (!selected) {
     return (
       <div className="flex flex-col gap-3">
         <SectionTitle>Agregar ejercicio</SectionTitle>
-        <ExercisePicker onSelect={(ex) => setSelected(ex)} />
+        <ExercisePicker onSelect={(ex) => setSelected(ex)} photoEnabled={photoEnabled} />
       </div>
     );
   }

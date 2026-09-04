@@ -4,7 +4,7 @@
  * - /_next/static (hashed, immutable) and exercise gifs: cache first.
  * - Everything else (server actions, API, RSC fetches): network only.
  */
-const VERSION = "v1";
+const VERSION = "v2";
 const PAGES = `pages-${VERSION}`;
 const ASSETS = `assets-${VERSION}`;
 const OFFLINE_URL = "/offline";
@@ -50,7 +50,8 @@ self.addEventListener("fetch", (event) => {
   }
 
   const isStatic = url.origin === self.location.origin && url.pathname.startsWith("/_next/static/");
-  const isGif = url.hostname === "static.exercisedb.dev";
+  const isGif =
+    url.hostname === "static.exercisedb.dev" || url.hostname.endsWith(".public.blob.vercel-storage.com");
   const isIcon = url.origin === self.location.origin && /\.(png|ico|webmanifest)$/.test(url.pathname);
   if (isStatic || isGif || isIcon) {
     event.respondWith(

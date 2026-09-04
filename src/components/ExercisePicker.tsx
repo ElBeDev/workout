@@ -5,6 +5,7 @@ import { Search, Loader2, Info } from "lucide-react";
 import { BODY_PARTS, bodyPartLabel } from "@/lib/body-parts";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { ExerciseInfoSheet } from "@/components/ExerciseInfoSheet";
+import { CustomExerciseForm } from "@/components/CustomExerciseForm";
 import { Chip, SecondaryButton } from "@/components/ui";
 
 export type ExerciseResult = {
@@ -15,12 +16,15 @@ export type ExerciseResult = {
   equipment: string | null;
   gifUrl: string | null;
   instructions: string | null;
+  isCustom?: boolean;
 };
 
 export function ExercisePicker({
   onSelect,
+  photoEnabled = false,
 }: {
   onSelect: (exercise: ExerciseResult) => void;
+  photoEnabled?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [bodyPart, setBodyPart] = useState<string>("");
@@ -117,6 +121,11 @@ export function ExercisePicker({
                 <ExerciseThumb src={ex.gifUrl} alt={ex.nameEs ?? ex.name} className="h-full w-full" />
               </div>
               <div className="flex flex-col gap-0.5 px-1 pb-1">
+                {ex.isCustom && (
+                  <span className="mb-0.5 w-fit rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-accent-foreground">
+                    Propio
+                  </span>
+                )}
                 <span className="line-clamp-2 text-[13px] font-semibold capitalize leading-tight">
                   {ex.nameEs ?? ex.name}
                 </span>
@@ -155,6 +164,8 @@ export function ExercisePicker({
           {loading ? "Cargando..." : "Cargar más"}
         </SecondaryButton>
       )}
+
+      <CustomExerciseForm photoEnabled={photoEnabled} onCreated={(ex) => onSelect(ex)} />
     </div>
   );
 }

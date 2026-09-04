@@ -1,10 +1,12 @@
 import { db } from "@/db";
 import { routines, routineExercises, exercises } from "@/db/schema";
+import { exerciseGif } from "@/db/exercise-gif";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { ChevronUp, ChevronDown, Play, Trash2 } from "lucide-react";
 import { bodyPartLabel } from "@/lib/body-parts";
 import { requireUserId } from "@/lib/session";
+import { blobConfigured } from "@/lib/blob";
 import { Card, PageHeader, PrimaryButton, SectionTitle } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { ExerciseInfoSheet } from "@/components/ExerciseInfoSheet";
@@ -35,7 +37,7 @@ export default async function RutinaDetailPage({
       targetWeight: routineExercises.targetWeight,
       exerciseName: exercises.name,
       exerciseNameEs: exercises.nameEs,
-      gifUrl: exercises.gifUrl,
+      gifUrl: exerciseGif,
       bodyPart: exercises.bodyPart,
       equipment: exercises.equipment,
       instructions: exercises.instructions,
@@ -151,7 +153,7 @@ export default async function RutinaDetailPage({
       </section>
 
       <Card className="p-4">
-        <AddExerciseForm routineId={routine.id} />
+        <AddExerciseForm routineId={routine.id} photoEnabled={blobConfigured()} />
       </Card>
 
       <RoutineSettings routineId={routine.id} name={routine.name} days={routine.days ?? []} />

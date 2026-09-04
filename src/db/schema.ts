@@ -37,8 +37,14 @@ export const exercises = pgTable(
     bodyPart: text("body_part"),
     equipment: text("equipment"),
     gifUrl: text("gif_url"),
+    // Copy of the gif in our own Vercel Blob store (filled lazily); the app
+    // prefers this over gif_url so we don't depend on static.exercisedb.dev.
+    gifBlobUrl: text("gif_blob_url"),
     instructions: text("instructions"),
     externalId: text("external_id"),
+    // Custom exercises belong to a user; catalog rows have user_id = null.
+    userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
+    isCustom: boolean("is_custom").notNull().default(false),
   },
   (table) => [uniqueIndex("exercises_external_id_idx").on(table.externalId)]
 );

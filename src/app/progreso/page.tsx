@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight, CalendarClock } from "lucide-react";
 import { db } from "@/db";
 import { workoutSessions, routines, setLogs, exercises } from "@/db/schema";
+import { exerciseGif } from "@/db/exercise-gif";
 import { requireUserId } from "@/lib/session";
 import { and, desc, eq, isNotNull } from "drizzle-orm";
 import { bodyPartLabel } from "@/lib/body-parts";
@@ -32,7 +33,7 @@ export default async function ProgresoPage() {
       name: exercises.name,
       nameEs: exercises.nameEs,
       bodyPart: exercises.bodyPart,
-      gifUrl: exercises.gifUrl,
+      gifUrl: exerciseGif,
     })
     .from(setLogs)
     .innerJoin(workoutSessions, eq(setLogs.sessionId, workoutSessions.id))

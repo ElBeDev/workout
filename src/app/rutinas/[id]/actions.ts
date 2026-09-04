@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { routines, routineExercises } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
+import { mirrorExerciseGif } from "@/lib/blob";
 import { and, eq, sql } from "drizzle-orm";
 
 async function requireOwnedRoutine(routineId: string) {
@@ -104,6 +105,10 @@ export async function addExerciseToRoutine(formData: FormData) {
     targetReps,
     targetWeight,
   });
+
+  // Keep our own copy of the gif now that the exercise is in use (no-op
+  // without BLOB_READ_WRITE_TOKEN or if already mirrored).
+  await mirrorExerciseGif(exerciseId);
 
   revalidatePath(`/rutinas/${routineId}`);
 }

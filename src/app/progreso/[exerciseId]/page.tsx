@@ -1,5 +1,6 @@
 import { db } from "@/db";
 import { setLogs, workoutSessions, exercises } from "@/db/schema";
+import { pickGif } from "@/db/exercise-gif";
 import { requireUserId } from "@/lib/session";
 import { and, eq, asc } from "drizzle-orm";
 import { notFound } from "next/navigation";
@@ -98,7 +99,7 @@ export default async function ExerciseProgressPage({
 
       <Card className="flex items-center gap-3 p-3">
         <div className="h-18 w-18 shrink-0 overflow-hidden rounded-2xl">
-          <ExerciseThumb src={exercise.gifUrl} alt={exercise.nameEs ?? exercise.name} className="h-full w-full" />
+          <ExerciseThumb src={pickGif(exercise)} alt={exercise.nameEs ?? exercise.name} className="h-full w-full" />
         </div>
         <div className="grid flex-1 grid-cols-2 gap-2">
           <div className="rounded-2xl bg-accent p-3 text-accent-foreground">
