@@ -306,6 +306,7 @@ Todo el trabajo fue en un solo día; el historial fino está en `git log`. Resum
 | `f46d61e` | PLAN: modelo de datos y pantallas al día, sección 13 con la auditoría |
 | `9ccbedf` | Foto de ejercicio propio alineada al tope de 4.5 MB de Vercel (`bodySizeLimit`) |
 | `13effb8` | Botón en Perfil para copiar los gifs a Blob desde producción (el token es secreto de solo escritura) |
+| `99ae318` | Placas como unidad de carga por ejercicio (kg o nº de placas) en rutina, entrenamiento, sugerencia, detalle, gráfica y CSV |
 | `853fbc2` | Arreglo de la auditoría: fechas en hora MX, sesiones huérfanas/terminadas/doble tap, consulta única del entrenamiento + índices, SW v3 sin HTML redirigido y purga al cerrar sesión, cola offline validada y por usuario, ownership en ejercicios propios, varios bajos |
 
 ## 12. Siguiente ronda (acordada 2026-09-03)
