@@ -38,7 +38,6 @@ export default async function RutinaDetailPage({
       targetSets: routineExercises.targetSets,
       targetReps: routineExercises.targetReps,
       targetWeight: routineExercises.targetWeight,
-      restSeconds: routineExercises.restSeconds,
       loadUnit: routineExercises.loadUnit,
       exerciseName: exercises.name,
       exerciseNameEs: exercises.nameEs,
@@ -120,7 +119,6 @@ export default async function RutinaDetailPage({
                       targetSets={item.targetSets}
                       targetReps={item.targetReps}
                       targetWeight={item.targetWeight}
-                      restSeconds={item.restSeconds}
                       loadUnit={item.loadUnit === "plates" ? "plates" : "kg"}
                     />
                     <p className="mt-0.5 text-[12px] text-muted/80">

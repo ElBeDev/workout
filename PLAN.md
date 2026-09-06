@@ -20,7 +20,7 @@ Lo que ya funciona de punta a punta:
 - [x] Fallback a un ícono cuando el gif de un ejercicio no carga.
 
 - [x] Reordenar ejercicios dentro de una rutina (flechas subir/bajar).
-- [x] Rest timer entre series (90s por defecto, +/-15s) integrado en el bloque de estado del entrenamiento.
+- [x] Rest timer entre series: **3 minutos fijos, automático** — arranca solo al marcar una serie, cuenta regresivo en el bloque lavanda, +/-15s / Saltar. Ya no es configurable (se quitó el "Desc. s" por ejercicio y el default en Perfil para simplificar).
 
 - [x] Rediseño completo siguiendo la referencia de Dribbble (fondo lavanda, tarjetas blancas, botón principal negro en píldora, chips oscuros, nav flotante, tipografía Outfit). Modo oscuro incluido.
 - [x] Renombrar y eliminar rutinas (con confirmación inline). Al eliminar, el historial de sesiones se conserva como "Rutina eliminada".
@@ -104,7 +104,7 @@ Conclusión: el patrón ganador es **"planner + tracker"**: armas la rutina una 
    - Puede haber varias rutinas y organizarlas por día de la semana o por "programa" (ej. rutina de 4 días). ✅ (varias rutinas sí; agrupar por "programa" queda para después)
 4. **Modo entrenamiento (ejecutar rutina)** ✅
    - Entras a la rutina del día, ves el primer ejercicio con su gif.
-   - Por cada serie: input rápido de **peso** (kg o nº de placas, según el ejercicio) y **reps**, botón "listo" para marcar la serie. ✅
+   - Por cada serie: input rápido de **peso** (kg o nº de placas, según el ejercicio) y **reps**, botón "listo" para marcar la serie — dispara el descanso automático de 3 min. ✅
    - Se muestra automáticamente lo que hiciste la última vez en ese mismo ejercicio/serie (referencia para progressive overload). ✅
    - Rest timer entre series (opcional pero muy usado). ✅
    - Al terminar, la rutina queda guardada como "sesión completada" con fecha. ✅
@@ -188,7 +188,7 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 2. **Home** — saludo, tarjeta de "Entrenamiento en curso" (continuar / descartar), stats de la semana y racha, "Hoy toca" según días asignados, rutinas con gif del primer ejercicio, nº de ejercicios/series y "última vez", botón ▶. ✅
 3. **Mis rutinas** — lista + crear. ✅
 4. **Detalle de rutina** — stats (ejercicios / series / músculos), CTA, lista de ejercicios (tocar gif = cómo se hace; editar series/reps/peso/descanso inline; subir/bajar; quitar), explorador (grid con gif, chips por músculo, búsqueda es/en, "i" de info, crear ejercicio propio), y ajustes (nombre, días de la semana, duplicar, eliminar). ✅
-5. **Modo entrenamiento** — casilla de carga en kg o placas según el ejercicio; HUD lavanda pegajoso (transcurrido, barra de series, descanso en grande con −15s / Saltar / +15s), aviso de series en cola sin señal, por ejercicio: sugerencia de peso con "Usar", filas por serie (kg + reps, placeholder de la vez pasada, ✓ con spinner / ámbar si quedó en cola), "Agregar serie", notas de la sesión, terminar / descartar. ✅
+5. **Modo entrenamiento** — casilla de carga en kg o placas según el ejercicio; HUD lavanda pegajoso (transcurrido, barra de series, descanso automático de 3 min al marcar una serie, con −15s / Saltar / +15s), aviso de series en cola sin señal, por ejercicio: sugerencia de peso con "Usar", filas por serie (kg + reps, placeholder de la vez pasada, ✓ con spinner / ámbar si quedó en cola), "Agregar serie", notas de la sesión, terminar / descartar. ✅
 6. **Progreso** — heatmap de 16 semanas, por ejercicio (mejor marca, última sesión, gráfica peso/reps/volumen, lista de sesiones), sesiones completadas → detalle con series editables, duración, volumen y notas. ✅
 7. **Perfil** — usuario, peso corporal (registro + gráfica), descanso por defecto, cambiar contraseña, exportar CSV, cerrar sesión. ✅
 8. **Cómo se hace** (bottom sheet) — gif grande, músculo, equipo, pasos (en inglés). ✅

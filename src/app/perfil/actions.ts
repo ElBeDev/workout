@@ -47,14 +47,6 @@ export async function mirrorMyGifs(): Promise<{ mirrored: number; remaining: num
   return { mirrored, remaining, enabled: true };
 }
 
-export async function setDefaultRest(formData: FormData) {
-  const userId = await requireUserId();
-  const seconds = Math.round(Number(formData.get("restSeconds")));
-  if (!Number.isFinite(seconds) || seconds < 10 || seconds > 900) return;
-  await db.update(users).set({ restSeconds: seconds }).where(eq(users.id, userId));
-  revalidatePath("/perfil");
-}
-
 export async function addBodyWeight(formData: FormData) {
   const userId = await requireUserId();
   const raw = String(formData.get("weight") ?? "").replace(",", ".").trim();

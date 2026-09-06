@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Layers, Pencil, Repeat, Timer, X } from "lucide-react";
+import { Check, Layers, Pencil, Repeat, X } from "lucide-react";
 import type { LoadUnit } from "@/lib/suggest";
 import { updateRoutineExercise } from "./actions";
 
@@ -14,7 +14,6 @@ export function ExerciseTargetsEditor({
   targetSets,
   targetReps,
   targetWeight,
-  restSeconds,
   loadUnit,
 }: {
   routineId: string;
@@ -22,7 +21,6 @@ export function ExerciseTargetsEditor({
   targetSets: number;
   targetReps: number;
   targetWeight: string | null;
-  restSeconds: number | null;
   loadUnit: LoadUnit;
 }) {
   const [editing, setEditing] = useState(false);
@@ -48,12 +46,6 @@ export function ExerciseTargetsEditor({
         {loadUnit === "plates" && !targetWeight && (
           <span className="rounded-full bg-accent/50 px-2 py-0.5 text-[11px] font-medium text-accent-foreground">
             placas
-          </span>
-        )}
-        {restSeconds !== null && (
-          <span className="inline-flex items-center gap-1">
-            <Timer className="h-3.5 w-3.5" />
-            {restSeconds}s
           </span>
         )}
         <Pencil className="h-3 w-3 opacity-60" />
@@ -85,7 +77,7 @@ export function ExerciseTargetsEditor({
           </button>
         ))}
       </div>
-      <div className="grid grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-3 gap-1.5">
         <label className="text-[10px] font-medium text-muted">
           Series
           <input name="targetSets" type="number" min={1} defaultValue={targetSets} className={fieldClass} />
@@ -103,18 +95,6 @@ export function ExerciseTargetsEditor({
             min={0}
             defaultValue={targetWeight ?? undefined}
             placeholder="—"
-            className={fieldClass}
-          />
-        </label>
-        <label className="text-[10px] font-medium text-muted">
-          Desc. s
-          <input
-            name="restSeconds"
-            type="number"
-            min={10}
-            step={5}
-            defaultValue={restSeconds ?? undefined}
-            placeholder="90"
             className={fieldClass}
           />
         </label>

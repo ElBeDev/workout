@@ -30,7 +30,6 @@ export function SetRow({
   loadUnit,
   loadPlaceholder,
   repsPlaceholder,
-  restSeconds = 90,
 }: {
   userId: string;
   sessionId: string;
@@ -44,7 +43,6 @@ export function SetRow({
   loadUnit: LoadUnit;
   loadPlaceholder: string;
   repsPlaceholder: string;
-  restSeconds?: number;
 }) {
   const [status, setStatus] = useState<Status>(completed ? "done" : "idle");
   const [, startTransition] = useTransition();
@@ -81,9 +79,10 @@ export function SetRow({
 
   // Dispatched from the button's onClick, not from the action: inside a
   // form action React batches the listener's setState into the transition
-  // and the RSC refresh after saving can swallow it.
+  // and the RSC refresh after saving can swallow it. SessionHud always
+  // counts down a fixed 3 minutes.
   function startRest() {
-    window.dispatchEvent(new CustomEvent("workout:rest-start", { detail: { seconds: restSeconds } }));
+    window.dispatchEvent(new CustomEvent("workout:rest-start"));
   }
 
   function submit(formData: FormData) {

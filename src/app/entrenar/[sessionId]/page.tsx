@@ -5,7 +5,6 @@ import {
   routineExercises,
   exercises,
   setLogs,
-  users,
 } from "@/db/schema";
 import { exerciseGif } from "@/db/exercise-gif";
 import { and, eq, desc, ne, inArray, isNotNull, or, isNull } from "drizzle-orm";
@@ -121,7 +120,6 @@ export default async function EntrenarPage({
       instructions: exercises.instructions,
       targetSets: routineExercises.targetSets,
       targetReps: routineExercises.targetReps,
-      restSeconds: routineExercises.restSeconds,
       loadUnit: routineExercises.loadUnit,
     })
     .from(routineExercises)
@@ -129,8 +127,7 @@ export default async function EntrenarPage({
     .where(eq(routineExercises.routineId, routine.id))
     .orderBy(routineExercises.sortOrder);
 
-  const [me, currentLogs, lastTimeByExercise] = await Promise.all([
-    db.select({ restSeconds: users.restSeconds }).from(users).where(eq(users.id, userId)).then((r) => r[0]),
+  const [currentLogs, lastTimeByExercise] = await Promise.all([
     db.select().from(setLogs).where(eq(setLogs.sessionId, sessionId)),
     getLastTimeSets(
       userId,
@@ -138,7 +135,6 @@ export default async function EntrenarPage({
       sessionId
     ),
   ]);
-  const defaultRest = me?.restSeconds ?? 90;
 
   const currentMap = new Map(
     currentLogs.map((log) => [`${log.exerciseId}-${log.setNumber}`, log])
@@ -174,7 +170,6 @@ export default async function EntrenarPage({
           const rows = rowCount.get(item.exerciseId) ?? item.targetSets;
           const unit: LoadUnit = item.loadUnit === "plates" ? "plates" : "kg";
           const suggestion = suggestNext(lastTime, item.targetSets, item.targetReps, unit);
-          const rest = item.restSeconds ?? defaultRest;
           return (
             <Card key={item.exerciseId} className="p-3">
               <div className="mb-3 flex items-center gap-3">
@@ -202,7 +197,7 @@ export default async function EntrenarPage({
                   <p className="mt-0.5 inline-flex items-center gap-1 text-[13px] text-muted">
                     <Repeat className="h-3.5 w-3.5" />
                     {item.targetSets} × {item.targetReps} reps
-                    <span className="opacity-70"> · descanso {rest}s{unit === "plates" ? " · placas" : ""}</span>
+                    {unit === "plates" && <span className="opacity-70"> · placas</span>}
                   </p>
                 </div>
               </div>
@@ -232,7 +227,6 @@ export default async function EntrenarPage({
                           : last?.weight ? `${last.weight} kg` : "kg"
                       }
                       repsPlaceholder={last?.reps ? `${last.reps} reps` : `${item.targetReps} reps`}
-                      restSeconds={rest}
                     />
                   );
                 })}

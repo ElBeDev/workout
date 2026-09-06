@@ -63,7 +63,6 @@ export async function duplicateRoutine(routineId: string) {
         targetSets: i.targetSets,
         targetReps: i.targetReps,
         targetWeight: i.targetWeight,
-        restSeconds: i.restSeconds,
         loadUnit: i.loadUnit,
       }))
     );
@@ -153,17 +152,11 @@ export async function updateRoutineExercise(
     targetWeightRaw && String(targetWeightRaw).trim() !== ""
       ? String(targetWeightRaw)
       : null;
-  const restRaw = String(formData.get("restSeconds") ?? "").trim();
-  const restSeconds =
-    restRaw !== "" && Number.isFinite(Number(restRaw)) && Number(restRaw) > 0
-      ? Math.min(900, Math.round(Number(restRaw)))
-      : null;
-
   const loadUnit = String(formData.get("loadUnit") ?? "kg") === "plates" ? "plates" : "kg";
 
   await db
     .update(routineExercises)
-    .set({ targetSets, targetReps, targetWeight, restSeconds, loadUnit })
+    .set({ targetSets, targetReps, targetWeight, loadUnit })
     .where(
       and(
         eq(routineExercises.id, routineExerciseId),

@@ -20,7 +20,6 @@ export const users = pgTable("users", {
   passwordHash: text("password_hash"),
   email: text("email").unique(),
   name: text("name"),
-  restSeconds: integer("rest_seconds").notNull().default(90),
   failedLogins: integer("failed_logins").notNull().default(0),
   lockedUntil: timestamp("locked_until"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -88,8 +87,6 @@ export const routineExercises = pgTable(
     targetSets: integer("target_sets").notNull(),
     targetReps: integer("target_reps").notNull(),
     targetWeight: numeric("target_weight"),
-    // Per-exercise rest override; null = the user's default.
-    restSeconds: integer("rest_seconds"),
     // "kg" or "plates" — plate-stack machines without marked weights log a
     // plate count instead of kilograms.
     loadUnit: text("load_unit").notNull().default("kg"),

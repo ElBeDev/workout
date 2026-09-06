@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Minus, Plus, X } from "lucide-react";
 
-const REST_SECONDS = 90;
+const REST_SECONDS = 180;
 
 function format(totalSeconds: number) {
   const mm = Math.floor(totalSeconds / 60);
@@ -36,9 +36,8 @@ export function SessionHud({
   }, []);
 
   useEffect(() => {
-    function handleStart(e: Event) {
-      const seconds = Number((e as CustomEvent<{ seconds?: number }>).detail?.seconds);
-      setRest(Number.isFinite(seconds) && seconds > 0 ? Math.round(seconds) : REST_SECONDS);
+    function handleStart() {
+      setRest(REST_SECONDS);
     }
     window.addEventListener("workout:rest-start", handleStart);
     return () => window.removeEventListener("workout:rest-start", handleStart);
