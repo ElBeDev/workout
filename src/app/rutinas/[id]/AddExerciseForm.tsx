@@ -24,6 +24,7 @@ export function AddExerciseForm({
   photoEnabled?: boolean;
 }) {
   const [selected, setSelected] = useState<SelectedExercise | null>(null);
+  const [unit, setUnit] = useState<"kg" | "plates">("kg");
 
   if (!selected) {
     return (
@@ -62,6 +63,23 @@ export function AddExerciseForm({
         </div>
       </div>
 
+      <div className="flex gap-1 rounded-full bg-surface-2 p-1 text-[12px] font-semibold">
+        {(["kg", "plates"] as const).map((u) => (
+          <button
+            key={u}
+            type="button"
+            onClick={() => setUnit(u)}
+            aria-pressed={unit === u}
+            className={`flex-1 rounded-full py-1.5 transition ${
+              unit === u ? "bg-primary text-primary-foreground" : "text-muted"
+            }`}
+          >
+            {u === "kg" ? "Kilos" : "Placas (máquina sin kg)"}
+          </button>
+        ))}
+      </div>
+      <input type="hidden" name="loadUnit" value={unit} />
+
       <div className="grid grid-cols-3 gap-2">
         <label className="text-[12px] font-medium text-muted">
           Series
@@ -72,8 +90,8 @@ export function AddExerciseForm({
           <input name="targetReps" type="number" min={1} defaultValue={10} className={fieldClass} />
         </label>
         <label className="text-[12px] font-medium text-muted">
-          Peso (kg)
-          <input name="targetWeight" type="number" step="0.5" placeholder="—" className={fieldClass} />
+          {unit === "plates" ? "Placas" : "Peso (kg)"}
+          <input name="targetWeight" type="number" step={unit === "plates" ? 1 : 0.5} min={0} placeholder="—" className={fieldClass} />
         </label>
       </div>
 

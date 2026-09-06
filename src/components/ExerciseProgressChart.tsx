@@ -14,14 +14,16 @@ import {
 export type ProgressPoint = {
   date: string;
   maxWeight: number | null;
+  maxPlates: number | null;
   maxReps: number | null;
   volume: number | null;
 };
 
-export type Metric = "maxWeight" | "maxReps" | "volume";
+export type Metric = "maxWeight" | "maxPlates" | "maxReps" | "volume";
 
-const METRICS: { key: Metric; label: string; unit: string }[] = [
+const ALL_METRICS: { key: Metric; label: string; unit: string }[] = [
   { key: "maxWeight", label: "Peso máx.", unit: "kg" },
+  { key: "maxPlates", label: "Placas máx.", unit: "placas" },
   { key: "maxReps", label: "Reps máx.", unit: "reps" },
   { key: "volume", label: "Volumen", unit: "kg" },
 ];
@@ -34,7 +36,11 @@ export function ExerciseProgressChart({
   defaultMetric?: Metric;
 }) {
   const [metric, setMetric] = useState<Metric>(defaultMetric);
-  const meta = METRICS.find((m) => m.key === metric)!;
+  // Only offer the toggles that have data (plates vs kg are exclusive in practice).
+  const METRICS = ALL_METRICS.filter(
+    (m) => m.key === metric || data.some((d) => d[m.key] !== null)
+  );
+  const meta = ALL_METRICS.find((m) => m.key === metric)!;
   const hasAny = data.some((d) => d[metric] !== null);
 
   return (

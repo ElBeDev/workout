@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Pencil, Trash2, X } from "lucide-react";
 import { PendingButton } from "@/components/PendingButton";
+import { loadLabel } from "@/lib/suggest";
 import { updateSet, deleteSet } from "./actions";
 
 const fieldClass =
@@ -13,14 +14,17 @@ export function SetRowEditor({
   setId,
   setNumber,
   weight,
+  plates,
   reps,
 }: {
   sessionId: string;
   setId: string;
   setNumber: number;
   weight: string | null;
+  plates: number | null;
   reps: number | null;
 }) {
+  const isPlates = plates !== null && plates > 0 && !weight;
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -40,7 +44,7 @@ export function SetRowEditor({
           className="flex flex-1 items-center gap-3 text-left"
           aria-label={`Editar serie ${setNumber}`}
         >
-          <span className="font-semibold tabular-nums">{weight ? `${weight} kg` : "—"}</span>
+          <span className="font-semibold tabular-nums">{loadLabel(weight, plates) ?? "—"}</span>
           <span className="text-muted">×</span>
           <span className="tabular-nums">{reps ?? "—"} reps</span>
           <Pencil className="ml-1 h-3 w-3 text-muted opacity-60" />
@@ -82,7 +86,11 @@ export function SetRowEditor({
         }}
         className="flex flex-1 items-center gap-2"
       >
-        <input name="weight" type="number" step="0.5" inputMode="decimal" defaultValue={weight ?? ""} placeholder="kg" className={fieldClass} />
+        {isPlates ? (
+          <input name="plates" type="number" step="1" min={0} inputMode="numeric" defaultValue={plates ?? ""} placeholder="placas" className={fieldClass} />
+        ) : (
+          <input name="weight" type="number" step="0.5" inputMode="decimal" defaultValue={weight ?? ""} placeholder="kg" className={fieldClass} />
+        )}
         <input name="reps" type="number" inputMode="numeric" defaultValue={reps ?? ""} placeholder="reps" className={fieldClass} />
         <PendingButton
           pendingLabel=""

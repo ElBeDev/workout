@@ -64,6 +64,7 @@ export async function duplicateRoutine(routineId: string) {
         targetReps: i.targetReps,
         targetWeight: i.targetWeight,
         restSeconds: i.restSeconds,
+        loadUnit: i.loadUnit,
       }))
     );
   }
@@ -104,6 +105,7 @@ export async function addExerciseToRoutine(formData: FormData) {
     targetWeightRaw && String(targetWeightRaw).trim() !== ""
       ? String(targetWeightRaw)
       : null;
+  const loadUnit = String(formData.get("loadUnit") ?? "kg") === "plates" ? "plates" : "kg";
 
   const userId = await requireUserId();
   await requireOwnedRoutine(routineId);
@@ -127,6 +129,7 @@ export async function addExerciseToRoutine(formData: FormData) {
     targetSets,
     targetReps,
     targetWeight,
+    loadUnit,
   });
 
   // Keep our own copy of the gif now that the exercise is in use (no-op
@@ -156,9 +159,11 @@ export async function updateRoutineExercise(
       ? Math.min(900, Math.round(Number(restRaw)))
       : null;
 
+  const loadUnit = String(formData.get("loadUnit") ?? "kg") === "plates" ? "plates" : "kg";
+
   await db
     .update(routineExercises)
-    .set({ targetSets, targetReps, targetWeight, restSeconds })
+    .set({ targetSets, targetReps, targetWeight, restSeconds, loadUnit })
     .where(
       and(
         eq(routineExercises.id, routineExerciseId),

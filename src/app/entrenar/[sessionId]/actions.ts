@@ -22,21 +22,21 @@ export async function logSet(formData: FormData) {
   const sessionId = String(formData.get("sessionId"));
   const exerciseId = String(formData.get("exerciseId"));
   const setNumber = Number(formData.get("setNumber"));
-  const weightRaw = formData.get("weight");
-  const repsRaw = formData.get("reps");
-  const weight =
-    weightRaw && String(weightRaw).trim() !== "" ? String(weightRaw) : null;
-  const reps =
-    repsRaw && String(repsRaw).trim() !== "" ? Number(repsRaw) : null;
+  const weightRaw = String(formData.get("weight") ?? "").replace(",", ".").trim();
+  const platesRaw = String(formData.get("plates") ?? "").trim();
+  const repsRaw = String(formData.get("reps") ?? "").trim();
+  const weight = weightRaw !== "" && Number.isFinite(Number(weightRaw)) ? weightRaw : null;
+  const plates = platesRaw !== "" && Number.isFinite(Number(platesRaw)) ? Math.round(Number(platesRaw)) : null;
+  const reps = repsRaw !== "" && Number.isFinite(Number(repsRaw)) ? Number(repsRaw) : null;
 
   await requireOwnedSession(sessionId);
 
   await db
     .insert(setLogs)
-    .values({ sessionId, exerciseId, setNumber, weight, reps, completed: true })
+    .values({ sessionId, exerciseId, setNumber, weight, plates, reps, completed: true })
     .onConflictDoUpdate({
       target: [setLogs.sessionId, setLogs.exerciseId, setLogs.setNumber],
-      set: { weight, reps, completed: true, loggedAt: new Date() },
+      set: { weight, plates, reps, completed: true, loggedAt: new Date() },
     });
 
   revalidatePath(`/entrenar/${sessionId}`);
@@ -47,6 +47,7 @@ const syncEntrySchema = z.object({
   exerciseId: z.string().uuid(),
   setNumber: z.number().int().min(1).max(50),
   weight: z.string().max(10).nullable(),
+  plates: z.number().int().min(0).max(100).nullable().optional(),
   reps: z.number().int().min(0).max(1000).nullable(),
 });
 
@@ -91,13 +92,14 @@ export async function syncSets(
     }
 
     const weight = e.weight !== null && Number.isFinite(Number(e.weight)) ? e.weight : null;
+    const plates = e.plates ?? null;
     try {
       await db
         .insert(setLogs)
-        .values({ ...key, weight, reps: e.reps, completed: true })
+        .values({ ...key, weight, plates, reps: e.reps, completed: true })
         .onConflictDoUpdate({
           target: [setLogs.sessionId, setLogs.exerciseId, setLogs.setNumber],
-          set: { weight, reps: e.reps, completed: true, loggedAt: new Date() },
+          set: { weight, plates, reps: e.reps, completed: true, loggedAt: new Date() },
         });
       saved.push(key);
     } catch {

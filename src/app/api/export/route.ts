@@ -24,6 +24,7 @@ export async function GET() {
       exerciseEs: exercises.nameEs,
       setNumber: setLogs.setNumber,
       weight: setLogs.weight,
+      plates: setLogs.plates,
       reps: setLogs.reps,
       notes: workoutSessions.notes,
     })
@@ -40,7 +41,7 @@ export async function GET() {
     timeStyle: "short",
   });
 
-  const header = ["fecha", "rutina", "ejercicio", "ejercicio_en", "serie", "kg", "reps", "notas"];
+  const header = ["fecha", "rutina", "ejercicio", "ejercicio_en", "serie", "kg", "placas", "reps", "notas"];
   const lines = [header.join(",")];
   for (const r of rows) {
     lines.push(
@@ -51,6 +52,7 @@ export async function GET() {
         r.exercise,
         r.setNumber,
         r.weight ?? "",
+        r.plates ?? "",
         r.reps ?? "",
         r.notes ?? "",
       ]

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { AlertCircle, Check, CloudOff, Loader2 } from "lucide-react";
 import { enqueueSet, findPendingSet } from "@/lib/offline-queue";
+import type { LoadUnit } from "@/lib/suggest";
 import { logSet } from "./actions";
 
 const fieldClass =
@@ -24,8 +25,10 @@ export function SetRow({
   extra,
   completed,
   weight,
+  plates,
   reps,
-  weightPlaceholder,
+  loadUnit,
+  loadPlaceholder,
   repsPlaceholder,
   restSeconds = 90,
 }: {
@@ -36,21 +39,24 @@ export function SetRow({
   extra: boolean;
   completed: boolean;
   weight: string | null;
+  plates: number | null;
   reps: number | null;
-  weightPlaceholder: string;
+  loadUnit: LoadUnit;
+  loadPlaceholder: string;
   repsPlaceholder: string;
   restSeconds?: number;
 }) {
   const [status, setStatus] = useState<Status>(completed ? "done" : "idle");
   const [, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
+  const isPlates = loadUnit === "plates";
 
-  function fill(w: string | null, r: number | null) {
+  function fill(load: string | number | null, r: number | null) {
     const form = formRef.current;
     if (!form) return;
-    const wi = form.querySelector<HTMLInputElement>('input[name="weight"]');
+    const li = form.querySelector<HTMLInputElement>('input[name="load"]');
     const ri = form.querySelector<HTMLInputElement>('input[name="reps"]');
-    if (wi) wi.value = w ?? "";
+    if (li) li.value = load !== null ? String(load) : "";
     if (ri) ri.value = r !== null ? String(r) : "";
   }
 
@@ -60,7 +66,7 @@ export function SetRow({
     if (!pending) return;
     const id = setTimeout(() => {
       setStatus("queued");
-      fill(pending.weight, pending.reps);
+      fill(pending.plates ?? pending.weight, pending.reps);
     }, 0);
     return () => clearTimeout(id);
   }, [userId, sessionId, exerciseId, setNumber]);
@@ -81,21 +87,24 @@ export function SetRow({
   }
 
   function submit(formData: FormData) {
-    formData.set("sessionId", sessionId);
-    formData.set("exerciseId", exerciseId);
-    formData.set("setNumber", String(setNumber));
-    const weightRaw = String(formData.get("weight") ?? "").trim();
+    const loadRaw = String(formData.get("load") ?? "").replace(",", ".").trim();
     const repsRaw = String(formData.get("reps") ?? "").trim();
     const entry = {
       sessionId,
       exerciseId,
       setNumber,
-      weight: weightRaw === "" ? null : weightRaw,
+      weight: !isPlates && loadRaw !== "" ? loadRaw : null,
+      plates: isPlates && loadRaw !== "" ? Math.round(Number(loadRaw)) : null,
       reps: repsRaw === "" ? null : Number(repsRaw),
     };
+    formData.set("sessionId", sessionId);
+    formData.set("exerciseId", exerciseId);
+    formData.set("setNumber", String(setNumber));
+    formData.set("weight", entry.weight ?? "");
+    formData.set("plates", entry.plates !== null ? String(entry.plates) : "");
     // React resets an uncontrolled form after its action runs; put the
     // values back so the row still shows what was typed.
-    const restore = () => setTimeout(() => fill(entry.weight, entry.reps), 0);
+    const restore = () => setTimeout(() => fill(entry.plates ?? entry.weight, entry.reps), 0);
 
     if (!navigator.onLine) {
       enqueueSet(userId, entry);
@@ -152,13 +161,14 @@ export function SetRow({
       </span>
 
       <input
-        name="weight"
+        name="load"
         type="number"
-        step="0.5"
-        inputMode="decimal"
-        defaultValue={weight ?? undefined}
-        placeholder={weightPlaceholder}
-        aria-label={`Peso serie ${setNumber} (kg)`}
+        step={isPlates ? 1 : 0.5}
+        min={0}
+        inputMode={isPlates ? "numeric" : "decimal"}
+        defaultValue={isPlates ? (plates ?? undefined) : (weight ?? undefined)}
+        placeholder={loadPlaceholder}
+        aria-label={isPlates ? `Placas serie ${setNumber}` : `Peso serie ${setNumber} (kg)`}
         className={fieldClass}
       />
       <input

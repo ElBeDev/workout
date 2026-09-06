@@ -61,7 +61,7 @@ async function main() {
     await page.click("text=Empezar entrenamiento");
     await page.waitForURL(/\/entrenar\//);
     await page.waitForTimeout(500);
-    await page.locator('input[name="weight"]').first().fill("40");
+    await page.locator('input[name="load"]').first().fill("40");
     await page.locator('input[name="reps"]').first().fill("10");
     await page.locator("form[data-exercise] button[type=submit]").first().click();
     await page.waitForFunction(() => !document.querySelector('button[aria-label="Guardando serie"]'), null, { timeout: 15000 });

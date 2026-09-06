@@ -24,13 +24,15 @@ function revalidateSession(sessionId: string) {
 export async function updateSet(sessionId: string, setId: string, formData: FormData) {
   await requireOwnedSession(sessionId);
   const weightRaw = String(formData.get("weight") ?? "").replace(",", ".").trim();
+  const platesRaw = String(formData.get("plates") ?? "").trim();
   const repsRaw = String(formData.get("reps") ?? "").trim();
   const weight = weightRaw !== "" && Number.isFinite(Number(weightRaw)) ? weightRaw : null;
+  const plates = platesRaw !== "" && Number.isFinite(Number(platesRaw)) ? Math.round(Number(platesRaw)) : null;
   const reps = repsRaw !== "" && Number.isFinite(Number(repsRaw)) ? Number(repsRaw) : null;
 
   await db
     .update(setLogs)
-    .set({ weight, reps })
+    .set({ weight, plates, reps })
     .where(and(eq(setLogs.id, setId), eq(setLogs.sessionId, sessionId)));
   revalidateSession(sessionId);
 }

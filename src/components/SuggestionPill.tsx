@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { TrendingUp, RotateCcw, Check } from "lucide-react";
-import type { Suggestion } from "@/lib/suggest";
+import { loadLabel, type Suggestion } from "@/lib/suggest";
 
 /**
  * Shows the suggested load for an exercise and, on tap, fills the empty
- * kg/reps inputs of that exercise's set rows (forms carry data-exercise).
+ * load/reps inputs of that exercise's set rows (forms carry data-exercise).
  */
 export function SuggestionPill({
   exerciseId,
@@ -19,20 +19,19 @@ export function SuggestionPill({
 
   function apply() {
     const forms = document.querySelectorAll<HTMLFormElement>(`form[data-exercise="${exerciseId}"]`);
+    const load = suggestion.plates ?? suggestion.weight;
     forms.forEach((form) => {
-      const w = form.querySelector<HTMLInputElement>('input[name="weight"]');
+      const w = form.querySelector<HTMLInputElement>('input[name="load"]');
       const r = form.querySelector<HTMLInputElement>('input[name="reps"]');
-      if (w && !w.value && suggestion.weight !== null) w.value = String(suggestion.weight);
+      if (w && !w.value && load !== null) w.value = String(load);
       if (r && !r.value) r.value = String(suggestion.reps);
     });
     setApplied(true);
   }
 
   const Icon = suggestion.kind === "up" ? TrendingUp : RotateCcw;
-  const label =
-    suggestion.weight !== null
-      ? `${suggestion.weight} kg × ${suggestion.reps}`
-      : `${suggestion.reps} reps`;
+  const load = loadLabel(suggestion.weight, suggestion.plates);
+  const label = load ? `${load} × ${suggestion.reps}` : `${suggestion.reps} reps`;
 
   return (
     <div

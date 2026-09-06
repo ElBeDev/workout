@@ -90,6 +90,9 @@ export const routineExercises = pgTable(
     targetWeight: numeric("target_weight"),
     // Per-exercise rest override; null = the user's default.
     restSeconds: integer("rest_seconds"),
+    // "kg" or "plates" — plate-stack machines without marked weights log a
+    // plate count instead of kilograms.
+    loadUnit: text("load_unit").notNull().default("kg"),
   },
   (table) => [index("routine_exercises_routine_idx").on(table.routineId)]
 );
@@ -122,6 +125,8 @@ export const setLogs = pgTable(
     exerciseId: uuid("exercise_id").notNull().references(() => exercises.id),
     setNumber: integer("set_number").notNull(),
     weight: numeric("weight"),
+    // Alternative to weight for plate-stack machines.
+    plates: integer("plates"),
     reps: integer("reps"),
     completed: boolean("completed").default(false).notNull(),
     loggedAt: timestamp("logged_at").defaultNow().notNull(),

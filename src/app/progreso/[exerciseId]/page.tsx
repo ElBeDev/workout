@@ -33,6 +33,7 @@ export default async function ExerciseProgressPage({
       sessionId: workoutSessions.id,
       startedAt: workoutSessions.startedAt,
       weight: setLogs.weight,
+      plates: setLogs.plates,
       reps: setLogs.reps,
     })
     .from(setLogs)
@@ -50,6 +51,7 @@ export default async function ExerciseProgressPage({
     sessionId: string;
     startedAt: Date;
     maxWeight: number | null;
+    maxPlates: number | null;
     maxReps: number | null;
     volume: number | null;
     sets: number;
@@ -58,11 +60,12 @@ export default async function ExerciseProgressPage({
   for (const s of sets) {
     let r = rows.find((x) => x.sessionId === s.sessionId);
     if (!r) {
-      r = { sessionId: s.sessionId, startedAt: s.startedAt, maxWeight: null, maxReps: null, volume: null, sets: 0 };
+      r = { sessionId: s.sessionId, startedAt: s.startedAt, maxWeight: null, maxPlates: null, maxReps: null, volume: null, sets: 0 };
       rows.push(r);
     }
     const w = s.weight ? Number(s.weight) : null;
     const reps = s.reps ?? null;
+    if (s.plates !== null && s.plates > 0) r.maxPlates = Math.max(r.maxPlates ?? 0, s.plates);
     if (w !== null) r.maxWeight = Math.max(r.maxWeight ?? 0, w);
     if (reps !== null) r.maxReps = Math.max(r.maxReps ?? 0, reps);
     if (w !== null && reps !== null) r.volume = (r.volume ?? 0) + w * reps;
@@ -72,14 +75,16 @@ export default async function ExerciseProgressPage({
   const chartData = rows.map((r) => ({
     date: fmtDate(r.startedAt, { day: "2-digit", month: "short" }),
     maxWeight: r.maxWeight,
+    maxPlates: r.maxPlates,
     maxReps: r.maxReps,
     volume: r.volume !== null ? Math.round(r.volume) : null,
   }));
 
   const anyWeight = rows.some((r) => r.maxWeight !== null);
-  const defaultMetric: Metric = anyWeight ? "maxWeight" : "maxReps";
-  const unit = anyWeight ? "kg" : "reps";
-  const pick = (r: Row) => (anyWeight ? r.maxWeight : r.maxReps);
+  const anyPlates = !anyWeight && rows.some((r) => r.maxPlates !== null);
+  const defaultMetric: Metric = anyWeight ? "maxWeight" : anyPlates ? "maxPlates" : "maxReps";
+  const unit = anyWeight ? "kg" : anyPlates ? "placas" : "reps";
+  const pick = (r: Row) => (anyWeight ? r.maxWeight : anyPlates ? r.maxPlates : r.maxReps);
   const best = rows.reduce<number | null>((acc, r) => {
     const v = pick(r);
     if (v === null) return acc;
@@ -147,7 +152,7 @@ export default async function ExerciseProgressPage({
                     <span className="flex items-center gap-3 tabular-nums">
                       <span className="text-muted">{r.sets} series</span>
                       <span className="font-semibold">
-                        {r.maxWeight !== null ? `${r.maxWeight} kg` : r.maxReps !== null ? `${r.maxReps} reps` : "—"}
+                        {r.maxWeight !== null ? `${r.maxWeight} kg` : r.maxPlates !== null ? `${r.maxPlates} placas` : r.maxReps !== null ? `${r.maxReps} reps` : "—"}
                       </span>
                     </span>
                   </Card>

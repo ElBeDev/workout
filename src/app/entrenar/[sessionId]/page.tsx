@@ -17,14 +17,14 @@ import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { ExerciseInfoSheet } from "@/components/ExerciseInfoSheet";
 import { SessionHud } from "@/components/SessionHud";
 import { SuggestionPill } from "@/components/SuggestionPill";
-import { suggestNext } from "@/lib/suggest";
+import { suggestNext, type LoadUnit } from "@/lib/suggest";
 import { DiscardSessionButton } from "@/components/DiscardSessionButton";
 import { SessionNotes } from "./SessionNotes";
 import { SetRow } from "./SetRow";
 import { PendingSync } from "./PendingSync";
 import { finishSession, addExtraSet } from "./actions";
 
-type LastSet = { weight: string | null; reps: number | null };
+type LastSet = { weight: string | null; plates: number | null; reps: number | null };
 
 /**
  * For each exercise, the sets of the most recent *finished* session (other
@@ -64,6 +64,7 @@ async function getLastTimeSets(
       exerciseId: setLogs.exerciseId,
       setNumber: setLogs.setNumber,
       weight: setLogs.weight,
+      plates: setLogs.plates,
       reps: setLogs.reps,
     })
     .from(setLogs)
@@ -71,7 +72,7 @@ async function getLastTimeSets(
 
   for (const row of rows) {
     if (!result.has(row.exerciseId)) result.set(row.exerciseId, new Map());
-    result.get(row.exerciseId)!.set(row.setNumber, { weight: row.weight, reps: row.reps });
+    result.get(row.exerciseId)!.set(row.setNumber, { weight: row.weight, plates: row.plates, reps: row.reps });
   }
   return result;
 }
@@ -121,6 +122,7 @@ export default async function EntrenarPage({
       targetSets: routineExercises.targetSets,
       targetReps: routineExercises.targetReps,
       restSeconds: routineExercises.restSeconds,
+      loadUnit: routineExercises.loadUnit,
     })
     .from(routineExercises)
     .innerJoin(exercises, eq(routineExercises.exerciseId, exercises.id))
@@ -170,7 +172,8 @@ export default async function EntrenarPage({
         {items.map((item) => {
           const lastTime = lastTimeByExercise.get(item.exerciseId) ?? new Map<number, LastSet>();
           const rows = rowCount.get(item.exerciseId) ?? item.targetSets;
-          const suggestion = suggestNext(lastTime, item.targetSets, item.targetReps);
+          const unit: LoadUnit = item.loadUnit === "plates" ? "plates" : "kg";
+          const suggestion = suggestNext(lastTime, item.targetSets, item.targetReps, unit);
           const rest = item.restSeconds ?? defaultRest;
           return (
             <Card key={item.exerciseId} className="p-3">
@@ -199,7 +202,7 @@ export default async function EntrenarPage({
                   <p className="mt-0.5 inline-flex items-center gap-1 text-[13px] text-muted">
                     <Repeat className="h-3.5 w-3.5" />
                     {item.targetSets} × {item.targetReps} reps
-                    <span className="opacity-70"> · descanso {rest}s</span>
+                    <span className="opacity-70"> · descanso {rest}s{unit === "plates" ? " · placas" : ""}</span>
                   </p>
                 </div>
               </div>
@@ -220,8 +223,14 @@ export default async function EntrenarPage({
                       extra={setNumber > item.targetSets}
                       completed={Boolean(existing?.completed)}
                       weight={existing?.weight ?? null}
+                      plates={existing?.plates ?? null}
                       reps={existing?.reps ?? null}
-                      weightPlaceholder={last?.weight ? `${last.weight} kg` : "kg"}
+                      loadUnit={unit}
+                      loadPlaceholder={
+                        unit === "plates"
+                          ? last?.plates ? `${last.plates} placas` : "placas"
+                          : last?.weight ? `${last.weight} kg` : "kg"
+                      }
                       repsPlaceholder={last?.reps ? `${last.reps} reps` : `${item.targetReps} reps`}
                       restSeconds={rest}
                     />

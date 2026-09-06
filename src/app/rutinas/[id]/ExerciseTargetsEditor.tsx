@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, Layers, Pencil, Repeat, Timer, X } from "lucide-react";
+import type { LoadUnit } from "@/lib/suggest";
 import { updateRoutineExercise } from "./actions";
 
 const fieldClass =
@@ -14,6 +15,7 @@ export function ExerciseTargetsEditor({
   targetReps,
   targetWeight,
   restSeconds,
+  loadUnit,
 }: {
   routineId: string;
   routineExerciseId: string;
@@ -21,8 +23,10 @@ export function ExerciseTargetsEditor({
   targetReps: number;
   targetWeight: string | null;
   restSeconds: number | null;
+  loadUnit: LoadUnit;
 }) {
   const [editing, setEditing] = useState(false);
+  const [unit, setUnit] = useState<LoadUnit>(loadUnit);
 
   if (!editing) {
     return (
@@ -39,8 +43,13 @@ export function ExerciseTargetsEditor({
         <span className="inline-flex items-center gap-1">
           <Repeat className="h-3.5 w-3.5" />
           {targetReps} reps
-          {targetWeight ? ` · ${targetWeight} kg` : ""}
+          {targetWeight ? ` · ${targetWeight} ${loadUnit === "plates" ? "placas" : "kg"}` : ""}
         </span>
+        {loadUnit === "plates" && !targetWeight && (
+          <span className="rounded-full bg-accent/50 px-2 py-0.5 text-[11px] font-medium text-accent-foreground">
+            placas
+          </span>
+        )}
         {restSeconds !== null && (
           <span className="inline-flex items-center gap-1">
             <Timer className="h-3.5 w-3.5" />
@@ -60,6 +69,22 @@ export function ExerciseTargetsEditor({
       }}
       className="mt-2 flex flex-col gap-2"
     >
+      <input type="hidden" name="loadUnit" value={unit} />
+      <div className="flex gap-1 rounded-full bg-surface-2 p-1 text-[12px] font-semibold">
+        {(["kg", "plates"] as const).map((u) => (
+          <button
+            key={u}
+            type="button"
+            onClick={() => setUnit(u)}
+            aria-pressed={unit === u}
+            className={`flex-1 rounded-full py-1.5 transition ${
+              unit === u ? "bg-primary text-primary-foreground" : "text-muted"
+            }`}
+          >
+            {u === "kg" ? "Kilos" : "Placas"}
+          </button>
+        ))}
+      </div>
       <div className="grid grid-cols-4 gap-1.5">
         <label className="text-[10px] font-medium text-muted">
           Series
@@ -70,11 +95,12 @@ export function ExerciseTargetsEditor({
           <input name="targetReps" type="number" min={1} defaultValue={targetReps} className={fieldClass} />
         </label>
         <label className="text-[10px] font-medium text-muted">
-          Kg
+          {unit === "plates" ? "Placas" : "Kg"}
           <input
             name="targetWeight"
             type="number"
-            step="0.5"
+            step={unit === "plates" ? 1 : 0.5}
+            min={0}
             defaultValue={targetWeight ?? undefined}
             placeholder="—"
             className={fieldClass}
@@ -102,7 +128,10 @@ export function ExerciseTargetsEditor({
         </button>
         <button
           type="button"
-          onClick={() => setEditing(false)}
+          onClick={() => {
+            setUnit(loadUnit);
+            setEditing(false);
+          }}
           aria-label="Cancelar"
           className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface-2 text-muted"
         >

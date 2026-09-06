@@ -47,6 +47,8 @@ Tercera ronda (sección 12, misma fecha): sugerencia de peso, corregir series pa
 
 Cuarta ronda (sección 13, misma fecha): auditoría completa del código y arreglo de todos los hallazgos altos y medios (fechas en hora MX, sesiones huérfanas / terminadas / doble tap, consulta única del entrenamiento + índices, SW sin HTML redirigido y purga al cerrar sesión, cola offline validada y por usuario, ownership en ejercicios propios). Lo que sigue abierto está en la sección 9.
 
+Quinta (2026-09-06): **placas como unidad de carga** — cada ejercicio de una rutina puede ser "Kilos" o "Placas" (máquinas de placas sin kg marcados). En el entrenamiento la casilla pide lo que corresponda, la sugerencia sube +1 placa, el detalle de sesión muestra "N placas × reps" (editable), la gráfica tiene "Placas máx." y el CSV una columna `placas`.
+
 Notas de infra que ya no hay que repetir:
 - El cliente de DB (`src/db/index.ts`) es "lazy" a propósito — si se inicializa en el import top-level, `next build` truena en Vercel al analizar rutas aunque `DATABASE_URL` sí exista en el entorno de runtime.
 - En Vercel, la integración de Neon prefija sus variables como `DATABASE_URL_*` si ya existe una variable llamada `DATABASE_URL` — la que de verdad lee el código es la que se llama exactamente `DATABASE_URL` (sin prefijo).
@@ -57,6 +59,7 @@ Notas de infra que ya no hay que repetir:
 - `name_es` se regenera con `node --env-file=.env.local ./node_modules/.bin/tsx scripts/translate-exercises.ts` (idempotente); `scripts/preview-translations.ts` muestra una muestra antes de escribir.
 - El service worker (`public/sw.js`) tiene un `VERSION`; si cambia la estrategia de cache hay que subir ese número para que los clientes descarten el cache viejo.
 - "Hoy" y "esta semana" se calculan en `America/Mexico_City` (`src/lib/dates.ts`) porque Vercel corre en UTC.
+- Quinta migración a mano: `set_logs.plates integer` y `routine_exercises.load_unit text default 'kg'`.
 - Tercera ronda de migraciones a mano (mismo método): `exercises.gif_blob_url / user_id / is_custom`, `users.rest_seconds / failed_logins / locked_until`, `routine_exercises.rest_seconds`.
 - Cuarta ronda de migraciones a mano: índices (`set_logs(exercise_id)`, `workout_sessions(user_id, finished_at)`, `sessions(expires_at)`, `exercises(user_id)`, `routine_exercises(routine_id)`) y el índice único parcial `workout_sessions(user_id, routine_id) WHERE finished_at IS NULL` (una sola sesión abierta por rutina). Todos declarados también en `schema.ts`.
 - Al cerrar sesión, `LogoutButton` borra los caches `pages-*` y las colas `workout:*` de `localStorage`, y avisa al SW (`purge-pages`). El SW (v3) no cachea respuestas redirigidas ni `/login`.
@@ -101,7 +104,7 @@ Conclusión: el patrón ganador es **"planner + tracker"**: armas la rutina una 
    - Puede haber varias rutinas y organizarlas por día de la semana o por "programa" (ej. rutina de 4 días). ✅ (varias rutinas sí; agrupar por "programa" queda para después)
 4. **Modo entrenamiento (ejecutar rutina)** ✅
    - Entras a la rutina del día, ves el primer ejercicio con su gif.
-   - Por cada serie: input rápido de **peso** y **reps**, botón "listo" para marcar la serie. ✅
+   - Por cada serie: input rápido de **peso** (kg o nº de placas, según el ejercicio) y **reps**, botón "listo" para marcar la serie. ✅
    - Se muestra automáticamente lo que hiciste la última vez en ese mismo ejercicio/serie (referencia para progressive overload). ✅
    - Rest timer entre series (opcional pero muy usado). ✅
    - Al terminar, la rutina queda guardada como "sesión completada" con fecha. ✅
@@ -185,7 +188,7 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 2. **Home** — saludo, tarjeta de "Entrenamiento en curso" (continuar / descartar), stats de la semana y racha, "Hoy toca" según días asignados, rutinas con gif del primer ejercicio, nº de ejercicios/series y "última vez", botón ▶. ✅
 3. **Mis rutinas** — lista + crear. ✅
 4. **Detalle de rutina** — stats (ejercicios / series / músculos), CTA, lista de ejercicios (tocar gif = cómo se hace; editar series/reps/peso/descanso inline; subir/bajar; quitar), explorador (grid con gif, chips por músculo, búsqueda es/en, "i" de info, crear ejercicio propio), y ajustes (nombre, días de la semana, duplicar, eliminar). ✅
-5. **Modo entrenamiento** — HUD lavanda pegajoso (transcurrido, barra de series, descanso en grande con −15s / Saltar / +15s), aviso de series en cola sin señal, por ejercicio: sugerencia de peso con "Usar", filas por serie (kg + reps, placeholder de la vez pasada, ✓ con spinner / ámbar si quedó en cola), "Agregar serie", notas de la sesión, terminar / descartar. ✅
+5. **Modo entrenamiento** — casilla de carga en kg o placas según el ejercicio; HUD lavanda pegajoso (transcurrido, barra de series, descanso en grande con −15s / Saltar / +15s), aviso de series en cola sin señal, por ejercicio: sugerencia de peso con "Usar", filas por serie (kg + reps, placeholder de la vez pasada, ✓ con spinner / ámbar si quedó en cola), "Agregar serie", notas de la sesión, terminar / descartar. ✅
 6. **Progreso** — heatmap de 16 semanas, por ejercicio (mejor marca, última sesión, gráfica peso/reps/volumen, lista de sesiones), sesiones completadas → detalle con series editables, duración, volumen y notas. ✅
 7. **Perfil** — usuario, peso corporal (registro + gráfica), descanso por defecto, cambiar contraseña, exportar CSV, cerrar sesión. ✅
 8. **Cómo se hace** (bottom sheet) — gif grande, músculo, equipo, pasos (en inglés). ✅
