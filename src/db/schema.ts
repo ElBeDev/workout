@@ -20,6 +20,8 @@ export const users = pgTable("users", {
   passwordHash: text("password_hash"),
   email: text("email").unique(),
   name: text("name"),
+  // Admins can build routines for any user from /admin.
+  isAdmin: boolean("is_admin").notNull().default(false),
   failedLogins: integer("failed_logins").notNull().default(0),
   lockedUntil: timestamp("locked_until"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

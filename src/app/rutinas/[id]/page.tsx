@@ -1,11 +1,12 @@
 import { db } from "@/db";
-import { routines, routineExercises, exercises } from "@/db/schema";
+import { routines, routineExercises, exercises, users } from "@/db/schema";
 import { exerciseGif } from "@/db/exercise-gif";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import { ChevronUp, ChevronDown, Play, Trash2 } from "lucide-react";
+import { ChevronUp, ChevronDown, Play, Trash2, ShieldCheck } from "lucide-react";
 import { bodyPartLabel } from "@/lib/body-parts";
 import { requireUserId } from "@/lib/session";
+import { isAdminUser } from "@/lib/admin";
 import { blobConfigured } from "@/lib/blob";
 import { Card, PageHeader, PrimaryButton, SectionTitle } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
@@ -30,7 +31,16 @@ export default async function RutinaDetailPage({
   const userId = await requireUserId();
 
   const [routine] = await db.select().from(routines).where(eq(routines.id, id));
-  if (!routine || routine.userId !== userId) notFound();
+  if (!routine) notFound();
+
+  const isOwner = routine.userId === userId;
+  if (!isOwner && !(await isAdminUser(userId))) notFound();
+
+  let ownerName: string | null = null;
+  if (!isOwner) {
+    const [owner] = await db.select({ username: users.username }).from(users).where(eq(users.id, routine.userId));
+    ownerName = owner?.username ?? null;
+  }
 
   const items = await db
     .select({
@@ -56,7 +66,17 @@ export default async function RutinaDetailPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={routine.name} backHref="/rutinas" />
+      <PageHeader
+        title={routine.name}
+        backHref={isOwner ? "/rutinas" : `/admin/usuarios/${routine.userId}`}
+      />
+
+      {!isOwner && (
+        <p className="flex items-center gap-2 rounded-2xl bg-accent px-4 py-3 text-[13px] font-medium text-accent-foreground">
+          <ShieldCheck className="h-4 w-4 shrink-0" />
+          Editando como admin la rutina de <span className="capitalize">{ownerName ?? "otro usuario"}</span>
+        </p>
+      )}
 
       {error === "open-session" && (
         <p className="rounded-2xl bg-danger/10 px-4 py-3 text-[13px] font-medium text-danger">
@@ -72,7 +92,7 @@ export default async function RutinaDetailPage({
         </div>
       </div>
 
-      {items.length > 0 && (
+      {isOwner && items.length > 0 && (
         <form action={startSession.bind(null, routine.id)}>
           <PrimaryButton type="submit">
             <Play className="h-4 w-4" fill="currentColor" />

@@ -1,5 +1,6 @@
 import { desc, eq } from "drizzle-orm";
-import { KeyRound, Scale, Trash2, Plus, ShieldAlert, Download, Images } from "lucide-react";
+import Link from "next/link";
+import { KeyRound, Scale, Trash2, Plus, ShieldAlert, ShieldCheck, Download, Images, ChevronRight } from "lucide-react";
 import { db } from "@/db";
 import { users, bodyWeights } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
@@ -68,6 +69,21 @@ export default async function PerfilPage({
           )}
         </div>
       </Card>
+
+      {user?.isAdmin && (
+        <Link href="/admin">
+          <Card className="flex items-center gap-3 p-3 transition active:scale-[0.99]">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-semibold">Panel de administrador</p>
+              <p className="text-[13px] text-muted">Armar rutinas para cualquier usuario</p>
+            </div>
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
+          </Card>
+        </Link>
+      )}
 
       <Card className="flex flex-col gap-3 p-4">
         <SectionTitle className="flex items-center gap-2">

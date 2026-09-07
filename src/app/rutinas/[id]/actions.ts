@@ -5,16 +5,16 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { routines, routineExercises, workoutSessions, exercises } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
+import { isAdminUser } from "@/lib/admin";
 import { mirrorExerciseGif } from "@/lib/blob";
 import { and, eq, isNull, or, sql } from "drizzle-orm";
 
+/** Owner of the routine, or an admin building it for someone else. */
 async function requireOwnedRoutine(routineId: string) {
   const userId = await requireUserId();
-  const [routine] = await db
-    .select({ id: routines.id })
-    .from(routines)
-    .where(and(eq(routines.id, routineId), eq(routines.userId, userId)));
+  const [routine] = await db.select().from(routines).where(eq(routines.id, routineId));
   if (!routine) redirect("/rutinas");
+  if (routine.userId !== userId && !(await isAdminUser(userId))) redirect("/rutinas");
   return routine;
 }
 
@@ -39,15 +39,13 @@ export async function setRoutineDays(routineId: string, days: number[]) {
 
 export async function duplicateRoutine(routineId: string) {
   const userId = await requireUserId();
-  const [source] = await db
-    .select()
-    .from(routines)
-    .where(and(eq(routines.id, routineId), eq(routines.userId, userId)));
+  const [source] = await db.select().from(routines).where(eq(routines.id, routineId));
   if (!source) redirect("/rutinas");
+  if (source.userId !== userId && !(await isAdminUser(userId))) redirect("/rutinas");
 
   const [copy] = await db
     .insert(routines)
-    .values({ userId, name: `${source.name} (copia)`, days: [] })
+    .values({ userId: source.userId, name: `${source.name} (copia)`, days: [] })
     .returning({ id: routines.id });
 
   const items = await db
@@ -106,14 +104,14 @@ export async function addExerciseToRoutine(formData: FormData) {
       : null;
   const loadUnit = String(formData.get("loadUnit") ?? "kg") === "plates" ? "plates" : "kg";
 
-  const userId = await requireUserId();
-  await requireOwnedRoutine(routineId);
+  const routine = await requireOwnedRoutine(routineId);
 
-  // Catalog exercise or one of this user's own — never someone else's custom row.
+  // Catalog exercise or one belonging to this routine's owner — never
+  // another user's custom row (relevant when an admin builds it for them).
   const [exercise] = await db
     .select({ id: exercises.id })
     .from(exercises)
-    .where(and(eq(exercises.id, exerciseId), or(isNull(exercises.userId), eq(exercises.userId, userId))));
+    .where(and(eq(exercises.id, exerciseId), or(isNull(exercises.userId), eq(exercises.userId, routine.userId))));
   if (!exercise) return;
 
   const [{ nextOrder }] = await db

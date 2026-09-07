@@ -49,6 +49,8 @@ Cuarta ronda (sección 13, misma fecha): auditoría completa del código y arreg
 
 Quinta (2026-09-06): **placas como unidad de carga** — cada ejercicio de una rutina puede ser "Kilos" o "Placas" (máquinas de placas sin kg marcados). En el entrenamiento la casilla pide lo que corresponda, la sugerencia sube +1 placa, el detalle de sesión muestra "N placas × reps" (editable), la gráfica tiene "Placas máx." y el CSV una columna `placas`.
 
+Sexta (2026-09-07): **panel de administrador**. `bener` es admin (`users.is_admin`). Perfil → "Panel de administrador" → lista todos los usuarios con su conteo de rutinas → entra a un usuario → crea una rutina para él y la arma completa (buscar/agregar ejercicios, series/reps/peso, orden) con el mismo editor de siempre — la rutina queda con `userId` del usuario destino, así que le sale directo en su Hoy/Rutinas. Un aviso "Editando como admin la rutina de <usuario>" avisa cuando no es tu propia rutina; el botón "Empezar entrenamiento" se oculta en ese caso (el admin arma, no entrena por el usuario). Ownership de rutinas ahora es "dueño O admin" en un solo lugar (`requireOwnedRoutine`); usuarios normales siguen sin poder ver ni tocar rutinas ajenas (probado: URL directa a la rutina de otro → 404).
+
 Notas de infra que ya no hay que repetir:
 - El cliente de DB (`src/db/index.ts`) es "lazy" a propósito — si se inicializa en el import top-level, `next build` truena en Vercel al analizar rutas aunque `DATABASE_URL` sí exista en el entorno de runtime.
 - En Vercel, la integración de Neon prefija sus variables como `DATABASE_URL_*` si ya existe una variable llamada `DATABASE_URL` — la que de verdad lee el código es la que se llama exactamente `DATABASE_URL` (sin prefijo).
@@ -60,7 +62,8 @@ Notas de infra que ya no hay que repetir:
 - El service worker (`public/sw.js`) tiene un `VERSION`; si cambia la estrategia de cache hay que subir ese número para que los clientes descarten el cache viejo.
 - "Hoy" y "esta semana" se calculan en `America/Mexico_City` (`src/lib/dates.ts`) porque Vercel corre en UTC.
 - Quinta migración a mano: `set_logs.plates integer` y `routine_exercises.load_unit text default 'kg'`.
-- Tercera ronda de migraciones a mano (mismo método): `exercises.gif_blob_url / user_id / is_custom`, `users.rest_seconds / failed_logins / locked_until`, `routine_exercises.rest_seconds`.
+- Tercera ronda de migraciones a mano (mismo método): `exercises.gif_blob_url / user_id / is_custom`, `users.failed_logins / locked_until`.
+- Sexta migración a mano: `users.is_admin boolean default false`, `bener` puesto en `true`. Y se revirtió una migración: `users.rest_seconds` / `routine_exercises.rest_seconds` (columnas del descanso configurable) se **borraron** al hacerlo fijo en 3 min — si ves esas columnas mencionadas en commits viejos, ya no existen.
 - Cuarta ronda de migraciones a mano: índices (`set_logs(exercise_id)`, `workout_sessions(user_id, finished_at)`, `sessions(expires_at)`, `exercises(user_id)`, `routine_exercises(routine_id)`) y el índice único parcial `workout_sessions(user_id, routine_id) WHERE finished_at IS NULL` (una sola sesión abierta por rutina). Todos declarados también en `schema.ts`.
 - Al cerrar sesión, `LogoutButton` borra los caches `pages-*` y las colas `workout:*` de `localStorage`, y avisa al SW (`purge-pages`). El SW (v3) no cachea respuestas redirigidas ni `/login`.
 - Vercel Blob: `BLOB_READ_WRITE_TOKEN` es un secreto de solo escritura en Vercel (no se puede revelar ni bajar con `vercel env pull`), así que el barrido de gifs se hace desde la app: Perfil → "Imágenes de ejercicios" → botón que copia en tandas de 6 los gifs de los ejercicios que usas. Cada gif nuevo se copia solo al agregarlo a una rutina. `scripts/mirror-gifs.ts` sigue ahí por si algún día se tiene el token local.
@@ -135,8 +138,7 @@ No hace falta grabar ni animar nada a mano, hay APIs/bases de datos gratis:
 
 ```
 User
- └─ id, username, password_hash, rest_seconds (descanso por defecto),
-    failed_logins, locked_until, created_at
+ └─ id, username, password_hash, is_admin, failed_logins, locked_until, created_at
 
 Session (auth, no confundir con WorkoutSession)
  └─ token, user_id, expires_at
@@ -151,6 +153,7 @@ Routine
 
 RoutineExercise (ejercicio dentro de una rutina)
  └─ id, routine_id, exercise_id, sort_order, target_sets, target_reps,
+    load_unit ('kg' | 'plates'),
     target_weight (opcional), rest_seconds (opcional, override del usuario)
 
 WorkoutSession (una ejecución real de la rutina)
@@ -190,9 +193,10 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 4. **Detalle de rutina** — stats (ejercicios / series / músculos), CTA, lista de ejercicios (tocar gif = cómo se hace; editar series/reps/peso/descanso inline; subir/bajar; quitar), explorador (grid con gif, chips por músculo, búsqueda es/en, "i" de info, crear ejercicio propio), y ajustes (nombre, días de la semana, duplicar, eliminar). ✅
 5. **Modo entrenamiento** — casilla de carga en kg o placas según el ejercicio; HUD lavanda pegajoso (transcurrido, barra de series, descanso automático de 3 min al marcar una serie, con −15s / Saltar / +15s), aviso de series en cola sin señal, por ejercicio: sugerencia de peso con "Usar", filas por serie (kg + reps, placeholder de la vez pasada, ✓ con spinner / ámbar si quedó en cola), "Agregar serie", notas de la sesión, terminar / descartar. ✅
 6. **Progreso** — heatmap de 16 semanas, por ejercicio (mejor marca, última sesión, gráfica peso/reps/volumen, lista de sesiones), sesiones completadas → detalle con series editables, duración, volumen y notas. ✅
-7. **Perfil** — usuario, peso corporal (registro + gráfica), descanso por defecto, cambiar contraseña, exportar CSV, cerrar sesión. ✅
+7. **Perfil** — usuario, link a "Panel de administrador" (si `isAdmin`), peso corporal (registro + gráfica), cambiar contraseña, copiar gifs a Blob, exportar CSV, cerrar sesión. ✅
 8. **Cómo se hace** (bottom sheet) — gif grande, músculo, equipo, pasos (en inglés). ✅
 9. **Offline** — banner sin conexión, páginas visitadas abren desde cache, `/offline` para las no visitadas. ✅
+10. **Admin** (solo `isAdmin`) — lista de usuarios con su conteo de rutinas → entra a uno → ve sus rutinas y crea una nueva → la arma con el mismo editor de siempre (banner "Editando como admin la rutina de <usuario>"). ✅
 
 ## 9. Roadmap
 
@@ -205,13 +209,15 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 - ~~Fase 2: sesión en curso, feedback al guardar, series extra, notas, instrucciones, nombres en español, detalle de sesión, gráfica peso/reps/volumen, "Hoy toca", racha, duplicar, contraseña, peso corporal, ícono, offline de lectura~~ ✅
 - ~~Tercera ronda (sección 12): sugerencia de peso, corregir series pasadas, ejercicios propios, gifs en Blob, cola offline, descanso configurable, heatmap, CSV, bloqueo de login, suite de humo~~ ✅
 - ~~Cuarta ronda (sección 13): auditoría y arreglo de los hallazgos altos y medios~~ ✅
+- ~~Quinta: placas como unidad de carga~~ ✅
+- ~~Sexta: descanso fijo de 3 min (se quita la config), panel de administrador~~ ✅
 
 **Queda abierto (sin prisa), en este orden sugerido:**
 1. Pulsar "Copiar gifs" en Perfil (producción) una vez por usuario; después es automático.
 2. Migraciones versionadas (`drizzle-kit generate` + carpeta `drizzle/`) para que el repo pruebe que producción coincide con `schema.ts`.
 3. Throttle de login por IP (hoy el bloqueo es por cuenta).
-4. Accesibilidad de la hoja "cómo se hace" (focus trap, `aria-labelledby`) y consolidar helpers duplicados (`requireOwnedSession`, `fieldClass`, `REST_SECONDS`).
-5. Producto: récords personales con aviso, plantillas de rutina (Push/Pull/Legs), compartir rutina por link, push notifications, fotos de progreso, traducir las instrucciones paso a paso.
+4. Accesibilidad de la hoja "cómo se hace" (focus trap, `aria-labelledby`) y consolidar helpers duplicados (`requireOwnedSession`).
+5. Producto: récords personales con aviso, plantillas de rutina (Push/Pull/Legs) para que el admin las asigne rápido, compartir rutina por link, push notifications, fotos de progreso, traducir las instrucciones paso a paso.
 
 ## 10. Mapa del código
 
@@ -227,18 +233,22 @@ src/app/
   rutinas/page.tsx      Lista + crear (actions.ts: createRoutine)
   rutinas/[id]/         Detalle: page, actions (add/remove/move/update ejercicio,
                         rename/delete/duplicate rutina, setRoutineDays — todas con
-                        requireOwnedRoutine), AddExerciseForm, ExerciseTargetsEditor,
-                        RoutineSettings (nombre, días, duplicar, eliminar)
+                        requireOwnedRoutine, que ahora deja pasar también a un admin),
+                        AddExerciseForm, ExerciseTargetsEditor, RoutineSettings (nombre,
+                        días, duplicar, eliminar); banner "Editando como admin" si no es tu rutina
   entrenar/actions.ts   startSession (reanuda si hay abierta), discardSession
   entrenar/[sessionId]/ page, actions (logSet upsert, syncSets, addExtraSet, saveNotes,
                         finishSession — con requireOwnedSession), SetRow (guardado online /
                         cola offline), PendingSync, SessionNotes, error.tsx
   progreso/             Lista de sesiones, heatmap y ejercicios; [exerciseId] = gráfica;
                         sesion/[id] = detalle (SetRowEditor para corregir/borrar series)
-  perfil/               Usuario, descanso por defecto, peso corporal, contraseña, copiar gifs a Blob, CSV, logout
+  perfil/               Usuario, link a /admin (si isAdmin), peso corporal, contraseña, copiar gifs a Blob, CSV, logout
   ejercicios/actions.ts createCustomExercise
   api/exercises/search  Búsqueda/browse (q en es/en, bodyPart, offset); catálogo + propios del usuario
   api/export            CSV del historial del usuario
+  admin/                page (lista de usuarios), usuarios/[userId]/page.tsx (rutinas de
+                        ese usuario + crear una), actions.ts (createRoutineForUser) —
+                        todo detrás de requireAdmin()
 src/components/
   ui.tsx                Primitivas del sistema de diseño
   BottomNav.tsx         Nav flotante (oculto en /login y /registro)
@@ -247,7 +257,6 @@ src/components/
   ExerciseInfoSheet.tsx Bottom sheet con gif grande + pasos
   ExerciseThumb.tsx     <img> con fallback a ícono si el gif falla
   SessionHud.tsx        Bloque lavanda del entrenamiento (transcurrido + descanso)
-  LogSetButton.tsx      ✓ de cada serie con spinner (useFormStatus); dispara "workout:rest-start"
   PendingButton.tsx     Botón de submit con spinner genérico
   DiscardSessionButton.tsx  Descartar sesión con confirmación inline
   ExerciseProgressChart.tsx AreaChart con toggle peso/reps/volumen
@@ -261,6 +270,7 @@ src/db/
   exercise-gif.ts       coalesce(gif_blob_url, gif_url)
   queries.ts            getRoutineSummaries, getOpenSession, getWeeklyStats
 src/lib/
+  admin.ts               isAdminUser, requireAdmin (redirige a Home si no es admin)
   session.ts            createSession (purga expiradas) / destroySession / getCurrentUserId / requireUserId
   password.ts           scrypt hash + verify
   body-parts.ts         Etiquetas en español de los grupos musculares
@@ -269,7 +279,7 @@ src/lib/
   suggest.ts            Regla de progresión (+2.5 kg / +1 rep / repetir)
   offline-queue.ts      Cola de series en localStorage
   blob.ts               mirrorExerciseGif, pendingGifIds, uploadExercisePhoto (no-op sin token)
-public/sw.js            Service worker (app shell + páginas visitadas + gifs; VERSION v2)
+public/sw.js            Service worker (app shell + páginas visitadas + gifs; VERSION v3)
 scripts/
   seed-exercises.ts     Carga el catálogo desde ExerciseDB (con backoff por rate limit)
   translate-exercises.ts / preview-translations.ts   name_es
@@ -308,6 +318,7 @@ Todo el trabajo fue en un solo día; el historial fino está en `git log`. Resum
 | `13effb8` | Botón en Perfil para copiar los gifs a Blob desde producción (el token es secreto de solo escritura) |
 | `99ae318` | Placas como unidad de carga por ejercicio (kg o nº de placas) en rutina, entrenamiento, sugerencia, detalle, gráfica y CSV |
 | `853fbc2` | Arreglo de la auditoría: fechas en hora MX, sesiones huérfanas/terminadas/doble tap, consulta única del entrenamiento + índices, SW v3 sin HTML redirigido y purga al cerrar sesión, cola offline validada y por usuario, ownership en ejercicios propios, varios bajos |
+| `250eeff` | Descanso fijo automático de 3 min; se quita "Desc. s" por ejercicio y el default en Perfil, se borran `rest_seconds` de `users` y `routine_exercises` |
 
 ## 12. Siguiente ronda (acordada 2026-09-03)
 
