@@ -319,6 +319,7 @@ Todo el trabajo fue en un solo día; el historial fino está en `git log`. Resum
 | `99ae318` | Placas como unidad de carga por ejercicio (kg o nº de placas) en rutina, entrenamiento, sugerencia, detalle, gráfica y CSV |
 | `853fbc2` | Arreglo de la auditoría: fechas en hora MX, sesiones huérfanas/terminadas/doble tap, consulta única del entrenamiento + índices, SW v3 sin HTML redirigido y purga al cerrar sesión, cola offline validada y por usuario, ownership en ejercicios propios, varios bajos |
 | `250eeff` | Descanso fijo automático de 3 min; se quita "Desc. s" por ejercicio y el default en Perfil, se borran `rest_seconds` de `users` y `routine_exercises` |
+| `77e4b1d` | Panel de administrador: `users.is_admin`, `/admin`, `/admin/usuarios/[userId]`, ownership "dueño o admin" en `requireOwnedRoutine` |
 
 ## 12. Siguiente ronda (acordada 2026-09-03)
 
