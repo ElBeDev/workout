@@ -153,16 +153,15 @@ Routine
 
 RoutineExercise (ejercicio dentro de una rutina)
  └─ id, routine_id, exercise_id, sort_order, target_sets, target_reps,
-    load_unit ('kg' | 'plates'),
-    target_weight (opcional), rest_seconds (opcional, override del usuario)
+    target_weight (opcional), load_unit ('kg' | 'plates')
 
 WorkoutSession (una ejecución real de la rutina)
  └─ id, user_id, routine_id (nullable, SET NULL al borrar la rutina),
     started_at, finished_at (null = en curso), notes
 
 SetLog (cada serie registrada durante la sesión)
- └─ id, session_id, exercise_id, set_number, weight, reps, completed, logged_at
-    único por (session_id, exercise_id, set_number)
+ └─ id, session_id, exercise_id, set_number, weight, plates, reps, completed,
+    logged_at — único por (session_id, exercise_id, set_number)
 
 BodyWeight
  └─ id, user_id, weight, logged_at
