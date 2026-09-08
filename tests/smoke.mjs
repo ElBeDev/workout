@@ -49,6 +49,8 @@ async function main() {
     check("create routine", /\/rutinas\/[0-9a-f-]{36}$/.test(page.url()));
     const routineUrl = page.url();
 
+    await page.click("text=Agregar ejercicio");
+    await page.waitForSelector('input[placeholder^="Buscar"]');
     await page.fill('input[placeholder^="Buscar"]', "press de banca");
     await page.waitForTimeout(1000);
     const cards = await page.locator(".grid button[type=button]").count();

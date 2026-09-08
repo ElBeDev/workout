@@ -11,7 +11,7 @@ import { blobConfigured } from "@/lib/blob";
 import { Card, PageHeader, PrimaryButton, SectionTitle } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { ExerciseInfoSheet } from "@/components/ExerciseInfoSheet";
-import { AddExerciseForm } from "./AddExerciseForm";
+import { AddExerciseSheet } from "./AddExerciseSheet";
 import { RoutineSettings } from "./RoutineSettings";
 import { ExerciseTargetsEditor } from "./ExerciseTargetsEditor";
 import { removeRoutineExercise, moveRoutineExercise } from "./actions";
@@ -183,9 +183,7 @@ export default async function RutinaDetailPage({
         )}
       </section>
 
-      <Card className="p-4">
-        <AddExerciseForm routineId={routine.id} photoEnabled={blobConfigured()} />
-      </Card>
+      <AddExerciseSheet routineId={routine.id} photoEnabled={blobConfigured()} />
 
       <RoutineSettings routineId={routine.id} name={routine.name} days={routine.days ?? []} />
     </div>

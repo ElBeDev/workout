@@ -51,6 +51,8 @@ Quinta (2026-09-06): **placas como unidad de carga** — cada ejercicio de una r
 
 Sexta (2026-09-07): **panel de administrador**. `bener` es admin (`users.is_admin`). Perfil → "Panel de administrador" → lista todos los usuarios con su conteo de rutinas → entra a un usuario → crea una rutina para él y la arma completa (buscar/agregar ejercicios, series/reps/peso, orden) con el mismo editor de siempre — la rutina queda con `userId` del usuario destino, así que le sale directo en su Hoy/Rutinas. Un aviso "Editando como admin la rutina de <usuario>" avisa cuando no es tu propia rutina; el botón "Empezar entrenamiento" se oculta en ese caso (el admin arma, no entrena por el usuario). Ownership de rutinas ahora es "dueño O admin" en un solo lugar (`requireOwnedRoutine`); usuarios normales siguen sin poder ver ni tocar rutinas ajenas (probado: URL directa a la rutina de otro → 404).
 
+Séptima (2026-09-07): **limpieza de la pantalla de rutina**. El bloque de "Agregar ejercicio" (buscador + chips + grid, siempre visible) se cambió por un botón compacto que abre lo mismo en una hoja deslizante desde abajo (mismo estilo que "cómo se hace"), y se cierra sola al agregar. `AddExerciseSheet.tsx` reemplaza a `AddExerciseForm.tsx`.
+
 Notas de infra que ya no hay que repetir:
 - El cliente de DB (`src/db/index.ts`) es "lazy" a propósito — si se inicializa en el import top-level, `next build` truena en Vercel al analizar rutas aunque `DATABASE_URL` sí exista en el entorno de runtime.
 - En Vercel, la integración de Neon prefija sus variables como `DATABASE_URL_*` si ya existe una variable llamada `DATABASE_URL` — la que de verdad lee el código es la que se llama exactamente `DATABASE_URL` (sin prefijo).
@@ -189,7 +191,7 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 1. **Login / Registro** — usuario + contraseña; bloqueo tras 8 fallos; aviso de que no hay recuperación. ✅
 2. **Home** — saludo, tarjeta de "Entrenamiento en curso" (continuar / descartar), stats de la semana y racha, "Hoy toca" según días asignados, rutinas con gif del primer ejercicio, nº de ejercicios/series y "última vez", botón ▶. ✅
 3. **Mis rutinas** — lista + crear. ✅
-4. **Detalle de rutina** — stats (ejercicios / series / músculos), CTA, lista de ejercicios (tocar gif = cómo se hace; editar series/reps/peso/descanso inline; subir/bajar; quitar), explorador (grid con gif, chips por músculo, búsqueda es/en, "i" de info, crear ejercicio propio), y ajustes (nombre, días de la semana, duplicar, eliminar). ✅
+4. **Detalle de rutina** — stats (ejercicios / series / músculos), CTA, lista de ejercicios (tocar gif = cómo se hace; editar series/reps/peso inline; subir/bajar; quitar); botón compacto "Agregar ejercicio" que abre el explorador (grid con gif, chips por músculo, búsqueda es/en, "i" de info, crear ejercicio propio) como hoja deslizante en vez de ocupar la pantalla siempre; ajustes (nombre, días de la semana, duplicar, eliminar). ✅
 5. **Modo entrenamiento** — casilla de carga en kg o placas según el ejercicio; HUD lavanda pegajoso (transcurrido, barra de series, descanso automático de 3 min al marcar una serie, con −15s / Saltar / +15s), aviso de series en cola sin señal, por ejercicio: sugerencia de peso con "Usar", filas por serie (kg + reps, placeholder de la vez pasada, ✓ con spinner / ámbar si quedó en cola), "Agregar serie", notas de la sesión, terminar / descartar. ✅
 6. **Progreso** — heatmap de 16 semanas, por ejercicio (mejor marca, última sesión, gráfica peso/reps/volumen, lista de sesiones), sesiones completadas → detalle con series editables, duración, volumen y notas. ✅
 7. **Perfil** — usuario, link a "Panel de administrador" (si `isAdmin`), peso corporal (registro + gráfica), cambiar contraseña, copiar gifs a Blob, exportar CSV, cerrar sesión. ✅
@@ -210,6 +212,7 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 - ~~Cuarta ronda (sección 13): auditoría y arreglo de los hallazgos altos y medios~~ ✅
 - ~~Quinta: placas como unidad de carga~~ ✅
 - ~~Sexta: descanso fijo de 3 min (se quita la config), panel de administrador~~ ✅
+- ~~Séptima: "Agregar ejercicio" pasa de panel siempre visible a botón + hoja deslizante~~ ✅
 
 **Queda abierto (sin prisa), en este orden sugerido:**
 1. Pulsar "Copiar gifs" en Perfil (producción) una vez por usuario; después es automático.
@@ -233,8 +236,9 @@ src/app/
   rutinas/[id]/         Detalle: page, actions (add/remove/move/update ejercicio,
                         rename/delete/duplicate rutina, setRoutineDays — todas con
                         requireOwnedRoutine, que ahora deja pasar también a un admin),
-                        AddExerciseForm, ExerciseTargetsEditor, RoutineSettings (nombre,
-                        días, duplicar, eliminar); banner "Editando como admin" si no es tu rutina
+                        AddExerciseSheet (botón compacto + hoja con el explorador),
+                        ExerciseTargetsEditor, RoutineSettings (nombre, días, duplicar,
+                        eliminar); banner "Editando como admin" si no es tu rutina
   entrenar/actions.ts   startSession (reanuda si hay abierta), discardSession
   entrenar/[sessionId]/ page, actions (logSet upsert, syncSets, addExtraSet, saveNotes,
                         finishSession — con requireOwnedSession), SetRow (guardado online /
@@ -319,6 +323,7 @@ Todo el trabajo fue en un solo día; el historial fino está en `git log`. Resum
 | `853fbc2` | Arreglo de la auditoría: fechas en hora MX, sesiones huérfanas/terminadas/doble tap, consulta única del entrenamiento + índices, SW v3 sin HTML redirigido y purga al cerrar sesión, cola offline validada y por usuario, ownership en ejercicios propios, varios bajos |
 | `250eeff` | Descanso fijo automático de 3 min; se quita "Desc. s" por ejercicio y el default en Perfil, se borran `rest_seconds` de `users` y `routine_exercises` |
 | `77e4b1d` | Panel de administrador: `users.is_admin`, `/admin`, `/admin/usuarios/[userId]`, ownership "dueño o admin" en `requireOwnedRoutine` |
+| `(pendiente)` | "Agregar ejercicio" pasa de panel fijo a botón + hoja deslizante (`AddExerciseSheet`, reemplaza `AddExerciseForm`) |
 
 ## 12. Siguiente ronda (acordada 2026-09-03)
 
