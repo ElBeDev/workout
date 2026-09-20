@@ -1,27 +1,54 @@
-export type LastSet = { weight: string | null; plates: number | null; reps: number | null };
-export type LoadUnit = "kg" | "plates";
+export type WeightUnit = "kg" | "lbs";
+export type LoadUnit = WeightUnit | "plates";
+export type LastSet = {
+  weight: string | null;
+  plates: number | null;
+  reps: number | null;
+  weightUnit: WeightUnit | null;
+};
 
 export type Suggestion = {
   weight: number | null;
   plates: number | null;
   reps: number;
+  unit: WeightUnit;
   /** "up" = subir carga/reps, "repeat" = repetir lo mismo */
   kind: "up" | "repeat";
   reason: string;
 };
 
-const WEIGHT_STEP = 2.5;
+const WEIGHT_STEP: Record<WeightUnit, number> = { kg: 2.5, lbs: 5 };
+const UNIT_LABEL: Record<WeightUnit, string> = { kg: "kg", lbs: "lb" };
+const LB_TO_KG = 0.45359237;
 
-export function loadLabel(weight: number | string | null, plates: number | null): string | null {
+/** Converts a raw entered weight to kg, for aggregates that must add across units (e.g. session volume). */
+export function toKg(weight: number, unit: WeightUnit): number {
+  return unit === "lbs" ? weight * LB_TO_KG : weight;
+}
+
+export function normalizeLoadUnit(value: string | null | undefined): LoadUnit {
+  if (value === "plates") return "plates";
+  if (value === "lbs") return "lbs";
+  return "kg";
+}
+
+export function loadLabel(
+  weight: number | string | null,
+  plates: number | null,
+  unit: WeightUnit = "kg"
+): string | null {
   if (plates !== null && plates > 0) return `${plates} ${plates === 1 ? "placa" : "placas"}`;
-  if (weight !== null && Number(weight) > 0) return `${weight} kg`;
+  if (weight !== null && Number(weight) > 0) return `${weight} ${UNIT_LABEL[unit]}`;
   return null;
 }
 
 /**
  * Simple progressive-overload rule based on the previous session:
- * hit every target set with target reps → propose +2.5 kg / +1 placa
- * (or +1 rep when there is no load); otherwise propose repeating.
+ * hit every target set with target reps → propose +2.5 kg (or +5 lb) / +1
+ * placa (or +1 rep when there is no load); otherwise propose repeating.
+ * Weight history logged in a different unit than the exercise's current one
+ * (e.g. it moved from a kg-marked to a lb-marked machine) is ignored rather
+ * than compared raw, since the numbers aren't on the same scale.
  */
 export function suggestNext(
   last: Map<number, LastSet>,
@@ -31,9 +58,12 @@ export function suggestNext(
 ): Suggestion | null {
   if (last.size === 0) return null;
   const sets = Array.from(last.values());
-  const weights = sets.map((s) => (s.weight !== null ? Number(s.weight) : null));
+  const weightUnit: WeightUnit = unit === "lbs" ? "lbs" : "kg";
+  const weights = sets.map((s) =>
+    s.weight !== null && (s.weightUnit ?? "kg") === weightUnit ? Number(s.weight) : null
+  );
   const plates = sets.map((s) => s.plates);
-  const hasWeight = unit === "kg" && weights.some((w) => w !== null && w > 0);
+  const hasWeight = unit !== "plates" && weights.some((w) => w !== null && w > 0);
   const hasPlates = unit === "plates" && plates.some((p) => p !== null && p > 0);
   const maxWeight = hasWeight ? Math.max(...weights.filter((w): w is number => w !== null)) : null;
   const maxPlates = hasPlates ? Math.max(...plates.filter((p): p is number => p !== null)) : null;
@@ -45,11 +75,12 @@ export function suggestNext(
   if (completedAll) {
     if (hasWeight && maxWeight !== null) {
       return {
-        weight: Math.round((maxWeight + WEIGHT_STEP) * 2) / 2,
+        weight: Math.round((maxWeight + WEIGHT_STEP[weightUnit]) * 2) / 2,
         plates: null,
         reps: targetReps,
+        unit: weightUnit,
         kind: "up",
-        reason: `Completaste ${targetSets} × ${targetReps} con ${maxWeight} kg`,
+        reason: `Completaste ${targetSets} × ${targetReps} con ${maxWeight} ${UNIT_LABEL[weightUnit]}`,
       };
     }
     if (hasPlates && maxPlates !== null) {
@@ -57,6 +88,7 @@ export function suggestNext(
         weight: null,
         plates: maxPlates + 1,
         reps: targetReps,
+        unit: weightUnit,
         kind: "up",
         reason: `Completaste ${targetSets} × ${targetReps} con ${loadLabel(null, maxPlates)}`,
       };
@@ -65,6 +97,7 @@ export function suggestNext(
       weight: null,
       plates: null,
       reps: maxReps + 1,
+      unit: weightUnit,
       kind: "up",
       reason: `Completaste ${targetSets} × ${targetReps}`,
     };
@@ -74,6 +107,7 @@ export function suggestNext(
     weight: maxWeight,
     plates: maxPlates,
     reps: targetReps,
+    unit: weightUnit,
     kind: "repeat",
     reason: "No salieron todas las reps la vez pasada",
   };

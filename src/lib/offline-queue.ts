@@ -5,6 +5,7 @@ export type PendingSet = {
   exerciseId: string;
   setNumber: number;
   weight: string | null;
+  weightUnit: "kg" | "lbs";
   plates: number | null;
   reps: number | null;
   queuedAt: number;

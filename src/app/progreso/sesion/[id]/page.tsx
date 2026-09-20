@@ -8,6 +8,7 @@ import { Clock, Layers, Weight, NotebookPen } from "lucide-react";
 import { requireUserId } from "@/lib/session";
 import { bodyPartLabel } from "@/lib/body-parts";
 import { fmtDate } from "@/lib/dates";
+import { toKg, type WeightUnit } from "@/lib/suggest";
 import { Card, PageHeader, SectionTitle } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { SetRowEditor } from "./SetRowEditor";
@@ -51,6 +52,7 @@ export default async function SessionDetailPage({
       setId: setLogs.id,
       setNumber: setLogs.setNumber,
       weight: setLogs.weight,
+      weightUnit: setLogs.weightUnit,
       plates: setLogs.plates,
       reps: setLogs.reps,
       loggedAt: setLogs.loggedAt,
@@ -66,7 +68,14 @@ export default async function SessionDetailPage({
     nameEs: string | null;
     gifUrl: string | null;
     bodyPart: string | null;
-    sets: { setId: string; setNumber: number; weight: string | null; plates: number | null; reps: number | null }[];
+    sets: {
+      setId: string;
+      setNumber: number;
+      weight: string | null;
+      weightUnit: WeightUnit;
+      plates: number | null;
+      reps: number | null;
+    }[];
   };
   const groups: Group[] = [];
   for (const s of sets) {
@@ -75,11 +84,23 @@ export default async function SessionDetailPage({
       g = { exerciseId: s.exerciseId, name: s.name, nameEs: s.nameEs, gifUrl: s.gifUrl, bodyPart: s.bodyPart, sets: [] };
       groups.push(g);
     }
-    g.sets.push({ setId: s.setId, setNumber: s.setNumber, weight: s.weight, plates: s.plates, reps: s.reps });
+    g.sets.push({
+      setId: s.setId,
+      setNumber: s.setNumber,
+      weight: s.weight,
+      weightUnit: s.weightUnit === "lbs" ? "lbs" : "kg",
+      plates: s.plates,
+      reps: s.reps,
+    });
   }
   for (const g of groups) g.sets.sort((a, b) => a.setNumber - b.setNumber);
 
-  const volume = sets.reduce((sum, s) => sum + (Number(s.weight ?? 0) * (s.reps ?? 0)), 0);
+  // Volume always sums in kg so mixing kg- and lb-tracked exercises in one
+  // session still adds up to a single coherent number.
+  const volume = sets.reduce(
+    (sum, s) => sum + toKg(Number(s.weight ?? 0), s.weightUnit === "lbs" ? "lbs" : "kg") * (s.reps ?? 0),
+    0
+  );
 
   return (
     <div className="flex flex-col gap-5">
@@ -121,6 +142,7 @@ export default async function SessionDetailPage({
                     setId={s.setId}
                     setNumber={s.setNumber}
                     weight={s.weight}
+                    weightUnit={s.weightUnit}
                     plates={s.plates}
                     reps={s.reps}
                   />

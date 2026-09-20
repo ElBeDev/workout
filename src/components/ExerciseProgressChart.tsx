@@ -21,21 +21,25 @@ export type ProgressPoint = {
 
 export type Metric = "maxWeight" | "maxPlates" | "maxReps" | "volume";
 
-const ALL_METRICS: { key: Metric; label: string; unit: string }[] = [
-  { key: "maxWeight", label: "Peso máx.", unit: "kg" },
-  { key: "maxPlates", label: "Placas máx.", unit: "placas" },
-  { key: "maxReps", label: "Reps máx.", unit: "reps" },
-  { key: "volume", label: "Volumen", unit: "kg" },
-];
-
 export function ExerciseProgressChart({
   data,
   defaultMetric = "maxWeight",
+  weightUnit = "kg",
 }: {
   data: ProgressPoint[];
   defaultMetric?: Metric;
+  weightUnit?: "kg" | "lbs";
 }) {
   const [metric, setMetric] = useState<Metric>(defaultMetric);
+  const weightUnitLabel = weightUnit === "lbs" ? "lb" : "kg";
+  const ALL_METRICS: { key: Metric; label: string; unit: string }[] = [
+    { key: "maxWeight", label: "Peso máx.", unit: weightUnitLabel },
+    { key: "maxPlates", label: "Placas máx.", unit: "placas" },
+    { key: "maxReps", label: "Reps máx.", unit: "reps" },
+    // Volume is always summed in kg (see progreso/[exerciseId]/page.tsx) so
+    // it stays a coherent number even for exercises tracked in lb.
+    { key: "volume", label: "Volumen", unit: "kg" },
+  ];
   // Only offer the toggles that have data (plates vs kg are exclusive in practice).
   const METRICS = ALL_METRICS.filter(
     (m) => m.key === metric || data.some((d) => d[m.key] !== null)

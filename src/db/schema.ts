@@ -89,8 +89,8 @@ export const routineExercises = pgTable(
     targetSets: integer("target_sets").notNull(),
     targetReps: integer("target_reps").notNull(),
     targetWeight: numeric("target_weight"),
-    // "kg" or "plates" — plate-stack machines without marked weights log a
-    // plate count instead of kilograms.
+    // "kg", "lbs", or "plates" — plate-stack machines without marked weights
+    // log a plate count instead, and some equipment is only marked in lbs.
     loadUnit: text("load_unit").notNull().default("kg"),
   },
   (table) => [index("routine_exercises_routine_idx").on(table.routineId)]
@@ -124,6 +124,9 @@ export const setLogs = pgTable(
     exerciseId: uuid("exercise_id").notNull().references(() => exercises.id),
     setNumber: integer("set_number").notNull(),
     weight: numeric("weight"),
+    // Unit "weight" was logged in ("kg" or "lbs") — kept per set so a later
+    // change to the exercise's default unit never relabels past history.
+    weightUnit: text("weight_unit").notNull().default("kg"),
     // Alternative to weight for plate-stack machines.
     plates: integer("plates"),
     reps: integer("reps"),

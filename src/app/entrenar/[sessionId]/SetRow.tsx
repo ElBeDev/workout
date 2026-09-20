@@ -48,6 +48,7 @@ export function SetRow({
   const [, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
   const isPlates = loadUnit === "plates";
+  const weightUnit: "kg" | "lbs" = loadUnit === "lbs" ? "lbs" : "kg";
 
   function fill(load: string | number | null, r: number | null) {
     const form = formRef.current;
@@ -93,6 +94,7 @@ export function SetRow({
       exerciseId,
       setNumber,
       weight: !isPlates && loadRaw !== "" ? loadRaw : null,
+      weightUnit,
       plates: isPlates && loadRaw !== "" ? Math.round(Number(loadRaw)) : null,
       reps: repsRaw === "" ? null : Number(repsRaw),
     };
@@ -100,6 +102,7 @@ export function SetRow({
     formData.set("exerciseId", exerciseId);
     formData.set("setNumber", String(setNumber));
     formData.set("weight", entry.weight ?? "");
+    formData.set("weightUnit", weightUnit);
     formData.set("plates", entry.plates !== null ? String(entry.plates) : "");
     // React resets an uncontrolled form after its action runs; put the
     // values back so the row still shows what was typed.
@@ -167,7 +170,7 @@ export function SetRow({
         inputMode={isPlates ? "numeric" : "decimal"}
         defaultValue={isPlates ? (plates ?? undefined) : (weight ?? undefined)}
         placeholder={loadPlaceholder}
-        aria-label={isPlates ? `Placas serie ${setNumber}` : `Peso serie ${setNumber} (kg)`}
+        aria-label={isPlates ? `Placas serie ${setNumber}` : `Peso serie ${setNumber} (${weightUnit === "lbs" ? "lb" : "kg"})`}
         className={fieldClass}
       />
       <input

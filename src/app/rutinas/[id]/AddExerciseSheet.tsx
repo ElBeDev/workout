@@ -30,7 +30,7 @@ export function AddExerciseSheet({
 }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<SelectedExercise | null>(null);
-  const [unit, setUnit] = useState<"kg" | "plates">("kg");
+  const [unit, setUnit] = useState<"kg" | "lbs" | "plates">("kg");
 
   useEffect(() => {
     if (!open) return;
@@ -109,7 +109,7 @@ export function AddExerciseSheet({
                 </div>
 
                 <div className="flex gap-1 rounded-full bg-surface-2 p-1 text-[12px] font-semibold">
-                  {(["kg", "plates"] as const).map((u) => (
+                  {(["kg", "lbs", "plates"] as const).map((u) => (
                     <button
                       key={u}
                       type="button"
@@ -119,7 +119,7 @@ export function AddExerciseSheet({
                         unit === u ? "bg-primary text-primary-foreground" : "text-muted"
                       }`}
                     >
-                      {u === "kg" ? "Kilos" : "Placas (máquina sin kg)"}
+                      {u === "kg" ? "Kilos" : u === "lbs" ? "Libras" : "Placas"}
                     </button>
                   ))}
                 </div>
@@ -135,7 +135,7 @@ export function AddExerciseSheet({
                     <input name="targetReps" type="number" min={1} defaultValue={10} className={fieldClass} />
                   </label>
                   <label className="text-[12px] font-medium text-muted">
-                    {unit === "plates" ? "Placas" : "Peso (kg)"}
+                    {unit === "plates" ? "Placas" : unit === "lbs" ? "Peso (lb)" : "Peso (kg)"}
                     <input
                       name="targetWeight"
                       type="number"

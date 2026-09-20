@@ -4,6 +4,7 @@ import { pickGif } from "@/db/exercise-gif";
 import { requireUserId } from "@/lib/session";
 import { and, eq, asc, isNull, or } from "drizzle-orm";
 import { fmtDate } from "@/lib/dates";
+import { toKg, type WeightUnit } from "@/lib/suggest";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { TrendingUp } from "lucide-react";
@@ -33,6 +34,7 @@ export default async function ExerciseProgressPage({
       sessionId: workoutSessions.id,
       startedAt: workoutSessions.startedAt,
       weight: setLogs.weight,
+      weightUnit: setLogs.weightUnit,
       plates: setLogs.plates,
       reps: setLogs.reps,
     })
@@ -51,6 +53,7 @@ export default async function ExerciseProgressPage({
     sessionId: string;
     startedAt: Date;
     maxWeight: number | null;
+    weightUnit: WeightUnit | null;
     maxPlates: number | null;
     maxReps: number | null;
     volume: number | null;
@@ -60,15 +63,30 @@ export default async function ExerciseProgressPage({
   for (const s of sets) {
     let r = rows.find((x) => x.sessionId === s.sessionId);
     if (!r) {
-      r = { sessionId: s.sessionId, startedAt: s.startedAt, maxWeight: null, maxPlates: null, maxReps: null, volume: null, sets: 0 };
+      r = {
+        sessionId: s.sessionId,
+        startedAt: s.startedAt,
+        maxWeight: null,
+        weightUnit: null,
+        maxPlates: null,
+        maxReps: null,
+        volume: null,
+        sets: 0,
+      };
       rows.push(r);
     }
+    const unit: WeightUnit = s.weightUnit === "lbs" ? "lbs" : "kg";
     const w = s.weight ? Number(s.weight) : null;
     const reps = s.reps ?? null;
     if (s.plates !== null && s.plates > 0) r.maxPlates = Math.max(r.maxPlates ?? 0, s.plates);
-    if (w !== null) r.maxWeight = Math.max(r.maxWeight ?? 0, w);
+    if (w !== null && (r.maxWeight === null || w > r.maxWeight)) {
+      r.maxWeight = w;
+      r.weightUnit = unit;
+    }
     if (reps !== null) r.maxReps = Math.max(r.maxReps ?? 0, reps);
-    if (w !== null && reps !== null) r.volume = (r.volume ?? 0) + w * reps;
+    // Volume always sums in kg so a session that mixes kg- and lb-tracked
+    // sets for this exercise still adds up to one coherent number.
+    if (w !== null && reps !== null) r.volume = (r.volume ?? 0) + toKg(w, unit) * reps;
     r.sets += 1;
   }
 
@@ -83,7 +101,11 @@ export default async function ExerciseProgressPage({
   const anyWeight = rows.some((r) => r.maxWeight !== null);
   const anyPlates = !anyWeight && rows.some((r) => r.maxPlates !== null);
   const defaultMetric: Metric = anyWeight ? "maxWeight" : anyPlates ? "maxPlates" : "maxReps";
-  const unit = anyWeight ? "kg" : anyPlates ? "placas" : "reps";
+  // Represent the whole page with whichever unit was used most recently —
+  // an exercise rarely switches equipment/unit from one session to the next.
+  const weightUnit: WeightUnit =
+    [...rows].reverse().find((r) => r.weightUnit !== null)?.weightUnit ?? "kg";
+  const unit = anyWeight ? (weightUnit === "lbs" ? "lb" : "kg") : anyPlates ? "placas" : "reps";
   const pick = (r: Row) => (anyWeight ? r.maxWeight : anyPlates ? r.maxPlates : r.maxReps);
   const best = rows.reduce<number | null>((acc, r) => {
     const v = pick(r);
@@ -138,7 +160,7 @@ export default async function ExerciseProgressPage({
               <TrendingUp className="h-4 w-4" />
               Por sesión
             </p>
-            <ExerciseProgressChart data={chartData} defaultMetric={defaultMetric} />
+            <ExerciseProgressChart data={chartData} defaultMetric={defaultMetric} weightUnit={weightUnit} />
           </Card>
 
           <ul className="flex flex-col gap-2">
@@ -152,7 +174,13 @@ export default async function ExerciseProgressPage({
                     <span className="flex items-center gap-3 tabular-nums">
                       <span className="text-muted">{r.sets} series</span>
                       <span className="font-semibold">
-                        {r.maxWeight !== null ? `${r.maxWeight} kg` : r.maxPlates !== null ? `${r.maxPlates} placas` : r.maxReps !== null ? `${r.maxReps} reps` : "—"}
+                        {r.maxWeight !== null
+                          ? `${r.maxWeight} ${r.weightUnit === "lbs" ? "lb" : "kg"}`
+                          : r.maxPlates !== null
+                            ? `${r.maxPlates} placas`
+                            : r.maxReps !== null
+                              ? `${r.maxReps} reps`
+                              : "—"}
                       </span>
                     </span>
                   </Card>

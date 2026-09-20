@@ -7,6 +7,7 @@ import { ChevronUp, ChevronDown, Play, Trash2, ShieldCheck } from "lucide-react"
 import { bodyPartLabel } from "@/lib/body-parts";
 import { requireUserId } from "@/lib/session";
 import { isAdminUser } from "@/lib/admin";
+import { normalizeLoadUnit } from "@/lib/suggest";
 import { blobConfigured } from "@/lib/blob";
 import { Card, PageHeader, PrimaryButton, SectionTitle } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
@@ -139,7 +140,7 @@ export default async function RutinaDetailPage({
                       targetSets={item.targetSets}
                       targetReps={item.targetReps}
                       targetWeight={item.targetWeight}
-                      loadUnit={item.loadUnit === "plates" ? "plates" : "kg"}
+                      loadUnit={normalizeLoadUnit(item.loadUnit)}
                     />
                     <p className="mt-0.5 text-[12px] text-muted/80">
                       {bodyPartLabel(item.bodyPart)}

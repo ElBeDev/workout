@@ -16,14 +16,19 @@ import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { ExerciseInfoSheet } from "@/components/ExerciseInfoSheet";
 import { SessionHud } from "@/components/SessionHud";
 import { SuggestionPill } from "@/components/SuggestionPill";
-import { suggestNext, type LoadUnit } from "@/lib/suggest";
+import { suggestNext, normalizeLoadUnit, type LoadUnit } from "@/lib/suggest";
 import { DiscardSessionButton } from "@/components/DiscardSessionButton";
 import { SessionNotes } from "./SessionNotes";
 import { SetRow } from "./SetRow";
 import { PendingSync } from "./PendingSync";
 import { finishSession, addExtraSet } from "./actions";
 
-type LastSet = { weight: string | null; plates: number | null; reps: number | null };
+type LastSet = {
+  weight: string | null;
+  plates: number | null;
+  reps: number | null;
+  weightUnit: "kg" | "lbs" | null;
+};
 
 /**
  * For each exercise, the sets of the most recent *finished* session (other
@@ -63,6 +68,7 @@ async function getLastTimeSets(
       exerciseId: setLogs.exerciseId,
       setNumber: setLogs.setNumber,
       weight: setLogs.weight,
+      weightUnit: setLogs.weightUnit,
       plates: setLogs.plates,
       reps: setLogs.reps,
     })
@@ -71,7 +77,12 @@ async function getLastTimeSets(
 
   for (const row of rows) {
     if (!result.has(row.exerciseId)) result.set(row.exerciseId, new Map());
-    result.get(row.exerciseId)!.set(row.setNumber, { weight: row.weight, plates: row.plates, reps: row.reps });
+    result.get(row.exerciseId)!.set(row.setNumber, {
+      weight: row.weight,
+      weightUnit: row.weightUnit === "lbs" ? "lbs" : "kg",
+      plates: row.plates,
+      reps: row.reps,
+    });
   }
   return result;
 }
@@ -168,7 +179,7 @@ export default async function EntrenarPage({
         {items.map((item) => {
           const lastTime = lastTimeByExercise.get(item.exerciseId) ?? new Map<number, LastSet>();
           const rows = rowCount.get(item.exerciseId) ?? item.targetSets;
-          const unit: LoadUnit = item.loadUnit === "plates" ? "plates" : "kg";
+          const unit: LoadUnit = normalizeLoadUnit(item.loadUnit);
           const suggestion = suggestNext(lastTime, item.targetSets, item.targetReps, unit);
           return (
             <Card key={item.exerciseId} className="p-3">
@@ -197,7 +208,9 @@ export default async function EntrenarPage({
                   <p className="mt-0.5 inline-flex items-center gap-1 text-[13px] text-muted">
                     <Repeat className="h-3.5 w-3.5" />
                     {item.targetSets} × {item.targetReps} reps
-                    {unit === "plates" && <span className="opacity-70"> · placas</span>}
+                    {unit !== "kg" && (
+                      <span className="opacity-70"> · {unit === "plates" ? "placas" : "lb"}</span>
+                    )}
                   </p>
                 </div>
               </div>
@@ -224,7 +237,9 @@ export default async function EntrenarPage({
                       loadPlaceholder={
                         unit === "plates"
                           ? last?.plates ? `${last.plates} placas` : "placas"
-                          : last?.weight ? `${last.weight} kg` : "kg"
+                          : last?.weight && (last.weightUnit ?? "kg") === unit
+                            ? `${last.weight} ${unit === "lbs" ? "lb" : "kg"}`
+                            : unit === "lbs" ? "lb" : "kg"
                       }
                       repsPlaceholder={last?.reps ? `${last.reps} reps` : `${item.targetReps} reps`}
                     />

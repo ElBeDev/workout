@@ -7,6 +7,7 @@ import { routines, routineExercises, workoutSessions, exercises } from "@/db/sch
 import { requireUserId } from "@/lib/session";
 import { isAdminUser } from "@/lib/admin";
 import { mirrorExerciseGif } from "@/lib/blob";
+import { normalizeLoadUnit } from "@/lib/suggest";
 import { and, eq, isNull, or, sql } from "drizzle-orm";
 
 /** Owner of the routine, or an admin building it for someone else. */
@@ -102,7 +103,7 @@ export async function addExerciseToRoutine(formData: FormData) {
     targetWeightRaw && String(targetWeightRaw).trim() !== ""
       ? String(targetWeightRaw)
       : null;
-  const loadUnit = String(formData.get("loadUnit") ?? "kg") === "plates" ? "plates" : "kg";
+  const loadUnit = normalizeLoadUnit(String(formData.get("loadUnit") ?? "kg"));
 
   const routine = await requireOwnedRoutine(routineId);
 
@@ -150,7 +151,7 @@ export async function updateRoutineExercise(
     targetWeightRaw && String(targetWeightRaw).trim() !== ""
       ? String(targetWeightRaw)
       : null;
-  const loadUnit = String(formData.get("loadUnit") ?? "kg") === "plates" ? "plates" : "kg";
+  const loadUnit = normalizeLoadUnit(String(formData.get("loadUnit") ?? "kg"));
 
   await db
     .update(routineExercises)

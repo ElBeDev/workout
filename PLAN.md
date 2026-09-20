@@ -53,6 +53,8 @@ Sexta (2026-09-07): **panel de administrador**. `bener` es admin (`users.is_admi
 
 Séptima (2026-09-07): **limpieza de la pantalla de rutina**. El bloque de "Agregar ejercicio" (buscador + chips + grid, siempre visible) se cambió por un botón compacto que abre lo mismo en una hoja deslizante desde abajo (mismo estilo que "cómo se hace"), y se cierra sola al agregar. `AddExerciseSheet.tsx` reemplaza a `AddExerciseForm.tsx`.
 
+Octava (2026-09-20): **libras (lb) como segunda unidad de carga**, junto a kilos y placas (no todos los aparatos/mancuernas marcan kg). Al agregar o editar un ejercicio de una rutina el selector ahora tiene tres opciones (Kilos / Libras / Placas); el modo entrenamiento pide la carga en la unidad que toque. Como kg y lb comparten la misma columna `weight`, cada serie guarda además en qué unidad se registró (`set_logs.weight_unit`) para que un cambio posterior del ejercicio nunca reetiquete el historial ya guardado. Con eso: la sugerencia de progresión solo compara contra series de la misma unidad (si no hay historial en esa unidad, no sugiere carga) y usa +2.5 kg o +5 lb según toque; el detalle de sesión, la página por ejercicio, la gráfica y el CSV muestran cada serie con su unidad real tal cual se tecleó; y los volúmenes agregados (de una sesión o de un ejercicio) siempre sumen convirtiendo lb→kg primero, para que mezclar aparatos en kg y en lb no dé un número sin sentido.
+
 Notas de infra que ya no hay que repetir:
 - El cliente de DB (`src/db/index.ts`) es "lazy" a propósito — si se inicializa en el import top-level, `next build` truena en Vercel al analizar rutas aunque `DATABASE_URL` sí exista en el entorno de runtime.
 - En Vercel, la integración de Neon prefija sus variables como `DATABASE_URL_*` si ya existe una variable llamada `DATABASE_URL` — la que de verdad lee el código es la que se llama exactamente `DATABASE_URL` (sin prefijo).
@@ -66,6 +68,7 @@ Notas de infra que ya no hay que repetir:
 - Quinta migración a mano: `set_logs.plates integer` y `routine_exercises.load_unit text default 'kg'`.
 - Tercera ronda de migraciones a mano (mismo método): `exercises.gif_blob_url / user_id / is_custom`, `users.failed_logins / locked_until`.
 - Sexta migración a mano: `users.is_admin boolean default false`, `bener` puesto en `true`. Y se revirtió una migración: `users.rest_seconds` / `routine_exercises.rest_seconds` (columnas del descanso configurable) se **borraron** al hacerlo fijo en 3 min — si ves esas columnas mencionadas en commits viejos, ya no existen.
+- Octava migración a mano: `set_logs.weight_unit text not null default 'kg'`.
 - Cuarta ronda de migraciones a mano: índices (`set_logs(exercise_id)`, `workout_sessions(user_id, finished_at)`, `sessions(expires_at)`, `exercises(user_id)`, `routine_exercises(routine_id)`) y el índice único parcial `workout_sessions(user_id, routine_id) WHERE finished_at IS NULL` (una sola sesión abierta por rutina). Todos declarados también en `schema.ts`.
 - Al cerrar sesión, `LogoutButton` borra los caches `pages-*` y las colas `workout:*` de `localStorage`, y avisa al SW (`purge-pages`). El SW (v3) no cachea respuestas redirigidas ni `/login`.
 - Vercel Blob: `BLOB_READ_WRITE_TOKEN` es un secreto de solo escritura en Vercel (no se puede revelar ni bajar con `vercel env pull`), así que el barrido de gifs se hace desde la app: Perfil → "Imágenes de ejercicios" → botón que copia en tandas de 6 los gifs de los ejercicios que usas. Cada gif nuevo se copia solo al agregarlo a una rutina. `scripts/mirror-gifs.ts` sigue ahí por si algún día se tiene el token local.
@@ -155,15 +158,17 @@ Routine
 
 RoutineExercise (ejercicio dentro de una rutina)
  └─ id, routine_id, exercise_id, sort_order, target_sets, target_reps,
-    target_weight (opcional), load_unit ('kg' | 'plates')
+    target_weight (opcional), load_unit ('kg' | 'lbs' | 'plates')
 
 WorkoutSession (una ejecución real de la rutina)
  └─ id, user_id, routine_id (nullable, SET NULL al borrar la rutina),
     started_at, finished_at (null = en curso), notes
 
 SetLog (cada serie registrada durante la sesión)
- └─ id, session_id, exercise_id, set_number, weight, plates, reps, completed,
-    logged_at — único por (session_id, exercise_id, set_number)
+ └─ id, session_id, exercise_id, set_number, weight, weight_unit ('kg' | 'lbs',
+    la unidad en la que se tecleó ese `weight` — independiente del load_unit
+    actual del ejercicio), plates, reps, completed, logged_at — único por
+    (session_id, exercise_id, set_number)
 
 BodyWeight
  └─ id, user_id, weight, logged_at
@@ -192,7 +197,7 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 2. **Home** — saludo, tarjeta de "Entrenamiento en curso" (continuar / descartar), stats de la semana y racha, "Hoy toca" según días asignados, rutinas con gif del primer ejercicio, nº de ejercicios/series y "última vez", botón ▶. ✅
 3. **Mis rutinas** — lista + crear. ✅
 4. **Detalle de rutina** — stats (ejercicios / series / músculos), CTA, lista de ejercicios (tocar gif = cómo se hace; editar series/reps/peso inline; subir/bajar; quitar); botón compacto "Agregar ejercicio" que abre el explorador (grid con gif, chips por músculo, búsqueda es/en, "i" de info, crear ejercicio propio) como hoja deslizante en vez de ocupar la pantalla siempre; ajustes (nombre, días de la semana, duplicar, eliminar). ✅
-5. **Modo entrenamiento** — casilla de carga en kg o placas según el ejercicio; HUD lavanda pegajoso (transcurrido, barra de series, descanso automático de 3 min al marcar una serie, con −15s / Saltar / +15s), aviso de series en cola sin señal, por ejercicio: sugerencia de peso con "Usar", filas por serie (kg + reps, placeholder de la vez pasada, ✓ con spinner / ámbar si quedó en cola), "Agregar serie", notas de la sesión, terminar / descartar. ✅
+5. **Modo entrenamiento** — casilla de carga en kg, lb o placas según el ejercicio; HUD lavanda pegajoso (transcurrido, barra de series, descanso automático de 3 min al marcar una serie, con −15s / Saltar / +15s), aviso de series en cola sin señal, por ejercicio: sugerencia de peso con "Usar", filas por serie (kg + reps, placeholder de la vez pasada, ✓ con spinner / ámbar si quedó en cola), "Agregar serie", notas de la sesión, terminar / descartar. ✅
 6. **Progreso** — heatmap de 16 semanas, por ejercicio (mejor marca, última sesión, gráfica peso/reps/volumen, lista de sesiones), sesiones completadas → detalle con series editables, duración, volumen y notas. ✅
 7. **Perfil** — usuario, link a "Panel de administrador" (si `isAdmin`), peso corporal (registro + gráfica), cambiar contraseña, copiar gifs a Blob, exportar CSV, cerrar sesión. ✅
 8. **Cómo se hace** (bottom sheet) — gif grande, músculo, equipo, pasos (en inglés). ✅
@@ -213,6 +218,7 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 - ~~Quinta: placas como unidad de carga~~ ✅
 - ~~Sexta: descanso fijo de 3 min (se quita la config), panel de administrador~~ ✅
 - ~~Séptima: "Agregar ejercicio" pasa de panel siempre visible a botón + hoja deslizante~~ ✅
+- ~~Octava: libras (lb) como unidad de carga alterna a kg, con historial por serie fiel a como se tecleó~~ ✅
 
 **Queda abierto (sin prisa), en este orden sugerido:**
 1. Pulsar "Copiar gifs" en Perfil (producción) una vez por usuario; después es automático.
@@ -279,7 +285,8 @@ src/lib/
   body-parts.ts         Etiquetas en español de los grupos musculares
   dates.ts              Zona horaria MX, día de la semana, clave de semana, "hace N días"
   translate-exercise.ts Traductor por reglas de nombres de ejercicio
-  suggest.ts            Regla de progresión (+2.5 kg / +1 rep / repetir)
+  suggest.ts            Unidades (kg/lb/placas), regla de progresión (+2.5 kg
+                        o +5 lb / +1 rep / repetir), conversión lb→kg para volúmenes
   offline-queue.ts      Cola de series en localStorage
   blob.ts               mirrorExerciseGif, pendingGifIds, uploadExercisePhoto (no-op sin token)
 public/sw.js            Service worker (app shell + páginas visitadas + gifs; VERSION v3)
@@ -324,6 +331,8 @@ Todo el trabajo fue en un solo día; el historial fino está en `git log`. Resum
 | `250eeff` | Descanso fijo automático de 3 min; se quita "Desc. s" por ejercicio y el default en Perfil, se borran `rest_seconds` de `users` y `routine_exercises` |
 | `77e4b1d` | Panel de administrador: `users.is_admin`, `/admin`, `/admin/usuarios/[userId]`, ownership "dueño o admin" en `requireOwnedRoutine` |
 | `59f1ea7` | "Agregar ejercicio" pasa de panel fijo a botón + hoja deslizante (`AddExerciseSheet`, reemplaza `AddExerciseForm`) |
+| `79b2f35` | PLAN.md: rellenar el commit hash de la fila de `AddExerciseSheet` |
+| _(pendiente)_ | Libras (lb) como unidad de carga alterna a kg: selector de 3 opciones, `set_logs.weight_unit` por serie, sugerencia/volumen/CSV/gráfica conscientes de la unidad |
 
 ## 12. Siguiente ronda (acordada 2026-09-03)
 

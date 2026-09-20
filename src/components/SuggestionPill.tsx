@@ -30,7 +30,7 @@ export function SuggestionPill({
   }
 
   const Icon = suggestion.kind === "up" ? TrendingUp : RotateCcw;
-  const load = loadLabel(suggestion.weight, suggestion.plates);
+  const load = loadLabel(suggestion.weight, suggestion.plates, suggestion.unit);
   const label = load ? `${load} × ${suggestion.reps}` : `${suggestion.reps} reps`;
 
   return (

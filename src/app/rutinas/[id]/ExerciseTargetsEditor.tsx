@@ -41,7 +41,9 @@ export function ExerciseTargetsEditor({
         <span className="inline-flex items-center gap-1">
           <Repeat className="h-3.5 w-3.5" />
           {targetReps} reps
-          {targetWeight ? ` · ${targetWeight} ${loadUnit === "plates" ? "placas" : "kg"}` : ""}
+          {targetWeight
+            ? ` · ${targetWeight} ${loadUnit === "plates" ? "placas" : loadUnit === "lbs" ? "lb" : "kg"}`
+            : ""}
         </span>
         {loadUnit === "plates" && !targetWeight && (
           <span className="rounded-full bg-accent/50 px-2 py-0.5 text-[11px] font-medium text-accent-foreground">
@@ -63,7 +65,7 @@ export function ExerciseTargetsEditor({
     >
       <input type="hidden" name="loadUnit" value={unit} />
       <div className="flex gap-1 rounded-full bg-surface-2 p-1 text-[12px] font-semibold">
-        {(["kg", "plates"] as const).map((u) => (
+        {(["kg", "lbs", "plates"] as const).map((u) => (
           <button
             key={u}
             type="button"
@@ -73,7 +75,7 @@ export function ExerciseTargetsEditor({
               unit === u ? "bg-primary text-primary-foreground" : "text-muted"
             }`}
           >
-            {u === "kg" ? "Kilos" : "Placas"}
+            {u === "kg" ? "Kilos" : u === "lbs" ? "Libras" : "Placas"}
           </button>
         ))}
       </div>
@@ -87,7 +89,7 @@ export function ExerciseTargetsEditor({
           <input name="targetReps" type="number" min={1} defaultValue={targetReps} className={fieldClass} />
         </label>
         <label className="text-[10px] font-medium text-muted">
-          {unit === "plates" ? "Placas" : "Kg"}
+          {unit === "plates" ? "Placas" : unit === "lbs" ? "Lb" : "Kg"}
           <input
             name="targetWeight"
             type="number"

@@ -23,6 +23,7 @@ export async function logSet(formData: FormData) {
   const exerciseId = String(formData.get("exerciseId"));
   const setNumber = Number(formData.get("setNumber"));
   const weightRaw = String(formData.get("weight") ?? "").replace(",", ".").trim();
+  const weightUnit = String(formData.get("weightUnit") ?? "kg") === "lbs" ? "lbs" : "kg";
   const platesRaw = String(formData.get("plates") ?? "").trim();
   const repsRaw = String(formData.get("reps") ?? "").trim();
   const weight = weightRaw !== "" && Number.isFinite(Number(weightRaw)) ? weightRaw : null;
@@ -33,10 +34,10 @@ export async function logSet(formData: FormData) {
 
   await db
     .insert(setLogs)
-    .values({ sessionId, exerciseId, setNumber, weight, plates, reps, completed: true })
+    .values({ sessionId, exerciseId, setNumber, weight, weightUnit, plates, reps, completed: true })
     .onConflictDoUpdate({
       target: [setLogs.sessionId, setLogs.exerciseId, setLogs.setNumber],
-      set: { weight, plates, reps, completed: true, loggedAt: new Date() },
+      set: { weight, weightUnit, plates, reps, completed: true, loggedAt: new Date() },
     });
 
   revalidatePath(`/entrenar/${sessionId}`);
@@ -47,6 +48,7 @@ const syncEntrySchema = z.object({
   exerciseId: z.string().uuid(),
   setNumber: z.number().int().min(1).max(50),
   weight: z.string().max(10).nullable(),
+  weightUnit: z.enum(["kg", "lbs"]).optional(),
   plates: z.number().int().min(0).max(100).nullable().optional(),
   reps: z.number().int().min(0).max(1000).nullable(),
 });
@@ -92,14 +94,15 @@ export async function syncSets(
     }
 
     const weight = e.weight !== null && Number.isFinite(Number(e.weight)) ? e.weight : null;
+    const weightUnit = e.weightUnit ?? "kg";
     const plates = e.plates ?? null;
     try {
       await db
         .insert(setLogs)
-        .values({ ...key, weight, plates, reps: e.reps, completed: true })
+        .values({ ...key, weight, weightUnit, plates, reps: e.reps, completed: true })
         .onConflictDoUpdate({
           target: [setLogs.sessionId, setLogs.exerciseId, setLogs.setNumber],
-          set: { weight, plates, reps: e.reps, completed: true, loggedAt: new Date() },
+          set: { weight, weightUnit, plates, reps: e.reps, completed: true, loggedAt: new Date() },
         });
       saved.push(key);
     } catch {
