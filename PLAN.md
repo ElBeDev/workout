@@ -332,7 +332,7 @@ Todo el trabajo fue en un solo día; el historial fino está en `git log`. Resum
 | `77e4b1d` | Panel de administrador: `users.is_admin`, `/admin`, `/admin/usuarios/[userId]`, ownership "dueño o admin" en `requireOwnedRoutine` |
 | `59f1ea7` | "Agregar ejercicio" pasa de panel fijo a botón + hoja deslizante (`AddExerciseSheet`, reemplaza `AddExerciseForm`) |
 | `79b2f35` | PLAN.md: rellenar el commit hash de la fila de `AddExerciseSheet` |
-| _(pendiente)_ | Libras (lb) como unidad de carga alterna a kg: selector de 3 opciones, `set_logs.weight_unit` por serie, sugerencia/volumen/CSV/gráfica conscientes de la unidad |
+| `462e472` | Libras (lb) como unidad de carga alterna a kg: selector de 3 opciones, `set_logs.weight_unit` por serie, sugerencia/volumen/CSV/gráfica conscientes de la unidad |
 
 ## 12. Siguiente ronda (acordada 2026-09-03)
 
