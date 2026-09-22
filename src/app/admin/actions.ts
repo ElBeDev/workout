@@ -34,6 +34,7 @@ export async function createRoutineForUser(targetUserId: string, formData: FormD
  */
 export async function diagnoseBlob(): Promise<{
   token: boolean;
+  claves: string;
   download: string;
   upload: string;
   copias: number;
@@ -42,6 +43,13 @@ export async function diagnoseBlob(): Promise<{
   await requireAdmin();
 
   const token = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+  // Solo nombres, nunca valores: sirve para saber si el runtime ve las
+  // variables del store de Blob o ninguna.
+  const claves =
+    Object.keys(process.env)
+      .filter((k) => k.includes("BLOB"))
+      .sort()
+      .join(", ") || "ninguna con BLOB en el nombre";
 
   const [sample] = await db
     .select({ gifUrl: exercises.gifUrl })
@@ -82,5 +90,5 @@ export async function diagnoseBlob(): Promise<{
 
   const pendientes = (await pendingGifIds(await requireAdmin())).length;
 
-  return { token, download, upload, copias, pendientes };
+  return { token, claves, download, upload, copias, pendientes };
 }

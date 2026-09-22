@@ -41,6 +41,7 @@ export function BlobDiagnostics() {
       {result && (
         <dl className="flex flex-col gap-2 rounded-tile bg-surface-2 p-3 text-[13px]">
           <Row label="Token de Blob" ok={result.token} value={result.token ? "presente" : "AUSENTE"} />
+          <Row label="Claves BLOB* vistas" ok={result.claves.includes("TOKEN")} value={result.claves} />
           <Row label="Descargar gif" ok={result.download.startsWith("ok")} value={result.download} />
           <Row label="Subir a Blob" ok={result.upload.startsWith("ok")} value={result.upload} />
           <Row label="Gifs con copia" ok={result.copias > 0} value={String(result.copias)} />
