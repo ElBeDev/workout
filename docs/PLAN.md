@@ -349,6 +349,8 @@ Todo el trabajo fue en un solo día; el historial fino está en `git log`. Resum
 | `59f1ea7` | "Agregar ejercicio" pasa de panel fijo a botón + hoja deslizante (`AddExerciseSheet`, reemplaza `AddExerciseForm`) |
 | `79b2f35` | PLAN.md: rellenar el commit hash de la fila de `AddExerciseSheet` |
 | `462e472` | Libras (lb) como unidad de carga alterna a kg: selector de 3 opciones, `set_logs.weight_unit` por serie, sugerencia/volumen/CSV/gráfica conscientes de la unidad |
+| `71b4433` | PLAN.md: rellenar el commit hash de la fila de la unidad `lb` |
+| `1bf4729` | Rediseño visual completo al estilo Apple Fitness: tokens nuevos (lienzo neutro, color por dato), Inter, anillos en SVG, Home como "Resumen", metas semanales (`users.goal_weekly_*`), nav de vidrio, HUD con anillo, Progreso con tendencia/récords/calendario de anillos, resumen post-entrenamiento; documentación movida a `docs/` |
 
 ## 12. Siguiente ronda (acordada 2026-09-03)
 
