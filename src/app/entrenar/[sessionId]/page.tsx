@@ -202,7 +202,7 @@ export default async function EntrenarPage({
                   />
                 </ExerciseInfoSheet>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[17px] font-semibold capitalize">
+                  <p className="line-clamp-2 text-[17px] font-semibold capitalize leading-snug">
                     {item.exerciseNameEs ?? item.exerciseName}
                   </p>
                   <p className="mt-0.5 inline-flex items-center gap-1 text-[13px] text-muted">

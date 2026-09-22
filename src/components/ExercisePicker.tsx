@@ -110,17 +110,17 @@ export function ExercisePicker({
         {items.map((ex) => (
           <div
             key={ex.id}
-            className="relative flex flex-col gap-2 rounded-tile bg-surface-2 p-2"
+            className="relative flex flex-col overflow-hidden rounded-tile border border-border bg-surface"
           >
             <button
               type="button"
               onClick={() => onSelect(ex)}
-              className="flex flex-col gap-2 text-left transition active:scale-[0.98]"
+              className="flex flex-col text-left transition active:scale-[0.98]"
             >
-              <div className="aspect-square w-full overflow-hidden rounded-2xl bg-surface">
+              <div className="aspect-square w-full overflow-hidden">
                 <ExerciseThumb src={ex.gifUrl} alt={ex.nameEs ?? ex.name} className="h-full w-full" />
               </div>
-              <div className="flex flex-col gap-0.5 px-1 pb-1">
+              <div className="flex flex-col gap-0.5 p-2.5">
                 {ex.isCustom && (
                   <span className="mb-0.5 w-fit rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-accent-foreground">
                     Propio

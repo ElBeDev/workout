@@ -4,7 +4,6 @@ import { exerciseGif } from "@/db/exercise-gif";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { Play, ShieldCheck } from "lucide-react";
-import { bodyPartLabel } from "@/lib/body-parts";
 import { requireUserId } from "@/lib/session";
 import { isAdminUser } from "@/lib/admin";
 import { normalizeLoadUnit } from "@/lib/suggest";
@@ -110,7 +109,7 @@ export default async function RutinaDetailPage({
         ) : (
           <GroupedList>
             {items.map((item, index) => (
-              <div key={item.id} className="flex items-start gap-3 p-3">
+              <div key={item.id} className="flex items-center gap-3 p-3">
                 <ExerciseInfoSheet
                   exercise={{
                     name: item.exerciseName,
@@ -120,7 +119,7 @@ export default async function RutinaDetailPage({
                     equipment: item.equipment,
                     instructions: item.instructions,
                   }}
-                  className="h-14 w-14 shrink-0 overflow-hidden rounded-xl"
+                  className="h-12 w-12 shrink-0 overflow-hidden rounded-[0.7rem]"
                 >
                   <ExerciseThumb
                     src={item.gifUrl}
@@ -129,7 +128,7 @@ export default async function RutinaDetailPage({
                   />
                 </ExerciseInfoSheet>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[17px] font-semibold capitalize">
+                  <p className="line-clamp-2 text-[17px] font-semibold capitalize leading-snug">
                     {item.exerciseNameEs ?? item.exerciseName}
                   </p>
                   <ExerciseTargetsEditor
@@ -140,7 +139,6 @@ export default async function RutinaDetailPage({
                     targetWeight={item.targetWeight}
                     loadUnit={normalizeLoadUnit(item.loadUnit)}
                   />
-                  <p className="mt-0.5 text-[13px] text-faint">{bodyPartLabel(item.bodyPart)}</p>
                 </div>
                 <ExerciseRowMenu
                   name={item.exerciseNameEs ?? item.exerciseName}

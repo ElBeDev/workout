@@ -153,7 +153,7 @@ export default async function ProgresoPage({
                     />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[17px] font-semibold capitalize">
+                    <p className="line-clamp-2 text-[17px] font-semibold capitalize leading-snug">
                       {ex.nameEs ?? ex.name}
                     </p>
                     <p className="flex items-center gap-1.5 text-[13px] text-muted">
