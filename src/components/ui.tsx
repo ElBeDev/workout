@@ -275,9 +275,12 @@ export function GroupedList({
 /** "↑ 12 %" con flecha y color: nunca sólo el color. */
 export function TrendPill({
   pct,
+  label,
   className = "",
 }: {
   pct: number | null;
+  /** Qué métrica es, para que no se confunda con otro porcentaje al lado. */
+  label?: string;
   className?: string;
 }) {
   if (pct === null) {
@@ -294,6 +297,7 @@ export function TrendPill({
   return (
     <span className={`inline-flex items-center gap-1 text-[13px] font-semibold ${color} ${className}`}>
       <Icon className="h-3.5 w-3.5" />
+      {label && <span className="font-medium text-muted">{label}</span>}
       {flat ? "igual" : `${up ? "+" : ""}${Math.round(pct)} %`}
     </span>
   );

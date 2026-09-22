@@ -105,7 +105,7 @@ export default async function ProgresoPage({
               ? "—"
               : `${trendUp ? "+" : ""}${Math.round(stats.volumeTrendPct)} %`}
           </p>
-          {stats.volumeTrendPct !== null && <TrendPill pct={stats.setsTrendPct} />}
+          {stats.volumeTrendPct !== null && <TrendPill pct={stats.setsTrendPct} label="series" />}
         </div>
         <p className="mt-2 text-[15px] text-muted">
           {stats.volumeTrendPct === null
