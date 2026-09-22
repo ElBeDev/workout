@@ -20,6 +20,7 @@
 10. [Accesibilidad y detalles finos](#10-accesibilidad-y-detalles-finos)
 11. [Qué NO copiar de Apple](#11-qué-no-copiar-de-apple)
 12. [Fuentes](#12-fuentes)
+13. [Bitácora](#13-bitácora)
 
 ---
 
@@ -804,3 +805,69 @@ Esto es "inspirado en", no un clon. Límites conscientes:
 - [Meet the expanded San Francisco font family — WWDC22](https://developer.apple.com/videos/play/wwdc2022/110381/)
 - [Build a UIKit app with the new design — WWDC25](https://developer.apple.com/videos/play/wwdc2025/284/)
 - [Apple Watch — Close Your Rings](https://www.apple.com/watch/close-your-rings/)
+
+---
+
+## 13. Bitácora
+
+Registro de lo que de verdad se subió, en orden. El detalle por commit vive en
+la tabla de cambios de [PLAN.md](./PLAN.md); aquí queda el porqué.
+
+### 2026-09-22 — El rediseño sale a producción
+
+| Commit | Qué |
+|---|---|
+| `1bf4729` | Fases 0 a 4 completas + el resumen post-entrenamiento de la fase 5 |
+| `f4257e7` | Fila del changelog en PLAN.md |
+| `acbac55` | Etiquetar "series" en el porcentaje chico de la tarjeta de tendencia |
+| `16419ee` | Descartar entrenamiento pasa a hoja de acción |
+| `acec7ac` | El copiado de gifs sale de Perfil y se va a /admin → "Mantenimiento" |
+
+**Cómo se verificó** (no solo `npm run build`):
+
+- `npm run smoke` en local y con `BASE_URL` apuntando a Vercel: 9/9 las dos veces.
+  Hubo que actualizar dos selectores de la suite que el rediseño rompió ("Nueva
+  rutina" ahora es un botón que abre una hoja; el check de serie pasó de
+  `bg-primary` a `bg-sets`).
+- Recorrido con Playwright con una cuenta desechable y datos sembrados, en claro
+  y en oscuro, de Hoy / Rutinas / detalle de rutina / Entrenar / Progreso /
+  detalle de sesión / Perfil / descartar. Las capturas se revisaron una por una;
+  la cuenta se borra al final (`ON DELETE CASCADE`).
+
+**Lo que se arregló por verlo ya desplegado, no antes:**
+
+1. **El "+" salía dos veces en Rutinas.** `PageHeader` pintaba `right` en la fila
+   del botón de volver *y* junto al título. Ahora la acción va arriba solo cuando
+   hay `backHref`.
+2. **La leyenda de los anillos se cortaba** ("7,200/5,00…"): la unidad se movió a
+   la etiqueta ("CARGA (KG)") en vez de ir pegada al número.
+3. **Dos porcentajes idénticos sin distinguir** en la tarjeta de tendencia: el
+   grande es carga, el chico ahora dice "series".
+4. **Descartar entrenamiento rompía la tarjeta de "En curso".** El bloque de
+   confirmación se renderizaba dentro de la fila del botón Continuar, se salía de
+   la tarjeta y el botón de confirmar quedaba cortado por el borde de la
+   pantalla. Ahora es una hoja de acción desde abajo, igual desde Home que desde
+   la sesión — que además es el patrón de iOS para acciones destructivas.
+5. **Perfil explicaba plomería.** La tarjeta "Imágenes de ejercicios" le contaba
+   al usuario de dónde salen los gifs y que hay un almacenamiento propio. Se fue
+   a /admin → "Mantenimiento".
+
+**Hallazgo al mover eso último**: el espejado de gifs a Vercel Blob **nunca ha
+corrido**. Hay 0 copias de 1,500 gifs y 39 ejercicios ya usados en rutinas siguen
+dependiendo del servidor externo. La variable `BLOB_READ_WRITE_TOKEN` sí está en
+el proyecto de Vercel pero no llega al runtime. Está anotado como pendiente #1 en
+[PLAN.md](./PLAN.md); no tiene que ver con el rediseño, solo salió a la luz al
+tocar esa pantalla.
+
+### Decisiones que conviene no volver a discutir
+
+- **Inter, no SF Pro**: la licencia de SF Pro solo cubre plataformas Apple.
+- **Verde y cian cambian de valor entre modo claro y oscuro**: los vivos de Apple
+  (`#92E82A`, `#1EEAEF`) dan ~1.7:1 sobre blanco, ilegibles. El *arco* sí usa el
+  color vivo en los dos modos, porque es una forma y no texto.
+- **El volumen no cuenta placas**: no hay forma honesta de convertir "3 placas" a
+  kilos. Las libras sí se convierten a kg antes de sumar.
+- **Los anillos cuentan la sesión abierta**: tienen que moverse mientras
+  entrenas, no al terminar.
+- **Las metas viven en `users`, no en una constante**: 5,000 kg / 60 series /
+  4 días son solo el arranque, y cada quien las ajusta en Perfil.

@@ -57,6 +57,12 @@ Octava (2026-09-20): **libras (lb) como segunda unidad de carga**, junto a kilos
 
 Novena (2026-09-22): **rediseño visual completo al estilo Apple Fitness**. Se fue el sistema lavanda del shot de Dribbble y entró uno de lienzo neutro (negro puro en oscuro, `#f2f2f7` en claro) donde **todo el color viene del dato**: carga (rosa), series (verde), días (cian) — los tres anillos de la semana. Fuente Outfit → Inter. La Home es ahora un "Resumen" encabezado por los tres anillos con meta (`users.goal_weekly_*`, editables en Perfil), la nav es una cápsula de vidrio tipo iOS 26 que esconde las etiquetas al hacer scroll, el HUD del entrenamiento es un anillo de series que se vuelve cian y cuenta regresivo al descansar, las filas de serie tienen campos del doble de tamaño, Progreso trae selector semana/mes/año + tendencia contra el periodo anterior + récords por ejercicio + un calendario de 14 semanas donde cada día es un trío de anillos en miniatura, y al terminar un entrenamiento se cae en el resumen de la sesión con los anillos ya actualizados. El plan completo, con lo que quedó abierto, está en [diseno-apple-fitness.md](./diseno-apple-fitness.md).
 
+**Ya está desplegado** (`1bf4729` → `acec7ac`) y verificado contra producción, no solo en local: `npm run smoke` 9/9 con `BASE_URL` apuntando a Vercel, más un recorrido con Playwright de Hoy / Progreso / Entrenar / Perfil / descartar en claro y oscuro. Tres correcciones salieron de verlo ya desplegado, en el teléfono:
+
+- Salían dos porcentajes juntos en la tarjeta de tendencia sin decir cuál era cuál (`acbac55`).
+- Descartar un entrenamiento confirmaba en un bloque inline que se desbordaba de la tarjeta de "En curso" y dejaba el botón cortado por el borde de la pantalla; ahora es una hoja de acción, igual desde Home que desde la sesión (`16419ee`).
+- Perfil le explicaba al usuario de dónde salen los gifs y que hay un almacenamiento propio; eso es plomería y se fue a /admin → "Mantenimiento" (`acec7ac`).
+
 Notas de infra que ya no hay que repetir:
 - El cliente de DB (`src/db/index.ts`) es "lazy" a propósito — si se inicializa en el import top-level, `next build` truena en Vercel al analizar rutas aunque `DATABASE_URL` sí exista en el entorno de runtime.
 - En Vercel, la integración de Neon prefija sus variables como `DATABASE_URL_*` si ya existe una variable llamada `DATABASE_URL` — la que de verdad lee el código es la que se llama exactamente `DATABASE_URL` (sin prefijo).
@@ -76,7 +82,8 @@ Notas de infra que ya no hay que repetir:
 - Toda la documentación vive en `docs/` (`PLAN.md` se movió ahí con `git mv`).
 - Cuarta ronda de migraciones a mano: índices (`set_logs(exercise_id)`, `workout_sessions(user_id, finished_at)`, `sessions(expires_at)`, `exercises(user_id)`, `routine_exercises(routine_id)`) y el índice único parcial `workout_sessions(user_id, routine_id) WHERE finished_at IS NULL` (una sola sesión abierta por rutina). Todos declarados también en `schema.ts`.
 - Al cerrar sesión, `LogoutButton` borra los caches `pages-*` y las colas `workout:*` de `localStorage`, y avisa al SW (`purge-pages`). El SW (v3) no cachea respuestas redirigidas ni `/login`.
-- Vercel Blob: `BLOB_READ_WRITE_TOKEN` es un secreto de solo escritura en Vercel (no se puede revelar ni bajar con `vercel env pull`), así que el barrido de gifs se hace desde la app: **/admin → "Mantenimiento"** → botón que copia en tandas de 6 los gifs de los ejercicios que usa la cuenta admin. Estaba en Perfil y se movió al panel de admin (2026-09-22): es plomería interna y los usuarios no se tienen que enterar de dónde viven los gifs. El bloque ni siquiera se renderiza si no hay `BLOB_READ_WRITE_TOKEN` (en local, por ejemplo). Cada gif nuevo se copia solo al agregarlo a una rutina. `scripts/mirror-gifs.ts` sigue ahí por si algún día se tiene el token local.
+- Vercel Blob: `BLOB_READ_WRITE_TOKEN` es un secreto de solo escritura en Vercel (no se puede revelar ni bajar con `vercel env pull`), así que el barrido de gifs se hace desde la app: **/admin → "Mantenimiento"** → botón que copia en tandas de 6 los gifs de los ejercicios que usa la cuenta admin. Estaba en Perfil y se movió al panel de admin (2026-09-22): es plomería interna y los usuarios no se tienen que enterar de dónde viven los gifs. El bloque ni siquiera se renderiza si `blobConfigured()` es falso (en local, por ejemplo). Cada gif nuevo debería copiarse solo al agregarlo a una rutina. `scripts/mirror-gifs.ts` sigue ahí por si algún día se tiene el token local.
+- ⚠️ **El espejado de gifs nunca ha corrido** (comprobado el 2026-09-22): `select count(*) from exercises where gif_blob_url is not null` da **0** de 1,500, y 39 ejercicios ya usados en rutinas siguen sin copia. `npx vercel env ls production` sí lista `BLOB_READ_WRITE_TOKEN` (Production + Preview, creado hace 19 días), pero la app renderizaba el aviso de "Disponible solo en producción", o sea que en runtime `process.env.BLOB_READ_WRITE_TOKEN` llega vacío. Consecuencia: hoy los gifs dependen al 100 % de `static.exercisedb.dev`; si ese servidor se cae, la app se queda sin imágenes. Falta averiguar por qué la variable no llega al runtime (¿store de Blob conectado a otro proyecto? ¿scope de la variable?) antes de dar por buena esa red de seguridad.
 - Eventos del cronómetro: `workout:rest-start` se dispara desde el `onClick` del botón, no desde la acción del formulario (dentro de la acción React agrupa el setState del HUD en la transición y el refresh lo pierde).
 - Para probar en local se usa una cuenta QA desechable creada directo en la base (`insert into users ...` con hash scrypt), se recorre la app con Playwright (`npx playwright` + Chromium) y al final se borra el usuario — el `ON DELETE CASCADE` se lleva rutinas y sesiones. Nunca se toca la cuenta real.
 
@@ -226,7 +233,7 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 - ~~Octava: libras (lb) como unidad de carga alterna a kg, con historial por serie fiel a como se tecleó~~ ✅
 
 **Queda abierto (sin prisa), en este orden sugerido:**
-1. Pulsar "Copiar gifs" en /admin → Mantenimiento (producción); después es automático para los ejercicios nuevos.
+1. **Arreglar el espejado de gifs**: la variable `BLOB_READ_WRITE_TOKEN` existe en el proyecto pero no llega al runtime, así que hay 0 copias de 1,500 gifs (ver notas de infra). Primero eso; después, pulsar "Copiar gifs" en /admin → Mantenimiento.
 2. Migraciones versionadas (`drizzle-kit generate` + carpeta `drizzle/`) para que el repo pruebe que producción coincide con `schema.ts`.
 3. Throttle de login por IP (hoy el bloqueo es por cuenta).
 4. Accesibilidad de la hoja "cómo se hace" (focus trap, `aria-labelledby`) y consolidar helpers duplicados (`requireOwnedSession`).
@@ -352,6 +359,10 @@ Todo el trabajo fue en un solo día; el historial fino está en `git log`. Resum
 | `462e472` | Libras (lb) como unidad de carga alterna a kg: selector de 3 opciones, `set_logs.weight_unit` por serie, sugerencia/volumen/CSV/gráfica conscientes de la unidad |
 | `71b4433` | PLAN.md: rellenar el commit hash de la fila de la unidad `lb` |
 | `1bf4729` | Rediseño visual completo al estilo Apple Fitness: tokens nuevos (lienzo neutro, color por dato), Inter, anillos en SVG, Home como "Resumen", metas semanales (`users.goal_weekly_*`), nav de vidrio, HUD con anillo, Progreso con tendencia/récords/calendario de anillos, resumen post-entrenamiento; documentación movida a `docs/` |
+| `f4257e7` | PLAN.md: fila del changelog del rediseño |
+| `acbac55` | Progreso: etiquetar "series" en el porcentaje chico de la tarjeta de tendencia (salían dos porcentajes juntos sin decir cuál era cuál) |
+| `16419ee` | Descartar entrenamiento confirma en hoja de acción: inline se desbordaba de la tarjeta de "En curso" y el botón quedaba cortado por el borde |
+| `acec7ac` | Copiado de gifs a Blob sale de Perfil y se va a /admin → "Mantenimiento"; sin `BLOB_READ_WRITE_TOKEN` el bloque ni se renderiza |
 
 ## 12. Siguiente ronda (acordada 2026-09-03)
 
