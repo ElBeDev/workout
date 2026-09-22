@@ -4,9 +4,13 @@ import { ChevronRight, ShieldCheck } from "lucide-react";
 import { db } from "@/db";
 import { users, routines } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin";
-import { Card, PageHeader } from "@/components/ui";
+import { blobConfigured, pendingGifIds } from "@/lib/blob";
+import { Card, PageHeader, SectionTitle } from "@/components/ui";
+import { MirrorGifsButton } from "@/components/MirrorGifsButton";
 
 export const dynamic = "force-dynamic";
+// Cada tanda de copiado baja unos gifs de ExerciseDB antes de responder.
+export const maxDuration = 30;
 
 export default async function AdminPage() {
   const adminId = await requireAdmin();
@@ -22,6 +26,9 @@ export default async function AdminPage() {
       .groupBy(routines.userId),
   ]);
   const countByUser = new Map(counts.map((c) => [c.userId, c.count]));
+  // Mantenimiento: respaldar los gifs es plomería, no algo de lo que el usuario
+  // se tenga que enterar, así que vive aquí y no en Perfil.
+  const pendingGifs = blobConfigured() ? (await pendingGifIds(adminId)).length : 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -30,6 +37,8 @@ export default async function AdminPage() {
         subtitle="Elige un usuario para armarle rutinas"
         backHref="/perfil"
       />
+
+      <SectionTitle>Usuarios</SectionTitle>
 
       <ul className="flex flex-col gap-3">
         {allUsers.map((u) => (
@@ -58,6 +67,19 @@ export default async function AdminPage() {
           </li>
         ))}
       </ul>
+
+      {blobConfigured() && (
+        <section className="flex flex-col gap-3">
+          <SectionTitle>Mantenimiento</SectionTitle>
+          <Card className="flex flex-col gap-3 p-4">
+            <p className="text-[13px] text-muted">
+              Respaldo de los gifs del catálogo en nuestro propio almacenamiento. Los
+              ejercicios nuevos se copian solos al agregarlos; esto alcanza a los viejos.
+            </p>
+            <MirrorGifsButton pending={pendingGifs} />
+          </Card>
+        </section>
+      )}
     </div>
   );
 }

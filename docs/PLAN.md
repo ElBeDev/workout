@@ -76,7 +76,7 @@ Notas de infra que ya no hay que repetir:
 - Toda la documentación vive en `docs/` (`PLAN.md` se movió ahí con `git mv`).
 - Cuarta ronda de migraciones a mano: índices (`set_logs(exercise_id)`, `workout_sessions(user_id, finished_at)`, `sessions(expires_at)`, `exercises(user_id)`, `routine_exercises(routine_id)`) y el índice único parcial `workout_sessions(user_id, routine_id) WHERE finished_at IS NULL` (una sola sesión abierta por rutina). Todos declarados también en `schema.ts`.
 - Al cerrar sesión, `LogoutButton` borra los caches `pages-*` y las colas `workout:*` de `localStorage`, y avisa al SW (`purge-pages`). El SW (v3) no cachea respuestas redirigidas ni `/login`.
-- Vercel Blob: `BLOB_READ_WRITE_TOKEN` es un secreto de solo escritura en Vercel (no se puede revelar ni bajar con `vercel env pull`), así que el barrido de gifs se hace desde la app: Perfil → "Imágenes de ejercicios" → botón que copia en tandas de 6 los gifs de los ejercicios que usas. Cada gif nuevo se copia solo al agregarlo a una rutina. `scripts/mirror-gifs.ts` sigue ahí por si algún día se tiene el token local.
+- Vercel Blob: `BLOB_READ_WRITE_TOKEN` es un secreto de solo escritura en Vercel (no se puede revelar ni bajar con `vercel env pull`), así que el barrido de gifs se hace desde la app: **/admin → "Mantenimiento"** → botón que copia en tandas de 6 los gifs de los ejercicios que usa la cuenta admin. Estaba en Perfil y se movió al panel de admin (2026-09-22): es plomería interna y los usuarios no se tienen que enterar de dónde viven los gifs. El bloque ni siquiera se renderiza si no hay `BLOB_READ_WRITE_TOKEN` (en local, por ejemplo). Cada gif nuevo se copia solo al agregarlo a una rutina. `scripts/mirror-gifs.ts` sigue ahí por si algún día se tiene el token local.
 - Eventos del cronómetro: `workout:rest-start` se dispara desde el `onClick` del botón, no desde la acción del formulario (dentro de la acción React agrupa el setState del HUD en la transición y el refresh lo pierde).
 - Para probar en local se usa una cuenta QA desechable creada directo en la base (`insert into users ...` con hash scrypt), se recorre la app con Playwright (`npx playwright` + Chromium) y al final se borra el usuario — el `ON DELETE CASCADE` se lleva rutinas y sesiones. Nunca se toca la cuenta real.
 
@@ -204,7 +204,7 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 4. **Detalle de rutina** — stats (ejercicios / series / músculos), CTA, lista de ejercicios (tocar gif = cómo se hace; editar series/reps/peso inline; subir/bajar; quitar); botón compacto "Agregar ejercicio" que abre el explorador (grid con gif, chips por músculo, búsqueda es/en, "i" de info, crear ejercicio propio) como hoja deslizante en vez de ocupar la pantalla siempre; ajustes (nombre, días de la semana, duplicar, eliminar). ✅
 5. **Modo entrenamiento** — casilla de carga en kg, lb o placas según el ejercicio; HUD de vidrio pegajoso (un número grande + anillo de series, que se vuelve cian y cuenta regresivo en el descanso automático de 3 min al marcar una serie, con −15s / Saltar / +15s), aviso de series en cola sin señal, por ejercicio: sugerencia de peso con "Usar", filas por serie (kg + reps, placeholder de la vez pasada, ✓ con spinner / ámbar si quedó en cola), "Agregar serie", notas de la sesión, terminar / descartar. ✅
 6. **Progreso** — selector semana/mes/año, tarjeta de tendencia de carga contra el periodo anterior, totales (sesiones / series / carga / tiempo), calendario de constancia de 14 semanas con un trío de anillos por día, por ejercicio (mejor marca, última sesión, gráfica peso/reps/volumen, lista de sesiones), sesiones completadas → detalle con series editables, duración, volumen y notas. ✅
-7. **Perfil** — usuario, **metas semanales de los anillos**, link a "Panel de administrador" (si `isAdmin`), peso corporal (registro + gráfica), cambiar contraseña, copiar gifs a Blob, exportar CSV, cerrar sesión. ✅
+7. **Perfil** — usuario, **metas semanales de los anillos**, link a "Panel de administrador" (si `isAdmin`), peso corporal (registro + gráfica), cambiar contraseña, exportar CSV, cerrar sesión. ✅
 8. **Cómo se hace** (bottom sheet) — gif grande, músculo, equipo, pasos (en inglés). ✅
 9. **Offline** — banner sin conexión, páginas visitadas abren desde cache, `/offline` para las no visitadas. ✅
 10. **Admin** (solo `isAdmin`) — lista de usuarios con su conteo de rutinas → entra a uno → ve sus rutinas y crea una nueva → la arma con el mismo editor de siempre (banner "Editando como admin la rutina de <usuario>"). ✅
@@ -226,7 +226,7 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 - ~~Octava: libras (lb) como unidad de carga alterna a kg, con historial por serie fiel a como se tecleó~~ ✅
 
 **Queda abierto (sin prisa), en este orden sugerido:**
-1. Pulsar "Copiar gifs" en Perfil (producción) una vez por usuario; después es automático.
+1. Pulsar "Copiar gifs" en /admin → Mantenimiento (producción); después es automático para los ejercicios nuevos.
 2. Migraciones versionadas (`drizzle-kit generate` + carpeta `drizzle/`) para que el repo pruebe que producción coincide con `schema.ts`.
 3. Throttle de login por IP (hoy el bloqueo es por cuenta).
 4. Accesibilidad de la hoja "cómo se hace" (focus trap, `aria-labelledby`) y consolidar helpers duplicados (`requireOwnedSession`).
@@ -259,11 +259,12 @@ src/app/
   progreso/             Lista de sesiones, heatmap y ejercicios; [exerciseId] = gráfica;
                         sesion/[id] = detalle (SetRowEditor para corregir/borrar series)
   perfil/               Usuario, metas semanales de los anillos (updateGoals), link a /admin
-                        (si isAdmin), peso corporal, contraseña, copiar gifs a Blob, CSV, logout
+                        (si isAdmin), peso corporal, contraseña, CSV, logout
   ejercicios/actions.ts createCustomExercise
   api/exercises/search  Búsqueda/browse (q en es/en, bodyPart, offset); catálogo + propios del usuario
   api/export            CSV del historial del usuario
-  admin/                page (lista de usuarios), usuarios/[userId]/page.tsx (rutinas de
+  admin/                page (lista de usuarios + bloque de mantenimiento con el copiado
+                        de gifs a Blob), usuarios/[userId]/page.tsx (rutinas de
                         ese usuario + crear una), actions.ts (createRoutineForUser) —
                         todo detrás de requireAdmin()
 src/components/
