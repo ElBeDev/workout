@@ -1,10 +1,41 @@
 # Plan: App Web de Ejercicio (mobile-first) — estilo TrainWise
 
-## 0. Estado actual (2026-09-03)
+## 0. Estado actual (2026-09-22)
 
-🟢 **Ya está en línea**: https://workout-eight-neon.vercel.app — repo en [github.com/ElBeDev/workout](https://github.com/ElBeDev/workout), deploy automático a Vercel en cada push a `main`.
+🟢 **En línea**: https://workout-eight-neon.vercel.app — repo en [github.com/ElBeDev/workout](https://github.com/ElBeDev/workout), deploy automático a Vercel en cada push a `main`.
 
-Lo que ya funciona de punta a punta:
+En la base hoy: **3 usuarios**, 14 rutinas, 20 sesiones terminadas, 169 series registradas, 1,500 ejercicios de catálogo + 1 propio.
+
+### Qué tiene la app hoy
+
+**Cuentas** — usuario y contraseña propios (scrypt, sin dependencias externas), sesión en cookie httpOnly respaldada por la tabla `sessions`, bloqueo tras 8 intentos fallidos. No se pide correo, así que **no hay recuperación de contraseña** y la app lo advierte al registrarse. Multiusuario real; `users.is_admin` abre el panel de administrador.
+
+**Catálogo de ejercicios** — 1,500 ejercicios con gif (ExerciseDB), con nombre en español generado por reglas (`name_es`), músculo, equipo e instrucciones paso a paso. La búsqueda acepta español o inglés, hay filtro por grupo muscular, y una hoja de "cómo se hace" con el gif grande. Cada usuario puede crear ejercicios propios con su foto.
+
+**Rutinas** — crear (desde el "+" de la cabecera), renombrar, duplicar y eliminar conservando el historial (las sesiones quedan como "Rutina eliminada"). Días de la semana asignados, que alimentan el "Hoy toca" de la portada. Los ejercicios se agregan desde una hoja con el explorador; series, reps y peso objetivo se editan tocando la línea; subir, bajar y quitar viven en el menú "⋮". Cada ejercicio declara su unidad de carga: **kilos, libras o placas**.
+
+**Entrenamiento** — empezar o reanudar (nunca hay dos sesiones abiertas de la misma rutina: lo garantiza un índice único parcial). HUD pegajoso con el tiempo transcurrido, un anillo de series y el descanso automático de 3 minutos al marcar una serie (±15 s, saltar, vibración al terminar). Por serie se teclea carga y reps en la unidad que toque, con lo de la vez pasada como referencia y una sugerencia de progresión (+2.5 kg, +5 lb, +1 placa o +1 rep) que se aplica con un botón. Se pueden agregar series sobre la marcha, dejar notas de la sesión y descartarla. Al terminar se cae en el resumen de la sesión con los anillos de la semana ya actualizados.
+
+**Progreso** — totales del periodo (semana, mes o año): sesiones, series, carga y tiempo, más la tendencia contra el periodo anterior. Calendario de constancia de 14 semanas con un trío de anillos por día. Por ejercicio: récord personal, gráfica de peso / placas / reps / volumen por sesión, y su lista de sesiones. Detalle de sesión con métricas grandes, las series agrupadas por ejercicio (corregibles y borrables) y las notas. Todo el historial se exporta a CSV.
+
+**Perfil** — metas semanales de los tres anillos (carga, series, días), peso corporal con gráfica, cambiar contraseña y cerrar sesión (que además purga caches y colas locales).
+
+**Administrador** (solo `is_admin`) — lista de usuarios con su número de rutinas; entrar a uno y armarle rutinas con el mismo editor de siempre, con un banner de aviso y sin el botón de entrenar (el admin arma, no entrena por nadie). Bloque de mantenimiento con el respaldo de gifs (⚠️ hoy no operativo, ver pendientes).
+
+**PWA y offline** — instalable, con ícono y tema propios. Service worker propio: el shell y las páginas ya visitadas abren sin señal, y las series marcadas sin conexión se encolan en `localStorage` y se sincronizan al reconectar, con un banner que lo avisa.
+
+**Diseño** — sistema estilo Apple Fitness en claro y oscuro: lienzo neutro, color reservado para el dato (carga rosa, series verde, días cian), anillos, navegación de vidrio. El detalle completo está en [diseno-apple-fitness.md](./diseno-apple-fitness.md).
+
+### Cómo se prueba
+
+`npm run build` y `npx eslint src` son el mínimo. La referencia real es `npm run smoke`: 9 pruebas con Playwright sobre una cuenta desechable que se crea y se borra sola, y que se corre **también contra producción** con `BASE_URL=https://workout-eight-neon.vercel.app`. Para lo visual se siembra una cuenta QA con datos y se revisan capturas en claro y oscuro.
+
+### Historial de rondas (cómo llegamos aquí)
+
+El inventario de arriba es el estado real; esto es el orden en que se fue
+construyendo, útil para entender por qué algo está como está.
+
+**Primera tanda (2026-09-03) — MVP:**
 
 - [x] Proyecto Next.js + TypeScript + Tailwind, mobile-first, instalable como PWA.
 - [x] Base de datos en Neon (Postgres) con el modelo completo (usuarios, ejercicios, rutinas, sesiones, sets).
@@ -231,19 +262,21 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 - ~~Sexta: descanso fijo de 3 min (se quita la config), panel de administrador~~ ✅
 - ~~Séptima: "Agregar ejercicio" pasa de panel siempre visible a botón + hoja deslizante~~ ✅
 - ~~Octava: libras (lb) como unidad de carga alterna a kg, con historial por serie fiel a como se tecleó~~ ✅
+- ~~Novena: rediseño visual completo al estilo Apple Fitness (anillos semanales con metas, tendencias, récords, calendario de constancia, resumen post-entrenamiento)~~ ✅
 
 **Queda abierto (sin prisa), en este orden sugerido:**
 1. **Arreglar el espejado de gifs**: la variable `BLOB_READ_WRITE_TOKEN` existe en el proyecto pero no llega al runtime, así que hay 0 copias de 1,500 gifs (ver notas de infra). Primero eso; después, pulsar "Copiar gifs" en /admin → Mantenimiento.
 2. Migraciones versionadas (`drizzle-kit generate` + carpeta `drizzle/`) para que el repo pruebe que producción coincide con `schema.ts`.
 3. Throttle de login por IP (hoy el bloqueo es por cuenta).
 4. Accesibilidad de la hoja "cómo se hace" (focus trap, `aria-labelledby`) y consolidar helpers duplicados (`requireOwnedSession`).
-5. Producto: récords personales con aviso, plantillas de rutina (Push/Pull/Legs) para que el admin las asigne rápido, compartir rutina por link, push notifications, fotos de progreso, traducir las instrucciones paso a paso.
+5. Diseño, lo que quedó marcado con ⏳ en [diseno-apple-fitness.md](./diseno-apple-fitness.md): aviso de récord *durante* la sesión, carrusel de premios, compartir la sesión como imagen, skeletons y splash screens de iOS, y el colapso del título a barra de vidrio al hacer scroll.
+6. Producto: plantillas de rutina (Push/Pull/Legs) para que el admin las asigne rápido, compartir rutina por link, push notifications, fotos de progreso, traducir las instrucciones paso a paso (hoy en inglés).
 
 ## 10. Mapa del código
 
 ```
 src/app/
-  layout.tsx            Fuente Outfit, viewport/theme-color, Connectivity, BottomNav
+  layout.tsx            Fuente Inter, viewport/theme-color, Connectivity, BottomNav
   globals.css           Tokens de diseño (light/dark) y @theme de Tailwind
   manifest.ts, icon.png PWA manifest + favicon
   error.tsx             Error global con "Reintentar"
