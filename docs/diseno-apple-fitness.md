@@ -854,10 +854,12 @@ la tabla de cambios de [PLAN.md](./PLAN.md); aquí queda el porqué.
 
 **Hallazgo al mover eso último**: el espejado de gifs a Vercel Blob **nunca ha
 corrido**. Hay 0 copias de 1,500 gifs y 39 ejercicios ya usados en rutinas siguen
-dependiendo del servidor externo. La variable `BLOB_READ_WRITE_TOKEN` sí está en
-el proyecto de Vercel pero no llega al runtime. Está anotado como pendiente #1 en
-[PLAN.md](./PLAN.md); no tiene que ver con el rediseño, solo salió a la luz al
-tocar esa pantalla.
+dependiendo del servidor externo. Se diagnosticó a fondo (token vacío en el
+runtime + store privado que no sirve URLs públicas) y quedó como pendiente #1
+en [PLAN.md](./PLAN.md), con las dos opciones para cerrarlo. No tiene que ver con
+el rediseño: salió a la luz al tocar esa pantalla, y lo que lo mantuvo escondido
+19 días fue que `mirrorExerciseGif` se traga los errores. Por eso /admin ahora
+tiene un diagnóstico que prueba cada pieza por separado.
 
 ### Decisiones que conviene no volver a discutir
 
