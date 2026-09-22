@@ -34,6 +34,7 @@ export async function createRoutineForUser(targetUserId: string, formData: FormD
  */
 export async function diagnoseBlob(): Promise<{
   token: boolean;
+  acceso: string;
   claves: string;
   download: string;
   upload: string;
@@ -43,6 +44,12 @@ export async function diagnoseBlob(): Promise<{
   await requireAdmin();
 
   const token = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+  // Acceso estático vs. dinámico: si el estático viene vacío y el dinámico no,
+  // es que el valor se fijó en el bundle durante el build (cuando la variable
+  // todavía no existía) y el runtime real sí la tiene. Solo longitudes.
+  const nombre = ["BLOB", "READ", "WRITE", "TOKEN"].join("_");
+  const estatico = (process.env.BLOB_READ_WRITE_TOKEN ?? "").length;
+  const dinamico = (process.env[nombre] ?? "").length;
   // Solo nombres, nunca valores: sirve para saber si el runtime ve las
   // variables del store de Blob o ninguna.
   const claves =
@@ -69,7 +76,7 @@ export async function diagnoseBlob(): Promise<{
   }
 
   let upload = "no se intentó (falta el token)";
-  if (token) {
+  if (dinamico > 0) {
     try {
       const blob = await put("diagnostics/ping.txt", `ok ${new Date().toISOString()}`, {
         access: "public",
@@ -90,5 +97,13 @@ export async function diagnoseBlob(): Promise<{
 
   const pendientes = (await pendingGifIds(await requireAdmin())).length;
 
-  return { token, claves, download, upload, copias, pendientes };
+  return {
+    token,
+    acceso: `estático ${estatico} car. · dinámico ${dinamico} car.`,
+    claves,
+    download,
+    upload,
+    copias,
+    pendientes,
+  };
 }
