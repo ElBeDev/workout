@@ -1,16 +1,24 @@
 import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
-import { KeyRound, Scale, Trash2, Plus, ShieldAlert, ShieldCheck, Download, Images, ChevronRight } from "lucide-react";
+import { KeyRound, Scale, Trash2, Plus, ShieldAlert, ShieldCheck, Download, Images, ChevronRight, Target } from "lucide-react";
 import { db } from "@/db";
 import { users, bodyWeights } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
 import { fmtDate } from "@/lib/dates";
 import { blobConfigured, pendingGifIds } from "@/lib/blob";
-import { Card, Input, PageHeader, PrimaryButton, SectionTitle } from "@/components/ui";
+import {
+  Card,
+  GroupedList,
+  Input,
+  PageHeader,
+  PrimaryButton,
+  SecondaryButton,
+  SectionTitle,
+} from "@/components/ui";
 import { BodyWeightChart } from "@/components/BodyWeightChart";
 import { LogoutButton } from "@/components/LogoutButton";
 import { MirrorGifsButton } from "@/components/MirrorGifsButton";
-import { changePasswordAction, addBodyWeight, deleteBodyWeight } from "./actions";
+import { changePasswordAction, addBodyWeight, deleteBodyWeight, updateGoals } from "./actions";
 
 export const dynamic = "force-dynamic";
 // Each mirror batch downloads a few gifs from ExerciseDB before returning.
@@ -56,55 +64,110 @@ export default async function PerfilPage({
       <PageHeader title="Perfil" />
 
       <Card className="flex items-center gap-4 p-4">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-accent text-[26px] font-bold text-accent-foreground">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-surface-2 text-[26px] font-bold uppercase text-muted">
           {initial}
         </div>
         <div className="min-w-0">
-          <p className="truncate text-[18px] font-semibold capitalize">{user?.username}</p>
+          <p className="truncate text-[22px] font-bold capitalize tracking-[-0.02em]">
+            {user?.username}
+          </p>
           {user?.createdAt && (
             <p className="text-[13px] text-muted">
-              Desde{" "}
-              {fmtDate(user.createdAt, { month: "long", year: "numeric" })}
+              Desde {fmtDate(user.createdAt, { month: "long", year: "numeric" })}
             </p>
           )}
         </div>
       </Card>
 
+      <section className="flex flex-col gap-3">
+        <SectionTitle>Metas de la semana</SectionTitle>
+        <Card className="flex flex-col gap-3 p-4">
+          <p className="text-[13px] text-muted">
+            Son las tres metas de los anillos del Resumen. La carga no cuenta los ejercicios
+            en placas (no hay forma de convertirlas a kilos).
+          </p>
+          <form action={updateGoals} className="flex flex-col gap-3">
+            <div className="grid grid-cols-3 gap-2">
+              <label className="label text-load">
+                Carga (kg)
+                <Input
+                  name="volume"
+                  type="number"
+                  min={100}
+                  step={100}
+                  defaultValue={user?.goalWeeklyVolumeKg ?? 5000}
+                  className="mt-1 text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+                />
+              </label>
+              <label className="label text-sets">
+                Series
+                <Input
+                  name="sets"
+                  type="number"
+                  min={1}
+                  defaultValue={user?.goalWeeklySets ?? 60}
+                  className="mt-1 text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+                />
+              </label>
+              <label className="label text-days">
+                Días
+                <Input
+                  name="days"
+                  type="number"
+                  min={1}
+                  max={7}
+                  defaultValue={user?.goalWeeklyDays ?? 4}
+                  className="mt-1 text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+                />
+              </label>
+            </div>
+            <SecondaryButton type="submit" className="w-full">
+              <Target className="h-4 w-4" />
+              Guardar metas
+            </SecondaryButton>
+          </form>
+        </Card>
+      </section>
+
       {user?.isAdmin && (
-        <Link href="/admin">
-          <Card className="flex items-center gap-3 p-3 transition active:scale-[0.99]">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground">
+        <GroupedList>
+          <Link href="/admin" className="flex items-center gap-3 p-4 transition active:bg-surface-2">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
               <ShieldCheck className="h-5 w-5" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[15px] font-semibold">Panel de administrador</p>
+              <p className="text-[17px] font-semibold">Panel de administrador</p>
               <p className="text-[13px] text-muted">Armar rutinas para cualquier usuario</p>
             </div>
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
-          </Card>
-        </Link>
+            <ChevronRight className="h-5 w-5 shrink-0 text-faint" />
+          </Link>
+        </GroupedList>
       )}
 
       <Card className="flex flex-col gap-3 p-4">
         <SectionTitle className="flex items-center gap-2">
-          <Scale className="h-4 w-4 text-muted" /> Peso corporal
+          <Scale className="h-3.5 w-3.5" /> Peso corporal
         </SectionTitle>
 
         {latest !== null && (
           <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-2xl bg-accent p-3 text-accent-foreground">
-              <p className="text-[22px] font-bold leading-none tabular-nums">
+            <div className="rounded-xl bg-surface-2 p-3">
+              <p className="label text-muted">Último registro</p>
+              <p className="mt-1 text-[26px] font-bold leading-none tracking-[-0.02em] tabular-nums">
                 {latest}
-                <span className="ml-1 text-[12px] font-medium opacity-70">kg</span>
+                <span className="ml-1 text-[13px] font-semibold text-muted">kg</span>
               </p>
-              <p className="mt-1 text-[11px] opacity-70">Último registro</p>
             </div>
-            <div className="rounded-2xl bg-surface-2 p-3">
-              <p className="text-[22px] font-bold leading-none tabular-nums">
+            <div className="rounded-xl bg-surface-2 p-3">
+              <p className="label text-muted">Desde el primero</p>
+              <p
+                className={`mt-1 text-[26px] font-bold leading-none tracking-[-0.02em] tabular-nums ${
+                  delta === null || delta === 0 ? "" : delta > 0 ? "text-load" : "text-sets"
+                }`}
+              >
                 {delta === null ? "—" : `${delta > 0 ? "+" : ""}${delta}`}
-                <span className="ml-1 text-[12px] font-medium text-muted">kg</span>
+                <span className="ml-1 text-[13px] font-semibold text-muted">kg</span>
               </p>
-              <p className="mt-1 text-[11px] text-muted">Desde el primero</p>
             </div>
           </div>
         )}
@@ -157,16 +220,16 @@ export default async function PerfilPage({
 
       <Card className="flex flex-col gap-3 p-4">
         <SectionTitle className="flex items-center gap-2">
-          <KeyRound className="h-4 w-4 text-muted" /> Cambiar contraseña
+          <KeyRound className="h-3.5 w-3.5" /> Cambiar contraseña
         </SectionTitle>
 
         {error && ERRORS[error] && (
-          <p className="rounded-2xl bg-danger/10 px-4 py-3 text-[13px] font-medium text-danger">
+          <p className="rounded-xl bg-danger/10 px-4 py-3 text-[14px] font-semibold text-danger">
             {ERRORS[error]}
           </p>
         )}
         {ok === "password" && (
-          <p className="rounded-2xl bg-accent px-4 py-3 text-[13px] font-medium text-accent-foreground">
+          <p className="rounded-xl bg-sets/12 px-4 py-3 text-[14px] font-semibold text-sets">
             Contraseña actualizada.
           </p>
         )}
@@ -186,7 +249,7 @@ export default async function PerfilPage({
 
       <Card className="flex flex-col gap-3 p-4">
         <SectionTitle className="flex items-center gap-2">
-          <Images className="h-4 w-4 text-muted" /> Imágenes de ejercicios
+          <Images className="h-3.5 w-3.5" /> Imágenes de ejercicios
         </SectionTitle>
         <p className="text-[13px] text-muted">
           Los gifs vienen de un servidor externo. Guardar una copia en nuestro almacenamiento evita
@@ -203,7 +266,7 @@ export default async function PerfilPage({
       <a
         href="/api/export"
         download
-        className="flex items-center justify-center gap-2 rounded-full border border-border bg-surface px-5 py-3.5 text-[15px] font-medium text-foreground"
+        className="flex h-12 items-center justify-center gap-2 rounded-full bg-surface-2 px-5 text-[15px] font-semibold text-foreground"
       >
         <Download className="h-4 w-4" />
         Exportar historial (CSV)

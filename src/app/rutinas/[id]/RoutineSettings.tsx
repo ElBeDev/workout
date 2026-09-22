@@ -33,7 +33,7 @@ export function RoutineSettings({
       <SectionTitle>Ajustes de la rutina</SectionTitle>
 
       <form action={renameRoutine.bind(null, routineId)} className="flex flex-col gap-2">
-        <label className="text-[12px] font-medium text-muted">Nombre</label>
+        <label className="label text-muted">Nombre</label>
         <div className="flex gap-2">
           <Input name="name" defaultValue={name} required className="flex-1" />
           <button
@@ -48,7 +48,7 @@ export function RoutineSettings({
 
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <label className="text-[12px] font-medium text-muted">Días de la semana</label>
+          <label className="label text-muted">Días de la semana</label>
           {savingDays && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted" />}
         </div>
         <div className="flex justify-between gap-1">
@@ -64,7 +64,7 @@ export function RoutineSettings({
                 className={`flex h-11 flex-1 items-center justify-center rounded-full text-[14px] font-semibold transition ${
                   active
                     ? "bg-primary text-primary-foreground"
-                    : "border border-border bg-surface-2 text-muted"
+                    : "bg-surface-2 text-muted"
                 }`}
               >
                 {d.short}

@@ -6,7 +6,7 @@ import type { LoadUnit } from "@/lib/suggest";
 import { updateRoutineExercise } from "./actions";
 
 const fieldClass =
-  "w-full rounded-xl border border-border bg-surface-2 px-1 py-2 text-center text-[14px] text-foreground outline-none focus:ring-2 focus:ring-accent [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
+  "w-full rounded-xl bg-surface-2 px-1 py-2 text-center text-[14px] text-foreground outline-none focus:ring-2 focus:ring-accent [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 
 export function ExerciseTargetsEditor({
   routineId,
@@ -80,15 +80,15 @@ export function ExerciseTargetsEditor({
         ))}
       </div>
       <div className="grid grid-cols-3 gap-1.5">
-        <label className="text-[10px] font-medium text-muted">
+        <label className="label text-muted">
           Series
           <input name="targetSets" type="number" min={1} defaultValue={targetSets} className={fieldClass} />
         </label>
-        <label className="text-[10px] font-medium text-muted">
+        <label className="label text-muted">
           Reps
           <input name="targetReps" type="number" min={1} defaultValue={targetReps} className={fieldClass} />
         </label>
-        <label className="text-[10px] font-medium text-muted">
+        <label className="label text-muted">
           {unit === "plates" ? "Placas" : unit === "lbs" ? "Lb" : "Kg"}
           <input
             name="targetWeight"
@@ -115,7 +115,7 @@ export function ExerciseTargetsEditor({
             setEditing(false);
           }}
           aria-label="Cancelar"
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface-2 text-muted"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-2 text-muted"
         >
           <X className="h-3.5 w-3.5" />
         </button>

@@ -3,17 +3,18 @@ import { routines, routineExercises, exercises, users } from "@/db/schema";
 import { exerciseGif } from "@/db/exercise-gif";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import { ChevronUp, ChevronDown, Play, Trash2, ShieldCheck } from "lucide-react";
+import { Play, ShieldCheck } from "lucide-react";
 import { bodyPartLabel } from "@/lib/body-parts";
 import { requireUserId } from "@/lib/session";
 import { isAdminUser } from "@/lib/admin";
 import { normalizeLoadUnit } from "@/lib/suggest";
 import { blobConfigured } from "@/lib/blob";
-import { Card, PageHeader, PrimaryButton, SectionTitle } from "@/components/ui";
+import { Card, GroupedList, PageHeader, PrimaryButton, SectionTitle } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { ExerciseInfoSheet } from "@/components/ExerciseInfoSheet";
 import { AddExerciseSheet } from "./AddExerciseSheet";
 import { RoutineSettings } from "./RoutineSettings";
+import { ExerciseRowMenu } from "./ExerciseRowMenu";
 import { ExerciseTargetsEditor } from "./ExerciseTargetsEditor";
 import { removeRoutineExercise, moveRoutineExercise } from "./actions";
 import { startSession } from "../../entrenar/actions";
@@ -73,29 +74,27 @@ export default async function RutinaDetailPage({
       />
 
       {!isOwner && (
-        <p className="flex items-center gap-2 rounded-2xl bg-accent px-4 py-3 text-[13px] font-medium text-accent-foreground">
+        <p className="flex items-center gap-2 rounded-xl bg-accent/12 px-4 py-3 text-[14px] font-semibold text-accent">
           <ShieldCheck className="h-4 w-4 shrink-0" />
           Editando como admin la rutina de <span className="capitalize">{ownerName ?? "otro usuario"}</span>
         </p>
       )}
 
       {error === "open-session" && (
-        <p className="rounded-2xl bg-danger/10 px-4 py-3 text-[13px] font-medium text-danger">
+        <p className="rounded-xl bg-danger/10 px-4 py-3 text-[14px] font-semibold text-danger">
           Tienes un entrenamiento en curso con esta rutina. Termínalo o descártalo desde Hoy antes de eliminarla.
         </p>
       )}
 
-      <div className="rounded-[1.5rem] bg-accent p-5 text-accent-foreground">
-        <div className="grid grid-cols-3 divide-x divide-black/10 dark:divide-white/15">
-          <Stat value={items.length} label="Ejercicios" />
-          <Stat value={totalSets} label="Series" />
-          <Stat value={muscleGroups} label="Músculos" />
-        </div>
-      </div>
+      <Card hero className="grid grid-cols-3 divide-x divide-border p-4">
+        <Stat value={items.length} label="Ejercicios" tone="text-days" />
+        <Stat value={totalSets} label="Series" tone="text-sets" />
+        <Stat value={muscleGroups} label="Músculos" tone="text-load" />
+      </Card>
 
       {isOwner && items.length > 0 && (
         <form action={startSession.bind(null, routine.id)}>
-          <PrimaryButton type="submit">
+          <PrimaryButton type="submit" tone="accent">
             <Play className="h-4 w-4" fill="currentColor" />
             Empezar entrenamiento
           </PrimaryButton>
@@ -109,78 +108,51 @@ export default async function RutinaDetailPage({
             Esta rutina todavía no tiene ejercicios. Agrega el primero abajo.
           </p>
         ) : (
-          <ul className="flex flex-col gap-3">
+          <GroupedList>
             {items.map((item, index) => (
-              <li key={item.id}>
-                <Card className="flex items-center gap-3 p-3">
-                  <ExerciseInfoSheet
-                    exercise={{
-                      name: item.exerciseName,
-                      nameEs: item.exerciseNameEs,
-                      gifUrl: item.gifUrl,
-                      bodyPart: item.bodyPart,
-                      equipment: item.equipment,
-                      instructions: item.instructions,
-                    }}
-                    className="h-18 w-18 shrink-0 overflow-hidden rounded-2xl"
-                  >
-                    <ExerciseThumb
-                      src={item.gifUrl}
-                      alt={item.exerciseNameEs ?? item.exerciseName}
-                      className="h-full w-full"
-                    />
-                  </ExerciseInfoSheet>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[15px] font-semibold capitalize">
-                      {item.exerciseNameEs ?? item.exerciseName}
-                    </p>
-                    <ExerciseTargetsEditor
-                      routineId={routine.id}
-                      routineExerciseId={item.id}
-                      targetSets={item.targetSets}
-                      targetReps={item.targetReps}
-                      targetWeight={item.targetWeight}
-                      loadUnit={normalizeLoadUnit(item.loadUnit)}
-                    />
-                    <p className="mt-0.5 text-[12px] text-muted/80">
-                      {bodyPartLabel(item.bodyPart)}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <form action={moveRoutineExercise.bind(null, routine.id, item.id, "up")}>
-                      <button
-                        type="submit"
-                        disabled={index === 0}
-                        className="flex h-7 w-8 items-center justify-center text-muted disabled:opacity-25"
-                        aria-label="Subir"
-                      >
-                        <ChevronUp className="h-4 w-4" />
-                      </button>
-                    </form>
-                    <form action={moveRoutineExercise.bind(null, routine.id, item.id, "down")}>
-                      <button
-                        type="submit"
-                        disabled={index === items.length - 1}
-                        className="flex h-7 w-8 items-center justify-center text-muted disabled:opacity-25"
-                        aria-label="Bajar"
-                      >
-                        <ChevronDown className="h-4 w-4" />
-                      </button>
-                    </form>
-                  </div>
-                  <form action={removeRoutineExercise.bind(null, routine.id, item.id)}>
-                    <button
-                      type="submit"
-                      className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-surface-2 text-muted"
-                      aria-label="Quitar ejercicio"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </form>
-                </Card>
-              </li>
+              <div key={item.id} className="flex items-start gap-3 p-3">
+                <ExerciseInfoSheet
+                  exercise={{
+                    name: item.exerciseName,
+                    nameEs: item.exerciseNameEs,
+                    gifUrl: item.gifUrl,
+                    bodyPart: item.bodyPart,
+                    equipment: item.equipment,
+                    instructions: item.instructions,
+                  }}
+                  className="h-14 w-14 shrink-0 overflow-hidden rounded-xl"
+                >
+                  <ExerciseThumb
+                    src={item.gifUrl}
+                    alt={item.exerciseNameEs ?? item.exerciseName}
+                    className="h-full w-full"
+                  />
+                </ExerciseInfoSheet>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[17px] font-semibold capitalize">
+                    {item.exerciseNameEs ?? item.exerciseName}
+                  </p>
+                  <ExerciseTargetsEditor
+                    routineId={routine.id}
+                    routineExerciseId={item.id}
+                    targetSets={item.targetSets}
+                    targetReps={item.targetReps}
+                    targetWeight={item.targetWeight}
+                    loadUnit={normalizeLoadUnit(item.loadUnit)}
+                  />
+                  <p className="mt-0.5 text-[13px] text-faint">{bodyPartLabel(item.bodyPart)}</p>
+                </div>
+                <ExerciseRowMenu
+                  name={item.exerciseNameEs ?? item.exerciseName}
+                  canMoveUp={index > 0}
+                  canMoveDown={index < items.length - 1}
+                  moveUp={moveRoutineExercise.bind(null, routine.id, item.id, "up")}
+                  moveDown={moveRoutineExercise.bind(null, routine.id, item.id, "down")}
+                  remove={removeRoutineExercise.bind(null, routine.id, item.id)}
+                />
+              </div>
             ))}
-          </ul>
+          </GroupedList>
         )}
       </section>
 
@@ -191,11 +163,13 @@ export default async function RutinaDetailPage({
   );
 }
 
-function Stat({ value, label }: { value: number; label: string }) {
+function Stat({ value, label, tone }: { value: number; label: string; tone: string }) {
   return (
-    <div className="flex flex-col items-center">
-      <span className="text-[26px] font-bold leading-none tabular-nums">{value}</span>
-      <span className="mt-1 text-[12px] opacity-70">{label}</span>
+    <div className="flex flex-col items-center gap-1">
+      <span className={`label ${tone}`}>{label}</span>
+      <span className="text-[26px] font-bold leading-none tracking-[-0.02em] tabular-nums">
+        {value}
+      </span>
     </div>
   );
 }

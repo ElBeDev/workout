@@ -72,7 +72,7 @@ export function ExerciseInfoSheet({
             role="dialog"
             aria-modal="true"
             onClick={(e) => e.stopPropagation()}
-            className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-[2rem] bg-background pb-[max(1.5rem,env(safe-area-inset-bottom))] text-foreground"
+            className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-[1.75rem] bg-background pb-[max(1.5rem,env(safe-area-inset-bottom))] text-foreground"
           >
             <div className="relative aspect-square w-full overflow-hidden bg-white">
               <ExerciseThumb src={exercise.gifUrl} alt={title} className="h-full w-full" />
@@ -96,7 +96,7 @@ export function ExerciseInfoSheet({
                 )}
                 <div className="mt-2 flex flex-wrap gap-2">
                   {exercise.bodyPart && (
-                    <span className="rounded-full bg-accent px-3 py-1 text-[12px] font-medium text-accent-foreground">
+                    <span className="rounded-full bg-surface-2 px-3 py-1 text-[13px] font-semibold text-muted">
                       {bodyPartLabel(exercise.bodyPart)}
                     </span>
                   )}

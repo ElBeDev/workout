@@ -193,7 +193,7 @@ export default async function EntrenarPage({
                     equipment: item.equipment,
                     instructions: item.instructions,
                   }}
-                  className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl"
+                  className="h-14 w-14 shrink-0 overflow-hidden rounded-xl"
                 >
                   <ExerciseThumb
                     src={item.gifUrl}
@@ -202,20 +202,28 @@ export default async function EntrenarPage({
                   />
                 </ExerciseInfoSheet>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[15px] font-semibold capitalize">
+                  <p className="truncate text-[17px] font-semibold capitalize">
                     {item.exerciseNameEs ?? item.exerciseName}
                   </p>
                   <p className="mt-0.5 inline-flex items-center gap-1 text-[13px] text-muted">
                     <Repeat className="h-3.5 w-3.5" />
                     {item.targetSets} × {item.targetReps} reps
                     {unit !== "kg" && (
-                      <span className="opacity-70"> · {unit === "plates" ? "placas" : "lb"}</span>
+                      <span> · {unit === "plates" ? "placas" : "lb"}</span>
                     )}
                   </p>
                 </div>
               </div>
 
               {suggestion && <SuggestionPill exerciseId={item.exerciseId} suggestion={suggestion} />}
+
+              <div className="mb-1 flex items-center gap-2 pl-1 pr-14">
+                <span className="w-8 shrink-0" />
+                <span className="label flex-1 text-center text-faint">
+                  {unit === "plates" ? "Placas" : unit === "lbs" ? "Libras" : "Kilos"}
+                </span>
+                <span className="label flex-1 text-center text-faint">Reps</span>
+              </div>
 
               <div className="flex flex-col gap-2">
                 {Array.from({ length: rows }, (_, i) => i + 1).map((setNumber) => {
@@ -249,7 +257,7 @@ export default async function EntrenarPage({
                 <form action={addExtraSet.bind(null, sessionId, item.exerciseId, rows)}>
                   <button
                     type="submit"
-                    className="mt-1 inline-flex items-center gap-1 text-[13px] font-medium text-muted"
+                    className="mt-1 inline-flex h-9 items-center gap-1 rounded-full px-2 text-[14px] font-semibold text-accent"
                   >
                     <Plus className="h-3.5 w-3.5" />
                     Agregar serie

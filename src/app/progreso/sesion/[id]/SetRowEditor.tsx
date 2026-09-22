@@ -7,7 +7,7 @@ import { loadLabel, type WeightUnit } from "@/lib/suggest";
 import { updateSet, deleteSet } from "./actions";
 
 const fieldClass =
-  "w-full rounded-xl border border-border bg-surface-2 px-2 py-2 text-center text-[14px] text-foreground outline-none focus:ring-2 focus:ring-accent [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none";
+  "w-full rounded-xl bg-surface-2 px-2 py-2 text-center text-[14px] text-foreground outline-none focus:ring-2 focus:ring-accent [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none";
 
 export function SetRowEditor({
   sessionId,
@@ -31,7 +31,7 @@ export function SetRowEditor({
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const badge = (
-    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/40 text-[12px] font-semibold text-accent-strong">
+    <span className="flex h-7 w-7 shrink-0 items-center justify-center text-[13px] font-bold text-faint tabular-nums">
       {setNumber}
     </span>
   );
@@ -114,7 +114,7 @@ export function SetRowEditor({
         type="button"
         onClick={() => setConfirmDelete(true)}
         aria-label="Borrar serie"
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2 text-danger"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-danger"
       >
         <Trash2 className="h-4 w-4" />
       </button>
@@ -122,7 +122,7 @@ export function SetRowEditor({
         type="button"
         onClick={() => setEditing(false)}
         aria-label="Cancelar"
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2 text-muted"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-muted"
       >
         <X className="h-4 w-4" />
       </button>

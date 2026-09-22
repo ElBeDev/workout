@@ -24,6 +24,10 @@ export const users = pgTable("users", {
   isAdmin: boolean("is_admin").notNull().default(false),
   failedLogins: integer("failed_logins").notNull().default(0),
   lockedUntil: timestamp("locked_until"),
+  // Metas semanales de los tres anillos del Resumen (carga / series / días).
+  goalWeeklyVolumeKg: integer("goal_weekly_volume_kg").notNull().default(5000),
+  goalWeeklySets: integer("goal_weekly_sets").notNull().default(60),
+  goalWeeklyDays: integer("goal_weekly_days").notNull().default(4),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

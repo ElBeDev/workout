@@ -1,11 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Outfit } from "next/font/google";
+import { Inter } from "next/font/google";
 import { BottomNav } from "@/components/BottomNav";
 import { Connectivity } from "@/components/Connectivity";
 import "./globals.css";
 
-const outfit = Outfit({
-  variable: "--font-outfit",
+// SF Pro está licenciada sólo para plataformas Apple; Inter es la sustituta
+// con métricas más cercanas (ver docs/diseno-apple-fitness.md §4.2).
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
@@ -30,8 +32,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ebe7fb" },
-    { media: "(prefers-color-scheme: dark)", color: "#131220" },
+    { media: "(prefers-color-scheme: light)", color: "#f2f2f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -39,10 +41,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="es" className={`${outfit.variable} h-full antialiased`}>
+    <html lang="es" className={`${inter.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <Connectivity />
-        <main className="mx-auto w-full max-w-md flex-1 px-5 pb-28 pt-5">
+        <main className="mx-auto w-full max-w-md flex-1 px-5 pb-32 pt-4">
           {children}
         </main>
         <BottomNav />

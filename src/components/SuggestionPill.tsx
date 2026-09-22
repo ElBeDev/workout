@@ -35,22 +35,22 @@ export function SuggestionPill({
 
   return (
     <div
-      className={`mb-3 flex items-center gap-2 rounded-2xl px-3 py-2 ${
-        suggestion.kind === "up" ? "bg-accent text-accent-foreground" : "bg-surface-2 text-foreground"
+      className={`mb-3 flex items-center gap-2 rounded-xl px-3 py-2 ${
+        suggestion.kind === "up" ? "bg-load/12 text-load" : "bg-surface-2 text-muted"
       }`}
     >
-      <Icon className="h-4 w-4 shrink-0 opacity-80" />
+      <Icon className="h-4 w-4 shrink-0" />
       <div className="min-w-0 flex-1">
-        <p className="text-[13px] font-semibold leading-tight">
+        <p className="text-[14px] font-semibold leading-tight">
           {suggestion.kind === "up" ? "Sube a" : "Repite"} {label}
         </p>
-        <p className="truncate text-[11px] opacity-70">{suggestion.reason}</p>
+        <p className="truncate text-[11px] opacity-80">{suggestion.reason}</p>
       </div>
       <button
         type="button"
         onClick={apply}
         disabled={applied}
-        className="flex h-8 shrink-0 items-center gap-1 rounded-full bg-primary px-3 text-[12px] font-semibold text-primary-foreground disabled:opacity-60"
+        className="flex h-8 shrink-0 items-center gap-1 rounded-full bg-primary px-3 text-[13px] font-semibold text-primary-foreground disabled:opacity-60"
       >
         {applied ? <Check className="h-3.5 w-3.5" /> : null}
         {applied ? "Listo" : "Usar"}

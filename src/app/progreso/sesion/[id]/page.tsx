@@ -1,13 +1,16 @@
 import { db } from "@/db";
-import { workoutSessions, routines, setLogs, exercises } from "@/db/schema";
+import { workoutSessions, routines, setLogs, exercises, users } from "@/db/schema";
 import { exerciseGif } from "@/db/exercise-gif";
 import { and, asc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Clock, Layers, Weight, NotebookPen } from "lucide-react";
+import { NotebookPen } from "lucide-react";
 import { requireUserId } from "@/lib/session";
 import { bodyPartLabel } from "@/lib/body-parts";
 import { fmtDate } from "@/lib/dates";
+import { fmtKg } from "@/lib/format";
+import { getWeeklyRings } from "@/db/queries";
+import { RingTrio } from "@/components/Rings";
 import { toKg, type WeightUnit } from "@/lib/suggest";
 import { Card, PageHeader, SectionTitle } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
@@ -23,10 +26,13 @@ function formatDuration(start: Date, end: Date | null) {
 
 export default async function SessionDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ done?: string }>;
 }) {
   const { id } = await params;
+  const { done } = await searchParams;
   const userId = await requireUserId();
 
   const [session] = await db
@@ -102,21 +108,99 @@ export default async function SessionDetailPage({
     0
   );
 
+  // Recién terminada: se muestran los anillos de la semana ya con esta sesión
+  // dentro, que es la recompensa de haber entrenado.
+  const finishedNow = done === "1";
+  let rings = null;
+  if (finishedNow) {
+    const [me] = await db.select().from(users).where(eq(users.id, userId));
+    const weekly = await getWeeklyRings(userId, {
+      volumeKg: me?.goalWeeklyVolumeKg ?? 5000,
+      sets: me?.goalWeeklySets ?? 60,
+      days: me?.goalWeeklyDays ?? 4,
+    });
+    const v = fmtKg(weekly.volumeKg);
+    const g = fmtKg(weekly.volumeGoal);
+    rings = [
+      {
+        tone: "load" as const,
+        label: `Carga (${v.unit})`,
+        value: weekly.volumeKg,
+        goal: weekly.volumeGoal,
+        display: `${v.value}/${g.value}`,
+      },
+      {
+        tone: "sets" as const,
+        label: "Series",
+        value: weekly.sets,
+        goal: weekly.setsGoal,
+        display: `${weekly.sets}/${weekly.setsGoal}`,
+      },
+      {
+        tone: "days" as const,
+        label: "Días",
+        value: weekly.days,
+        goal: weekly.daysGoal,
+        display: `${weekly.days}/${weekly.daysGoal}`,
+      },
+    ];
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
         title={session.routineName ?? "Rutina eliminada"}
         backHref="/progreso"
+        eyebrow={finishedNow ? "Entrenamiento terminado" : undefined}
         subtitle={fmtDate(session.startedAt, { dateStyle: "full", timeStyle: "short" })}
       />
 
-      <div className="rounded-[1.5rem] bg-accent p-5 text-accent-foreground">
-        <div className="grid grid-cols-3 divide-x divide-black/10 dark:divide-white/15">
-          <Stat icon={<Clock className="h-4 w-4" />} value={formatDuration(session.startedAt, session.finishedAt)} label="Duración" />
-          <Stat icon={<Layers className="h-4 w-4" />} value={String(sets.length)} label="Series" />
-          <Stat icon={<Weight className="h-4 w-4" />} value={volume ? `${Math.round(volume)} kg` : "—"} label="Volumen" />
-        </div>
-      </div>
+      {rings && (
+        <Card hero className="flex flex-col items-center gap-3 p-5">
+          <RingTrio data={rings} size={132} />
+          <p className="text-center text-[15px] text-muted">
+            Así va tu semana con este entrenamiento dentro.
+          </p>
+          <div className="grid w-full grid-cols-3 gap-2">
+            {rings.map((r) => (
+              <div key={r.tone} className="text-center">
+                <p
+                  className={`label ${
+                    r.tone === "load" ? "text-load" : r.tone === "sets" ? "text-sets" : "text-days"
+                  }`}
+                >
+                  {r.label}
+                </p>
+                <p className="whitespace-nowrap text-[14px] font-semibold tabular-nums">
+                  {r.display}
+                </p>
+              </div>
+            ))}
+          </div>
+          <Link
+            href="/"
+            className="mt-1 flex h-12 w-full items-center justify-center rounded-full bg-primary text-[17px] font-semibold text-primary-foreground"
+          >
+            Listo
+          </Link>
+        </Card>
+      )}
+
+      <Card hero className="grid grid-cols-2 gap-x-4 gap-y-5 p-5">
+        <Stat
+          label="Duración"
+          value={formatDuration(session.startedAt, session.finishedAt)}
+          tone="text-days"
+        />
+        <Stat label="Series" value={String(sets.length)} tone="text-sets" />
+        <Stat
+          label="Carga total"
+          value={volume ? fmtKg(volume).value : "—"}
+          unit={volume ? fmtKg(volume).unit : undefined}
+          tone="text-load"
+        />
+        <Stat label="Ejercicios" value={String(groups.length)} tone="text-muted" />
+      </Card>
 
       {groups.length === 0 ? (
         <Card className="p-6 text-center text-sm text-muted">Esta sesión no tiene series registradas.</Card>
@@ -165,12 +249,26 @@ export default async function SessionDetailPage({
   );
 }
 
-function Stat({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) {
+/** Etiqueta chica arriba, valor grande abajo — el patrón del detalle de
+ *  entrenamiento de Fitness. */
+function Stat({
+  value,
+  label,
+  unit,
+  tone,
+}: {
+  value: string;
+  label: string;
+  unit?: string;
+  tone: string;
+}) {
   return (
-    <div className="flex flex-col items-center gap-1">
-      <span className="opacity-70">{icon}</span>
-      <span className="text-[18px] font-bold leading-none tabular-nums">{value}</span>
-      <span className="text-[11px] opacity-70">{label}</span>
+    <div className="min-w-0">
+      <p className={`label ${tone}`}>{label}</p>
+      <p className="truncate text-[28px] font-bold leading-none tracking-[-0.02em] tabular-nums">
+        {value}
+        {unit && <span className="ml-1 text-[15px] font-semibold text-muted">{unit}</span>}
+      </p>
     </div>
   );
 }

@@ -8,7 +8,6 @@ import {
   XAxis,
   YAxis,
   Tooltip,
-  CartesianGrid,
 } from "recharts";
 
 export type ProgressPoint = {
@@ -46,6 +45,13 @@ export function ExerciseProgressChart({
   );
   const meta = ALL_METRICS.find((m) => m.key === metric)!;
   const hasAny = data.some((d) => d[metric] !== null);
+  // El color dice de qué dato se trata, igual que en los anillos.
+  const color =
+    metric === "maxReps"
+      ? "var(--arc-sets)"
+      : metric === "maxPlates"
+        ? "var(--arc-days)"
+        : "var(--arc-load)";
 
   return (
     <div className="flex flex-col gap-3">
@@ -56,7 +62,7 @@ export function ExerciseProgressChart({
             type="button"
             onClick={() => setMetric(m.key)}
             className={`flex-1 rounded-full py-1.5 text-[12px] font-semibold transition ${
-              metric === m.key ? "bg-primary text-primary-foreground" : "text-muted"
+              metric === m.key ? "bg-surface text-foreground shadow-hero" : "text-muted"
             }`}
           >
             {m.label}
@@ -70,43 +76,47 @@ export function ExerciseProgressChart({
             <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id="progressFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#7c6cf0" stopOpacity={0.35} />
-                  <stop offset="100%" stopColor="#7c6cf0" stopOpacity={0} />
+                  <stop offset="0%" stopColor={color} stopOpacity={0.28} />
+                  <stop offset="100%" stopColor={color} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="0" stroke="currentColor" opacity={0.06} vertical={false} />
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 11, fill: "currentColor", opacity: 0.6 }}
+                tick={{ fontSize: 11, fill: "currentColor", opacity: 0.45 }}
                 tickLine={false}
                 axisLine={false}
+                minTickGap={24}
               />
               <YAxis
-                tick={{ fontSize: 11, fill: "currentColor", opacity: 0.6 }}
+                tick={{ fontSize: 11, fill: "currentColor", opacity: 0.45 }}
                 tickLine={false}
                 axisLine={false}
-                width={44}
+                width={40}
+                tickCount={3}
                 domain={["auto", "auto"]}
               />
               <Tooltip
                 formatter={(v) => [`${v} ${meta.unit}`, meta.label]}
+                cursor={{ stroke: "currentColor", strokeOpacity: 0.15 }}
                 contentStyle={{
-                  fontSize: 12,
+                  fontSize: 13,
+                  fontWeight: 600,
                   borderRadius: 12,
                   background: "var(--surface)",
                   color: "var(--foreground)",
                   border: "1px solid var(--border)",
-                  boxShadow: "0 8px 24px rgba(21,21,31,0.12)",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
                 }}
               />
               <Area
                 type="monotone"
                 dataKey={metric}
-                stroke="#7c6cf0"
-                strokeWidth={2.5}
+                stroke={color}
+                strokeWidth={3}
+                strokeLinecap="round"
                 fill="url(#progressFill)"
-                dot={{ r: 3.5, fill: "#7c6cf0", strokeWidth: 0 }}
-                activeDot={{ r: 5 }}
+                dot={{ r: 3, fill: color, strokeWidth: 0 }}
+                activeDot={{ r: 5.5 }}
                 connectNulls
               />
             </AreaChart>

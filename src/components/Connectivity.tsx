@@ -49,8 +49,8 @@ export function Connectivity() {
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-0 z-70 flex justify-center px-5 pt-[max(0.75rem,env(safe-area-inset-top))]">
-      <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground shadow-[0_8px_24px_rgba(21,21,31,0.25)]">
-        <WifiOff className="h-4 w-4" />
+      <div className="glass pointer-events-auto flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-foreground shadow-[0_8px_24px_rgba(0,0,0,0.25)]">
+        <WifiOff className="h-4 w-4 text-warning" />
         Sin conexión — las series se guardan aquí y se envían al reconectar
       </div>
     </div>

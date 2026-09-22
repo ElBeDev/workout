@@ -47,6 +47,28 @@ export async function mirrorMyGifs(): Promise<{ mirrored: number; remaining: num
   return { mirrored, remaining, enabled: true };
 }
 
+/** Metas semanales de los tres anillos del Resumen. */
+export async function updateGoals(formData: FormData) {
+  const userId = await requireUserId();
+  const clamp = (name: string, min: number, max: number, fallback: number) => {
+    const n = Math.round(Number(String(formData.get(name) ?? "").trim()));
+    if (!Number.isFinite(n)) return fallback;
+    return Math.min(Math.max(n, min), max);
+  };
+
+  await db
+    .update(users)
+    .set({
+      goalWeeklyVolumeKg: clamp("volume", 100, 200000, 5000),
+      goalWeeklySets: clamp("sets", 1, 500, 60),
+      goalWeeklyDays: clamp("days", 1, 7, 4),
+    })
+    .where(eq(users.id, userId));
+
+  revalidatePath("/perfil");
+  revalidatePath("/");
+}
+
 export async function addBodyWeight(formData: FormData) {
   const userId = await requireUserId();
   const raw = String(formData.get("weight") ?? "").replace(",", ".").trim();

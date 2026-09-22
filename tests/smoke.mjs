@@ -44,6 +44,8 @@ async function main() {
     check("login", page.url() === `${BASE}/`);
 
     await page.goto(`${BASE}/rutinas`, { waitUntil: "networkidle" });
+    await page.click('button[aria-label="Nueva rutina"]');
+    await page.waitForSelector('input[name="name"]');
     await page.fill('input[name="name"]', "Smoke Push");
     await Promise.all([page.waitForURL(/\/rutinas\/[0-9a-f-]{36}$/), page.click("text=Crear rutina")]);
     check("create routine", /\/rutinas\/[0-9a-f-]{36}$/.test(page.url()));
@@ -68,7 +70,7 @@ async function main() {
     await page.locator("form[data-exercise] button[type=submit]").first().click();
     await page.waitForFunction(() => !document.querySelector('button[aria-label="Guardando serie"]'), null, { timeout: 15000 });
     await page.waitForTimeout(500);
-    const done = await page.locator("form[data-exercise] button.bg-primary").count();
+    const done = await page.locator("form[data-exercise] button.bg-sets").count();
     check("log a set", done >= 1);
 
     await page.click("text=Terminar entrenamiento");

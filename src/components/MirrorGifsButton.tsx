@@ -41,7 +41,7 @@ export function MirrorGifsButton({ pending }: { pending: number }) {
   if (left === 0 && done === 0) {
     return (
       <p className="flex items-center gap-2 text-[13px] text-muted">
-        <Check className="h-4 w-4 text-accent-strong" /> Todos tus ejercicios ya tienen copia propia.
+        <Check className="h-4 w-4 text-sets" /> Todos tus ejercicios ya tienen copia propia.
       </p>
     );
   }

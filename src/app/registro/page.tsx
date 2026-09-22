@@ -18,24 +18,24 @@ export default async function RegistroPage({
   return (
     <div className="flex min-h-[85vh] flex-col justify-center gap-6">
       <div className="flex flex-col items-center gap-3 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-[1.25rem] bg-primary text-primary-foreground shadow-[0_8px_24px_rgba(21,21,31,0.18)]">
+        <div className="flex h-16 w-16 items-center justify-center rounded-card bg-primary text-primary-foreground shadow-hero">
           <Dumbbell className="h-7 w-7" />
         </div>
         <div>
-          <h1 className="text-[28px] font-bold tracking-tight">Crea tu cuenta</h1>
-          <p className="text-sm text-muted">Solo un usuario y una contraseña.</p>
+          <h1 className="text-[34px] font-bold tracking-[-0.02em]">Crea tu cuenta</h1>
+          <p className="text-[15px] text-muted">Solo un usuario y una contraseña.</p>
         </div>
       </div>
 
       <Card className="p-4">
         <form action={registerAction} className="flex flex-col gap-3">
           {error && (
-            <p className="rounded-2xl bg-danger/10 px-4 py-3 text-[13px] font-medium text-danger">
+            <p className="rounded-xl bg-danger/10 px-4 py-3 text-[14px] font-semibold text-danger">
               {ERROR_MESSAGES[error] ?? "Algo salió mal, intenta de nuevo."}
             </p>
           )}
 
-          <label className="flex flex-col gap-1.5 text-[12px] font-medium text-muted">
+          <label className="label flex flex-col gap-1.5 text-muted">
             Usuario
             <Input
               name="username"
@@ -46,7 +46,7 @@ export default async function RegistroPage({
             />
           </label>
 
-          <label className="flex flex-col gap-1.5 text-[12px] font-medium text-muted">
+          <label className="label flex flex-col gap-1.5 text-muted">
             Contraseña
             <Input
               name="password"
@@ -67,9 +67,9 @@ export default async function RegistroPage({
         </form>
       </Card>
 
-      <p className="text-center text-sm text-muted">
+      <p className="text-center text-[15px] text-muted">
         ¿Ya tienes cuenta?{" "}
-        <Link href="/login" className="font-semibold text-foreground">
+        <Link href="/login" className="font-semibold text-accent">
           Inicia sesión
         </Link>
       </p>

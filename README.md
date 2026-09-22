@@ -9,8 +9,10 @@ sesión y por semana. Multiusuario con cuentas propias.
 En línea: https://workout-eight-neon.vercel.app (deploy automático en cada
 push a `main`).
 
-Ver [PLAN.md](./PLAN.md) para el plan completo, estado actual, mapa del
-código, notas de infra y registro de cambios.
+Toda la documentación está en [docs/](./docs): el plan completo, estado actual,
+mapa del código, notas de infra y registro de cambios en
+[docs/PLAN.md](./docs/PLAN.md), y el rediseño visual al estilo Apple Fitness en
+[docs/diseno-apple-fitness.md](./docs/diseno-apple-fitness.md).
 
 ### Stack
 
@@ -57,7 +59,7 @@ reconectar. Si cambias la estrategia del SW, sube `VERSION` dentro del archivo.
 `src/db/schema.ts` es la fuente de verdad. Cuando `db:push` pide
 confirmación interactiva (tablas con datos) y no hay terminal, aplicar el
 cambio con SQL directo y luego volver a correr `db:push` para confirmar que
-no queda diferencia. Ver las notas de infra en `PLAN.md` para los casos que
+no queda diferencia. Ver las notas de infra en `docs/PLAN.md` para los casos que
 ya pasaron.
 
 ### Probar sin tocar la cuenta real

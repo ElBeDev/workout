@@ -36,7 +36,7 @@ export default async function AdminPage() {
           <li key={u.id}>
             <Link href={`/admin/usuarios/${u.id}`}>
               <Card className="flex items-center gap-3 p-3 transition active:scale-[0.99]">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-accent text-[18px] font-bold text-accent-foreground">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-surface-2 text-[18px] font-bold uppercase text-muted">
                   {(u.username ?? "?").charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">

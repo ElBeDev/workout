@@ -16,8 +16,8 @@ export function ExerciseThumb({
 
   if (!src || failed) {
     return (
-      <div className={`flex items-center justify-center bg-accent/40 ${className}`}>
-        <Dumbbell className="h-1/3 w-1/3 text-accent-strong" />
+      <div className={`flex items-center justify-center bg-surface-2 ${className}`}>
+        <Dumbbell className="h-1/3 w-1/3 text-faint" />
       </div>
     );
   }

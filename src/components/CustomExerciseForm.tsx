@@ -6,7 +6,7 @@ import { BODY_PARTS } from "@/lib/body-parts";
 import { createCustomExercise, type CreatedExercise } from "@/app/ejercicios/actions";
 
 const fieldClass =
-  "w-full rounded-2xl border border-border bg-surface-2 px-4 py-3 text-[15px] text-foreground outline-none focus:ring-2 focus:ring-accent";
+  "w-full rounded-xl bg-surface-2 px-4 py-3 text-[17px] text-foreground outline-none focus:ring-2 focus:ring-accent";
 
 export function CustomExerciseForm({
   onCreated,
@@ -46,7 +46,7 @@ export function CustomExerciseForm({
           onCreated(res.exercise);
         })
       }
-      className="flex flex-col gap-3 rounded-[1.25rem] border border-border bg-surface-2 p-3"
+      className="flex flex-col gap-3 rounded-tile bg-surface-2 p-3"
     >
       <div className="flex items-center justify-between">
         <p className="text-[14px] font-semibold">Nuevo ejercicio propio</p>

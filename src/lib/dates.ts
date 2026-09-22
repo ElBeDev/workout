@@ -56,6 +56,21 @@ export function fmtDate(date: Date, options: Intl.DateTimeFormatOptions): string
   return new Intl.DateTimeFormat("es-MX", { timeZone: APP_TIME_ZONE, ...options }).format(date);
 }
 
+/** "21 – 27 de septiembre" para la semana (lunes a domingo) que contiene `now`. */
+export function weekRangeLabel(now = new Date()): string {
+  const local = localDate(now);
+  const monday = new Date(local);
+  monday.setUTCDate(local.getUTCDate() - ((local.getUTCDay() + 6) % 7));
+  const sunday = new Date(monday);
+  sunday.setUTCDate(monday.getUTCDate() + 6);
+  const fmt = (d: Date, opts: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat("es-MX", { timeZone: "UTC", ...opts }).format(d);
+  const sameMonth = monday.getUTCMonth() === sunday.getUTCMonth();
+  return sameMonth
+    ? `${fmt(monday, { day: "numeric" })} – ${fmt(sunday, { day: "numeric", month: "long" })}`
+    : `${fmt(monday, { day: "numeric", month: "short" })} – ${fmt(sunday, { day: "numeric", month: "short" })}`;
+}
+
 export function daysAgoLabel(date: Date | null): string {
   if (!date) return "Nunca";
   const n = daysAgo(date);

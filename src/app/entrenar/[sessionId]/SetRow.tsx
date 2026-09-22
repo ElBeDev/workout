@@ -6,8 +6,9 @@ import { enqueueSet, findPendingSet } from "@/lib/offline-queue";
 import type { LoadUnit } from "@/lib/suggest";
 import { logSet } from "./actions";
 
+// Se teclea con el pulgar entre series: campo alto y número grande.
 const fieldClass =
-  "w-full rounded-2xl border border-border bg-surface-2 px-3 py-3 text-[15px] text-foreground outline-none focus:ring-2 focus:ring-accent [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none";
+  "h-12 w-full rounded-xl bg-surface-2 px-2 text-center text-[20px] font-semibold tabular-nums text-foreground outline-none transition focus:ring-2 focus:ring-accent [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none placeholder:text-[15px] placeholder:font-normal";
 
 type Status = "idle" | "saving" | "done" | "queued" | "error";
 
@@ -83,6 +84,9 @@ export function SetRow({
   // and the RSC refresh after saving can swallow it. SessionHud always
   // counts down a fixed 3 minutes.
   function startRest() {
+    try {
+      navigator.vibrate?.(12);
+    } catch {}
     window.dispatchEvent(new CustomEvent("workout:rest-start"));
   }
 
@@ -134,12 +138,12 @@ export function SetRow({
 
   const buttonClass =
     status === "done" || status === "saving"
-      ? "bg-primary text-primary-foreground"
+      ? "bg-sets text-white"
       : status === "queued"
-        ? "bg-amber-400 text-black"
+        ? "bg-warning text-black"
         : status === "error"
           ? "bg-danger text-white"
-          : "border border-border bg-surface-2 text-muted";
+          : "bg-surface-2 text-faint";
 
   const label =
     status === "saving"
@@ -150,13 +154,24 @@ export function SetRow({
           ? "No se pudo guardar, toca para reintentar"
           : "Marcar serie";
 
+  const done = status === "done" || status === "saving";
+
   return (
-    <form ref={formRef} action={submit} data-exercise={exerciseId} className="flex items-center gap-2">
+    <form
+      ref={formRef}
+      action={submit}
+      data-exercise={exerciseId}
+      className={`flex items-center gap-2 rounded-xl p-1 transition ${
+        done ? "bg-sets/10" : status === "queued" ? "bg-warning/10" : ""
+      }`}
+    >
       <span
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold ${
+        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[13px] font-bold tabular-nums ${
           extra
-            ? "border border-dashed border-accent-strong text-accent-strong"
-            : "bg-accent/40 text-accent-strong"
+            ? "border border-dashed border-border text-muted"
+            : done
+              ? "text-sets"
+              : "text-faint"
         }`}
       >
         {setNumber}
@@ -189,16 +204,18 @@ export function SetRow({
         disabled={status === "saving"}
         aria-label={label}
         title={status === "queued" ? "Se guardará al reconectar" : undefined}
-        className={`ml-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:scale-95 disabled:opacity-70 ${buttonClass}`}
+        className={`ml-auto flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition active:scale-95 disabled:opacity-70 ${buttonClass} ${
+          status === "done" ? "animate-pop" : ""
+        }`}
       >
         {status === "saving" ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader2 className="h-5 w-5 animate-spin" />
         ) : status === "queued" ? (
-          <CloudOff className="h-4 w-4" />
+          <CloudOff className="h-5 w-5" />
         ) : status === "error" ? (
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className="h-5 w-5" />
         ) : (
-          <Check className="h-4 w-4" strokeWidth={2.5} />
+          <Check className="h-5 w-5" strokeWidth={3} />
         )}
       </button>
     </form>

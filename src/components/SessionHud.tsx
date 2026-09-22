@@ -2,15 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { Minus, Plus, X } from "lucide-react";
+import { Ring } from "@/components/Rings";
+import { fmtClock } from "@/lib/format";
 
 const REST_SECONDS = 180;
 
-function format(totalSeconds: number) {
-  const mm = Math.floor(totalSeconds / 60);
-  const ss = totalSeconds % 60;
-  return `${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
-}
-
+/**
+ * HUD del entrenamiento: un solo número dominante y un anillo que dice de un
+ * vistazo cómo vas. Verde = series de la sesión; cian y en cuenta regresiva
+ * mientras descansas (docs/diseno-apple-fitness.md §6.4).
+ */
 export function SessionHud({
   startedAtMs,
   completed,
@@ -62,43 +63,31 @@ export function SessionHud({
 
   const elapsed = Math.max(0, Math.floor((now - startedAtMs) / 1000));
   const resting = rest !== null;
-  const ticks = Math.max(total, 1);
+  const setsPct = total > 0 ? completed / total : 0;
 
   return (
-    <div className="sticky top-3 z-30 rounded-[1.5rem] bg-accent p-4 text-accent-foreground shadow-[0_10px_30px_rgba(21,21,31,0.10)]">
-      <div className="flex gap-1">
-        {Array.from({ length: Math.min(ticks, 40) }, (_, i) => (
-          <span
-            key={i}
-            className={`h-2 flex-1 rounded-full ${
-              i < Math.round((completed / ticks) * Math.min(ticks, 40))
-                ? "bg-accent-foreground/85"
-                : "bg-accent-foreground/20"
-            }`}
-          />
-        ))}
-      </div>
+    <div className="glass sticky top-2 z-30 rounded-card p-4 shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
+      <div className="flex items-center gap-4">
+        <Ring
+          tone={resting ? "days" : "sets"}
+          pct={resting ? (rest ?? 0) / REST_SECONDS : setsPct}
+          size={64}
+          thickness={13}
+        >
+          {!resting && (
+            <span className="text-[13px] font-bold tabular-nums">
+              {Math.round(setsPct * 100)}
+            </span>
+          )}
+        </Ring>
 
-      <div className="mt-4 flex items-end justify-between">
-        <div className="flex flex-col">
-          <span className="text-[15px] font-semibold tabular-nums">{format(elapsed)}</span>
-          <span className="text-[11px] opacity-70">Transcurrido</span>
-        </div>
-
-        <div className="flex flex-col items-center">
-          <span className="text-[40px] font-bold leading-none tabular-nums">
-            {resting ? format(rest) : format(elapsed)}
-          </span>
-          <span className="mt-1 text-[11px] opacity-70">
+        <div className="min-w-0 flex-1">
+          <p className={`label ${resting ? "text-days" : "text-sets"}`}>
             {resting ? "Descanso" : "Entrenando"}
-          </span>
-        </div>
-
-        <div className="flex flex-col items-end">
-          <span className="text-[15px] font-semibold tabular-nums">
-            {completed}/{total}
-          </span>
-          <span className="text-[11px] opacity-70">Series</span>
+          </p>
+          <p className="text-[44px] font-bold leading-none tracking-[-0.03em] tabular-nums">
+            {fmtClock(resting ? (rest ?? 0) : elapsed)}
+          </p>
         </div>
       </div>
 
@@ -107,26 +96,40 @@ export function SessionHud({
           <button
             type="button"
             onClick={() => setRest((r) => Math.max(1, (r ?? 0) - 15))}
-            className="flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-[13px] font-medium text-foreground"
+            className="flex h-10 items-center gap-1 rounded-full bg-surface-2 px-4 text-[14px] font-semibold text-foreground active:scale-95"
           >
             <Minus className="h-3.5 w-3.5" /> 15s
           </button>
           <button
             type="button"
             onClick={() => setRest(null)}
-            className="flex h-9 items-center gap-1 rounded-full bg-primary px-4 text-[13px] font-semibold text-primary-foreground"
+            className="flex h-10 items-center gap-1 rounded-full bg-primary px-5 text-[14px] font-semibold text-primary-foreground active:scale-95"
           >
             <X className="h-3.5 w-3.5" /> Saltar
           </button>
           <button
             type="button"
             onClick={() => setRest((r) => (r ?? 0) + 15)}
-            className="flex h-9 items-center gap-1 rounded-full bg-surface px-3 text-[13px] font-medium text-foreground"
+            className="flex h-10 items-center gap-1 rounded-full bg-surface-2 px-4 text-[14px] font-semibold text-foreground active:scale-95"
           >
             <Plus className="h-3.5 w-3.5" /> 15s
           </button>
         </div>
       )}
+
+      <div className="mt-4 grid grid-cols-2 border-t border-border pt-3">
+        <div>
+          <p className="label text-muted">Transcurrido</p>
+          <p className="text-[17px] font-semibold tabular-nums">{fmtClock(elapsed)}</p>
+        </div>
+        <div className="text-right">
+          <p className="label text-muted">Series</p>
+          <p className="text-[17px] font-semibold tabular-nums">
+            {completed}
+            <span className="text-muted">/{total}</span>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

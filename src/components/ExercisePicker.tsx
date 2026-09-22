@@ -87,7 +87,7 @@ export function ExercisePicker({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Buscar (ej. press de banca, curl)"
-          className="w-full rounded-2xl border border-border bg-surface-2 py-3.5 pl-11 pr-4 text-[15px] text-foreground outline-none focus:ring-2 focus:ring-accent"
+          className="w-full rounded-xl bg-surface-2 py-3.5 pl-11 pr-4 text-[17px] text-foreground outline-none focus:ring-2 focus:ring-accent"
         />
       </div>
 
@@ -110,7 +110,7 @@ export function ExercisePicker({
         {items.map((ex) => (
           <div
             key={ex.id}
-            className="relative flex flex-col gap-2 rounded-[1.25rem] border border-border bg-surface-2 p-2"
+            className="relative flex flex-col gap-2 rounded-tile bg-surface-2 p-2"
           >
             <button
               type="button"
@@ -122,7 +122,7 @@ export function ExercisePicker({
               </div>
               <div className="flex flex-col gap-0.5 px-1 pb-1">
                 {ex.isCustom && (
-                  <span className="mb-0.5 w-fit rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-accent-foreground">
+                  <span className="mb-0.5 w-fit rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-accent-foreground">
                     Propio
                   </span>
                 )}

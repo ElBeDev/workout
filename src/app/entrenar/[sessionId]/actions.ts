@@ -146,5 +146,7 @@ export async function finishSession(sessionId: string) {
     .where(and(eq(workoutSessions.id, sessionId), isNull(workoutSessions.finishedAt)));
 
   revalidatePath("/");
-  redirect("/progreso");
+  // Al terminar se va al resumen de la sesión (con los anillos de la semana ya
+  // actualizados), no a la lista: cerrar un entrenamiento merece su pantalla.
+  redirect(`/progreso/sesion/${sessionId}?done=1`);
 }

@@ -14,7 +14,7 @@ type SelectedExercise = {
 };
 
 const fieldClass =
-  "mt-1 w-full rounded-2xl border border-border bg-surface-2 px-3 py-3 text-[15px] text-foreground outline-none focus:ring-2 focus:ring-accent";
+  "mt-1 w-full rounded-xl bg-surface-2 px-3 py-3 text-[17px] text-foreground outline-none focus:ring-2 focus:ring-accent";
 
 /**
  * Collapsed by default (just a button) so the routine screen doesn't carry
@@ -67,10 +67,11 @@ export function AddExerciseSheet({
             aria-modal="true"
             aria-labelledby="add-exercise-sheet-title"
             onClick={(e) => e.stopPropagation()}
-            className="flex max-h-[92vh] w-full max-w-md flex-col overflow-y-auto rounded-t-[2rem] bg-background p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-foreground"
+            className="flex max-h-[92vh] w-full max-w-md flex-col overflow-y-auto rounded-t-[1.75rem] bg-background p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-foreground"
           >
+            <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-border" />
             <div className="mb-4 flex items-center justify-between">
-              <h2 id="add-exercise-sheet-title" className="text-[18px] font-bold tracking-tight">
+              <h2 id="add-exercise-sheet-title" className="truncate text-[22px] font-bold tracking-[-0.02em]">
                 {selected ? (selected.nameEs ?? selected.name) : "Agregar ejercicio"}
               </h2>
               <button
@@ -126,15 +127,15 @@ export function AddExerciseSheet({
                 <input type="hidden" name="loadUnit" value={unit} />
 
                 <div className="grid grid-cols-3 gap-2">
-                  <label className="text-[12px] font-medium text-muted">
+                  <label className="label text-muted">
                     Series
                     <input name="targetSets" type="number" min={1} defaultValue={2} className={fieldClass} />
                   </label>
-                  <label className="text-[12px] font-medium text-muted">
+                  <label className="label text-muted">
                     Reps
                     <input name="targetReps" type="number" min={1} defaultValue={10} className={fieldClass} />
                   </label>
-                  <label className="text-[12px] font-medium text-muted">
+                  <label className="label text-muted">
                     {unit === "plates" ? "Placas" : unit === "lbs" ? "Peso (lb)" : "Peso (kg)"}
                     <input
                       name="targetWeight"

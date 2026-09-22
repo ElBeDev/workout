@@ -30,7 +30,7 @@ export function SessionNotes({
             if (!navigator.onLine) return; // keep the text; it saves on the next blur with signal
             if (e.target.value.trim() !== (notes ?? "")) formRef.current?.requestSubmit();
           }}
-          className="w-full resize-none rounded-2xl border border-border bg-surface-2 px-4 py-3 text-[15px] text-foreground outline-none focus:ring-2 focus:ring-accent"
+          className="w-full resize-none rounded-xl bg-surface-2 px-4 py-3 text-[17px] text-foreground outline-none focus:ring-2 focus:ring-accent"
         />
       </form>
       <p className="text-[11px] text-muted">Se guarda solo al salir del campo.</p>

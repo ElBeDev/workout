@@ -55,6 +55,8 @@ Séptima (2026-09-07): **limpieza de la pantalla de rutina**. El bloque de "Agre
 
 Octava (2026-09-20): **libras (lb) como segunda unidad de carga**, junto a kilos y placas (no todos los aparatos/mancuernas marcan kg). Al agregar o editar un ejercicio de una rutina el selector ahora tiene tres opciones (Kilos / Libras / Placas); el modo entrenamiento pide la carga en la unidad que toque. Como kg y lb comparten la misma columna `weight`, cada serie guarda además en qué unidad se registró (`set_logs.weight_unit`) para que un cambio posterior del ejercicio nunca reetiquete el historial ya guardado. Con eso: la sugerencia de progresión solo compara contra series de la misma unidad (si no hay historial en esa unidad, no sugiere carga) y usa +2.5 kg o +5 lb según toque; el detalle de sesión, la página por ejercicio, la gráfica y el CSV muestran cada serie con su unidad real tal cual se tecleó; y los volúmenes agregados (de una sesión o de un ejercicio) siempre sumen convirtiendo lb→kg primero, para que mezclar aparatos en kg y en lb no dé un número sin sentido.
 
+Novena (2026-09-22): **rediseño visual completo al estilo Apple Fitness**. Se fue el sistema lavanda del shot de Dribbble y entró uno de lienzo neutro (negro puro en oscuro, `#f2f2f7` en claro) donde **todo el color viene del dato**: carga (rosa), series (verde), días (cian) — los tres anillos de la semana. Fuente Outfit → Inter. La Home es ahora un "Resumen" encabezado por los tres anillos con meta (`users.goal_weekly_*`, editables en Perfil), la nav es una cápsula de vidrio tipo iOS 26 que esconde las etiquetas al hacer scroll, el HUD del entrenamiento es un anillo de series que se vuelve cian y cuenta regresivo al descansar, las filas de serie tienen campos del doble de tamaño, Progreso trae selector semana/mes/año + tendencia contra el periodo anterior + récords por ejercicio + un calendario de 14 semanas donde cada día es un trío de anillos en miniatura, y al terminar un entrenamiento se cae en el resumen de la sesión con los anillos ya actualizados. El plan completo, con lo que quedó abierto, está en [diseno-apple-fitness.md](./diseno-apple-fitness.md).
+
 Notas de infra que ya no hay que repetir:
 - El cliente de DB (`src/db/index.ts`) es "lazy" a propósito — si se inicializa en el import top-level, `next build` truena en Vercel al analizar rutas aunque `DATABASE_URL` sí exista en el entorno de runtime.
 - En Vercel, la integración de Neon prefija sus variables como `DATABASE_URL_*` si ya existe una variable llamada `DATABASE_URL` — la que de verdad lee el código es la que se llama exactamente `DATABASE_URL` (sin prefijo).
@@ -69,6 +71,9 @@ Notas de infra que ya no hay que repetir:
 - Tercera ronda de migraciones a mano (mismo método): `exercises.gif_blob_url / user_id / is_custom`, `users.failed_logins / locked_until`.
 - Sexta migración a mano: `users.is_admin boolean default false`, `bener` puesto en `true`. Y se revirtió una migración: `users.rest_seconds` / `routine_exercises.rest_seconds` (columnas del descanso configurable) se **borraron** al hacerlo fijo en 3 min — si ves esas columnas mencionadas en commits viejos, ya no existen.
 - Octava migración a mano: `set_logs.weight_unit text not null default 'kg'`.
+- Novena migración a mano (aditiva, con defaults, sin tocar datos): `users.goal_weekly_volume_kg int not null default 5000`, `users.goal_weekly_sets int not null default 60`, `users.goal_weekly_days int not null default 4` — las metas de los tres anillos.
+- El volumen de los anillos y de las tendencias **no cuenta las series en placas**: no hay forma honesta de convertir "3 placas" a kilos, y un número inventado arruinaría la métrica. Las lb sí se convierten a kg.
+- Toda la documentación vive en `docs/` (`PLAN.md` se movió ahí con `git mv`).
 - Cuarta ronda de migraciones a mano: índices (`set_logs(exercise_id)`, `workout_sessions(user_id, finished_at)`, `sessions(expires_at)`, `exercises(user_id)`, `routine_exercises(routine_id)`) y el índice único parcial `workout_sessions(user_id, routine_id) WHERE finished_at IS NULL` (una sola sesión abierta por rutina). Todos declarados también en `schema.ts`.
 - Al cerrar sesión, `LogoutButton` borra los caches `pages-*` y las colas `workout:*` de `localStorage`, y avisa al SW (`purge-pages`). El SW (v3) no cachea respuestas redirigidas ni `/login`.
 - Vercel Blob: `BLOB_READ_WRITE_TOKEN` es un secreto de solo escritura en Vercel (no se puede revelar ni bajar con `vercel env pull`), así que el barrido de gifs se hace desde la app: Perfil → "Imágenes de ejercicios" → botón que copia en tandas de 6 los gifs de los ejercicios que usas. Cada gif nuevo se copia solo al agregarlo a una rutina. `scripts/mirror-gifs.ts` sigue ahí por si algún día se tiene el token local.
@@ -181,7 +186,7 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 ## 7. Stack técnico (real, ya implementado)
 
 - **Frontend**: Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 — mobile-first, con `app/manifest.ts` para que sea instalable como app en el celular.
-- **Diseño**: sistema propio inspirado en [este shot de Dribbble](https://dribbble.com/shots/26265316-Ai-Powered-Smarter-Home-Workout-App-Design). Tokens en `src/app/globals.css` (`--background` lavanda, `--surface`, `--primary` casi negro, `--accent` lavanda fuerte, `--danger`, con variante dark). Primitivas en `src/components/ui.tsx`: `Card`, `PrimaryButton`, `SecondaryButton`, `CircleButton`, `Chip`, `Input`, `PageHeader`, `BackButton`, `SectionTitle`. Fuente Outfit vía `next/font`. Iconos `lucide-react`.
+- **Diseño**: sistema propio estilo **Apple Fitness** — ver [diseno-apple-fitness.md](./diseno-apple-fitness.md). Tokens en `src/app/globals.css` (lienzo `#000` / `#f2f2f7`, superficies neutras, y los tres colores del dato: `--ring-load` rosa, `--ring-sets` verde, `--ring-days` cian, con valores distintos por modo para pasar contraste). Primitivas en `src/components/ui.tsx` (`Card`, `MetricTile`, `StatGrid`, `GroupedList`, `TrendPill`, `Label`, botones, `Chip`, `Input`, `PageHeader` con large title) y anillos en `src/components/Rings.tsx`. Fuente Inter vía `next/font` (SF Pro no se puede usar fuera de plataformas Apple). Iconos `lucide-react`. *(Antes: sistema lavanda inspirado en [este shot de Dribbble](https://dribbble.com/shots/26265316-Ai-Powered-Smarter-Home-Workout-App-Design), con fuente Outfit.)*
 - **Backend/DB**: Neon (Postgres serverless) + Drizzle ORM. Ajustamos el plan original de Supabase por Neon porque el deploy es en Vercel y Neon se integra nativo ahí (Storage tab del proyecto).
 - **Auth**: usuario + contraseña propios (scrypt vía `node:crypto`, sin dependencias extra), sesión en cookie httpOnly respaldada por tabla `sessions` (`src/lib/session.ts`, `src/lib/password.ts`).
 - **Gráficas**: Recharts — por ejercicio (peso máx / reps máx / volumen por sesión) y peso corporal; heatmap propio en SVG/CSS.
@@ -194,12 +199,12 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 ## 8. Pantallas principales
 
 1. **Login / Registro** — usuario + contraseña; bloqueo tras 8 fallos; aviso de que no hay recuperación. ✅
-2. **Home** — saludo, tarjeta de "Entrenamiento en curso" (continuar / descartar), stats de la semana y racha, "Hoy toca" según días asignados, rutinas con gif del primer ejercicio, nº de ejercicios/series y "última vez", botón ▶. ✅
+2. **Home ("Resumen")** — fecha + large title, tarjeta héroe con los **tres anillos de la semana** (carga / series / días) y su leyenda, racha, tarjeta de "Entrenamiento en curso" (continuar / descartar), "Hoy toca" según días asignados con el ▶ grande, y el resto de las rutinas en lista agrupada. ✅
 3. **Mis rutinas** — lista + crear. ✅
 4. **Detalle de rutina** — stats (ejercicios / series / músculos), CTA, lista de ejercicios (tocar gif = cómo se hace; editar series/reps/peso inline; subir/bajar; quitar); botón compacto "Agregar ejercicio" que abre el explorador (grid con gif, chips por músculo, búsqueda es/en, "i" de info, crear ejercicio propio) como hoja deslizante en vez de ocupar la pantalla siempre; ajustes (nombre, días de la semana, duplicar, eliminar). ✅
-5. **Modo entrenamiento** — casilla de carga en kg, lb o placas según el ejercicio; HUD lavanda pegajoso (transcurrido, barra de series, descanso automático de 3 min al marcar una serie, con −15s / Saltar / +15s), aviso de series en cola sin señal, por ejercicio: sugerencia de peso con "Usar", filas por serie (kg + reps, placeholder de la vez pasada, ✓ con spinner / ámbar si quedó en cola), "Agregar serie", notas de la sesión, terminar / descartar. ✅
-6. **Progreso** — heatmap de 16 semanas, por ejercicio (mejor marca, última sesión, gráfica peso/reps/volumen, lista de sesiones), sesiones completadas → detalle con series editables, duración, volumen y notas. ✅
-7. **Perfil** — usuario, link a "Panel de administrador" (si `isAdmin`), peso corporal (registro + gráfica), cambiar contraseña, copiar gifs a Blob, exportar CSV, cerrar sesión. ✅
+5. **Modo entrenamiento** — casilla de carga en kg, lb o placas según el ejercicio; HUD de vidrio pegajoso (un número grande + anillo de series, que se vuelve cian y cuenta regresivo en el descanso automático de 3 min al marcar una serie, con −15s / Saltar / +15s), aviso de series en cola sin señal, por ejercicio: sugerencia de peso con "Usar", filas por serie (kg + reps, placeholder de la vez pasada, ✓ con spinner / ámbar si quedó en cola), "Agregar serie", notas de la sesión, terminar / descartar. ✅
+6. **Progreso** — selector semana/mes/año, tarjeta de tendencia de carga contra el periodo anterior, totales (sesiones / series / carga / tiempo), calendario de constancia de 14 semanas con un trío de anillos por día, por ejercicio (mejor marca, última sesión, gráfica peso/reps/volumen, lista de sesiones), sesiones completadas → detalle con series editables, duración, volumen y notas. ✅
+7. **Perfil** — usuario, **metas semanales de los anillos**, link a "Panel de administrador" (si `isAdmin`), peso corporal (registro + gráfica), cambiar contraseña, copiar gifs a Blob, exportar CSV, cerrar sesión. ✅
 8. **Cómo se hace** (bottom sheet) — gif grande, músculo, equipo, pasos (en inglés). ✅
 9. **Offline** — banner sin conexión, páginas visitadas abren desde cache, `/offline` para las no visitadas. ✅
 10. **Admin** (solo `isAdmin`) — lista de usuarios con su conteo de rutinas → entra a uno → ve sus rutinas y crea una nueva → la arma con el mismo editor de siempre (banner "Editando como admin la rutina de <usuario>"). ✅
@@ -238,20 +243,23 @@ src/app/
   offline/              Fallback del service worker para páginas no visitadas
   page.tsx              Home: sesión en curso, stats semanales, "Hoy toca", rutinas
   login/, registro/     Auth (page + actions)
-  rutinas/page.tsx      Lista + crear (actions.ts: createRoutine)
+  rutinas/page.tsx      Lista agrupada + NewRoutineSheet (el "+" de la cabecera abre la
+                        hoja de crear; actions.ts: createRoutine)
   rutinas/[id]/         Detalle: page, actions (add/remove/move/update ejercicio,
                         rename/delete/duplicate rutina, setRoutineDays — todas con
                         requireOwnedRoutine, que ahora deja pasar también a un admin),
                         AddExerciseSheet (botón compacto + hoja con el explorador),
-                        ExerciseTargetsEditor, RoutineSettings (nombre, días, duplicar,
-                        eliminar); banner "Editando como admin" si no es tu rutina
+                        ExerciseTargetsEditor, ExerciseRowMenu (el "⋮" con subir / bajar /
+                        quitar), RoutineSettings (nombre, días, duplicar, eliminar);
+                        banner "Editando como admin" si no es tu rutina
   entrenar/actions.ts   startSession (reanuda si hay abierta), discardSession
   entrenar/[sessionId]/ page, actions (logSet upsert, syncSets, addExtraSet, saveNotes,
                         finishSession — con requireOwnedSession), SetRow (guardado online /
                         cola offline), PendingSync, SessionNotes, error.tsx
   progreso/             Lista de sesiones, heatmap y ejercicios; [exerciseId] = gráfica;
                         sesion/[id] = detalle (SetRowEditor para corregir/borrar series)
-  perfil/               Usuario, link a /admin (si isAdmin), peso corporal, contraseña, copiar gifs a Blob, CSV, logout
+  perfil/               Usuario, metas semanales de los anillos (updateGoals), link a /admin
+                        (si isAdmin), peso corporal, contraseña, copiar gifs a Blob, CSV, logout
   ejercicios/actions.ts createCustomExercise
   api/exercises/search  Búsqueda/browse (q en es/en, bodyPart, offset); catálogo + propios del usuario
   api/export            CSV del historial del usuario
@@ -259,25 +267,32 @@ src/app/
                         ese usuario + crear una), actions.ts (createRoutineForUser) —
                         todo detrás de requireAdmin()
 src/components/
-  ui.tsx                Primitivas del sistema de diseño
+  ui.tsx                Primitivas del sistema de diseño (Card, MetricTile, StatGrid,
+                        GroupedList, TrendPill, PageHeader con large title, botones)
+  Rings.tsx             Anillos de Apple Fitness en SVG: Ring, RingTrio, RingLegend,
+                        MiniRings (track al 20 %, degradado, segunda vuelta al pasar del 100 %)
+  ConsistencyCalendar.tsx  14 semanas; cada día es un trío de anillos en miniatura
   BottomNav.tsx         Nav flotante (oculto en /login y /registro)
   Connectivity.tsx      Registra sw.js, calienta el cache de la ruta actual, banner offline
   ExercisePicker.tsx    Grid de ejercicios con chips por músculo, "i" de info y "Cargar más"
   ExerciseInfoSheet.tsx Bottom sheet con gif grande + pasos
   ExerciseThumb.tsx     <img> con fallback a ícono si el gif falla
-  SessionHud.tsx        Bloque lavanda del entrenamiento (transcurrido + descanso)
+  SessionHud.tsx        HUD de vidrio del entrenamiento: anillo de series (verde) que se
+                        vuelve cian y cuenta regresivo durante el descanso
   PendingButton.tsx     Botón de submit con spinner genérico
   DiscardSessionButton.tsx  Descartar sesión con confirmación inline
   ExerciseProgressChart.tsx AreaChart con toggle peso/reps/volumen
   BodyWeightChart.tsx   AreaChart del peso corporal
-  TrainingHeatmap.tsx   Días entrenados (16 semanas)
   SuggestionPill.tsx    "Sube a X kg" / "Repite" con botón Usar
   CustomExerciseForm.tsx  Alta de ejercicio propio dentro del explorador
 src/db/
   schema.ts             Fuente de verdad del modelo (Drizzle)
   index.ts              Cliente Neon lazy
   exercise-gif.ts       coalesce(gif_blob_url, gif_url)
-  queries.ts            getRoutineSummaries, getOpenSession, getWeeklyStats
+  queries.ts            getRoutineSummaries, getOpenSession, getWeeklyStats,
+                        getWeeklyRings (los tres anillos de la semana), getPeriodStats
+                        (totales + tendencia contra el periodo anterior), getDailyTraining,
+                        getPersonalRecords, getSessionSummaries
 src/lib/
   admin.ts               isAdminUser, requireAdmin (redirige a Home si no es admin)
   session.ts            createSession (purga expiradas) / destroySession / getCurrentUserId / requireUserId
@@ -285,6 +300,7 @@ src/lib/
   body-parts.ts         Etiquetas en español de los grupos musculares
   dates.ts              Zona horaria MX, día de la semana, clave de semana, "hace N días"
   translate-exercise.ts Traductor por reglas de nombres de ejercicio
+  format.ts             fmtKg / fmtNumber / fmtMinutes / fmtClock para las métricas
   suggest.ts            Unidades (kg/lb/placas), regla de progresión (+2.5 kg
                         o +5 lb / +1 rep / repetir), conversión lb→kg para volúmenes
   offline-queue.ts      Cola de series en localStorage

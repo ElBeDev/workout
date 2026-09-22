@@ -7,9 +7,9 @@ import { fmtDate } from "@/lib/dates";
 import { toKg, type WeightUnit } from "@/lib/suggest";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { TrendingUp } from "lucide-react";
+import { Trophy } from "lucide-react";
 import { bodyPartLabel } from "@/lib/body-parts";
-import { Card, PageHeader } from "@/components/ui";
+import { Card, GroupedList, PageHeader } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { ExerciseProgressChart, type Metric } from "@/components/ExerciseProgressChart";
 
@@ -125,24 +125,26 @@ export default async function ExerciseProgressPage({
         capitalize
       />
 
-      <Card className="flex items-center gap-3 p-3">
-        <div className="h-18 w-18 shrink-0 overflow-hidden rounded-2xl">
+      <Card hero className="flex items-center gap-3 p-3">
+        <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl">
           <ExerciseThumb src={pickGif(exercise)} alt={exercise.nameEs ?? exercise.name} className="h-full w-full" />
         </div>
-        <div className="grid flex-1 grid-cols-2 gap-2">
-          <div className="rounded-2xl bg-accent p-3 text-accent-foreground">
-            <p className="text-[22px] font-bold leading-none tabular-nums">
+        <div className="grid flex-1 grid-cols-2 gap-3 pl-1">
+          <div>
+            <p className="label flex items-center gap-1 text-load">
+              <Trophy className="h-3 w-3" /> Récord
+            </p>
+            <p className="mt-1 text-[26px] font-bold leading-none tracking-[-0.02em] tabular-nums">
               {best !== null ? `${best}` : "—"}
-              <span className="ml-1 text-[12px] font-medium opacity-70">{unit}</span>
+              <span className="ml-1 text-[13px] font-semibold text-muted">{unit}</span>
             </p>
-            <p className="mt-1 text-[11px] opacity-70">Mejor marca</p>
           </div>
-          <div className="rounded-2xl bg-surface-2 p-3">
-            <p className="text-[22px] font-bold leading-none tabular-nums">
+          <div>
+            <p className="label text-muted">Última</p>
+            <p className="mt-1 text-[26px] font-bold leading-none tracking-[-0.02em] tabular-nums">
               {latest !== null ? `${latest}` : "—"}
-              <span className="ml-1 text-[12px] font-medium text-muted">{unit}</span>
+              <span className="ml-1 text-[13px] font-semibold text-muted">{unit}</span>
             </p>
-            <p className="mt-1 text-[11px] text-muted">Última sesión</p>
           </div>
         </div>
       </Card>
@@ -156,18 +158,17 @@ export default async function ExerciseProgressPage({
       ) : (
         <>
           <Card className="p-4">
-            <p className="mb-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-muted">
-              <TrendingUp className="h-4 w-4" />
-              Por sesión
-            </p>
+            <p className="label mb-3 text-muted">Por sesión</p>
             <ExerciseProgressChart data={chartData} defaultMetric={defaultMetric} weightUnit={weightUnit} />
           </Card>
 
-          <ul className="flex flex-col gap-2">
+          <GroupedList>
             {[...rows].reverse().map((r) => (
-              <li key={r.sessionId}>
-                <Link href={`/progreso/sesion/${r.sessionId}`}>
-                  <Card className="flex items-center justify-between px-4 py-3 text-[14px] transition active:scale-[0.99]">
+              <Link
+                key={r.sessionId}
+                href={`/progreso/sesion/${r.sessionId}`}
+                className="flex items-center justify-between px-4 py-3.5 text-[15px] transition active:bg-surface-2"
+              >
                     <span className="text-muted">
                       {fmtDate(r.startedAt, { dateStyle: "medium" })}
                     </span>
@@ -183,11 +184,9 @@ export default async function ExerciseProgressPage({
                               : "—"}
                       </span>
                     </span>
-                  </Card>
-                </Link>
-              </li>
+              </Link>
             ))}
-          </ul>
+          </GroupedList>
         </>
       )}
     </div>
