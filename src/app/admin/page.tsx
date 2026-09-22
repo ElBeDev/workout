@@ -7,6 +7,7 @@ import { requireAdmin } from "@/lib/admin";
 import { blobConfigured, pendingGifIds } from "@/lib/blob";
 import { Card, PageHeader, SectionTitle } from "@/components/ui";
 import { MirrorGifsButton } from "@/components/MirrorGifsButton";
+import { BlobDiagnostics } from "@/components/BlobDiagnostics";
 
 export const dynamic = "force-dynamic";
 // Cada tanda de copiado baja unos gifs de ExerciseDB antes de responder.
@@ -68,18 +69,24 @@ export default async function AdminPage() {
         ))}
       </ul>
 
-      {blobConfigured() && (
-        <section className="flex flex-col gap-3">
-          <SectionTitle>Mantenimiento</SectionTitle>
-          <Card className="flex flex-col gap-3 p-4">
-            <p className="text-[13px] text-muted">
-              Respaldo de los gifs del catálogo en nuestro propio almacenamiento. Los
-              ejercicios nuevos se copian solos al agregarlos; esto alcanza a los viejos.
-            </p>
+      <section className="flex flex-col gap-3">
+        <SectionTitle>Mantenimiento</SectionTitle>
+        <Card className="flex flex-col gap-3 p-4">
+          <p className="text-[13px] text-muted">
+            Respaldo de los gifs del catálogo en nuestro propio almacenamiento. Los
+            ejercicios nuevos se copian solos al agregarlos; el botón alcanza a los
+            viejos. El diagnóstico dice cuál pieza falla cuando no copia nada.
+          </p>
+          {blobConfigured() ? (
             <MirrorGifsButton pending={pendingGifs} />
-          </Card>
-        </section>
-      )}
+          ) : (
+            <p className="rounded-xl bg-warning/12 px-3 py-2 text-[13px] font-semibold text-warning">
+              Sin BLOB_READ_WRITE_TOKEN en este entorno: el respaldo no corre.
+            </p>
+          )}
+          <BlobDiagnostics />
+        </Card>
+      </section>
     </div>
   );
 }
