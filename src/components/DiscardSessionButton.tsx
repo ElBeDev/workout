@@ -1,11 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
-import { SecondaryButton } from "@/components/ui";
 import { PendingButton } from "@/components/PendingButton";
 import { discardSession } from "@/app/entrenar/actions";
 
+/**
+ * Descartar es destructivo, así que confirma en una hoja de acción (como las
+ * de iOS) en vez de expandir un bloque dentro de la fila: inline se desbordaba
+ * de la tarjeta de "En curso" y se encimaba con el botón de Continuar.
+ */
 export function DiscardSessionButton({
   sessionId,
   compact = false,
@@ -15,39 +19,73 @@ export function DiscardSessionButton({
 }) {
   const [confirming, setConfirming] = useState(false);
 
-  if (!confirming) {
-    return (
+  useEffect(() => {
+    if (!confirming) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setConfirming(false);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [confirming]);
+
+  return (
+    <>
       <button
         type="button"
         onClick={() => setConfirming(true)}
         className={
           compact
-            ? "text-[13px] font-medium text-muted underline-offset-2 hover:underline"
-            : "flex items-center justify-center gap-2 py-2 text-[14px] font-medium text-muted"
+            ? "shrink-0 px-2 text-[15px] font-semibold text-muted transition active:scale-95"
+            : "flex h-12 w-full items-center justify-center gap-2 rounded-full text-[15px] font-semibold text-danger transition active:scale-[0.98]"
         }
       >
         {!compact && <Trash2 className="h-4 w-4" />}
-        Descartar entrenamiento
+        Descartar
+        {!compact && " entrenamiento"}
       </button>
-    );
-  }
 
-  return (
-    <div className="flex flex-col gap-3 rounded-2xl bg-danger/10 p-4">
-      <p className="text-[14px]">¿Descartar este entrenamiento? Se borran las series de hoy.</p>
-      <div className="flex gap-2">
-        <SecondaryButton type="button" className="flex-1" onClick={() => setConfirming(false)}>
-          Cancelar
-        </SecondaryButton>
-        <form action={discardSession.bind(null, sessionId)} className="flex-1">
-          <PendingButton
-            pendingLabel="Descartando…"
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-danger px-5 py-3.5 text-[15px] font-semibold text-white active:scale-[0.98] disabled:opacity-70"
+      {confirming && (
+        <div
+          className="fixed inset-0 z-70 flex items-end justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => setConfirming(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="discard-title"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-t-[1.75rem] bg-background p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
           >
-            Sí, descartar
-          </PendingButton>
-        </form>
-      </div>
-    </div>
+            <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-border" />
+            <h2 id="discard-title" className="text-[22px] font-bold tracking-[-0.02em]">
+              ¿Descartar el entrenamiento?
+            </h2>
+            <p className="mt-2 text-[15px] text-muted">
+              Se borran las series que llevas registradas en esta sesión. No se puede
+              deshacer.
+            </p>
+
+            <form action={discardSession.bind(null, sessionId)} className="mt-5">
+              <PendingButton
+                pendingLabel="Descartando…"
+                className="flex h-13 w-full items-center justify-center gap-2 rounded-full bg-danger text-[17px] font-semibold text-white transition active:scale-[0.98] disabled:opacity-60"
+              >
+                Sí, descartar
+              </PendingButton>
+            </form>
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              className="mt-2 flex h-13 w-full items-center justify-center rounded-full bg-surface-2 text-[17px] font-semibold text-foreground transition active:scale-[0.98]"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
