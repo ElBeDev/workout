@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { routines, routineExercises, exercises, users } from "@/db/schema";
 import { exerciseGif } from "@/db/exercise-gif";
+import { exerciseInstructions } from "@/db/exercise-instructions";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { Play, ShieldCheck } from "lucide-react";
@@ -55,7 +56,7 @@ export default async function RutinaDetailPage({
       gifUrl: exerciseGif,
       bodyPart: exercises.bodyPart,
       equipment: exercises.equipment,
-      instructions: exercises.instructions,
+      instructions: exerciseInstructions,
     })
     .from(routineExercises)
     .innerJoin(exercises, eq(routineExercises.exerciseId, exercises.id))

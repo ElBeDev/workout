@@ -7,6 +7,7 @@ import {
   setLogs,
 } from "@/db/schema";
 import { exerciseGif } from "@/db/exercise-gif";
+import { exerciseInstructions } from "@/db/exercise-instructions";
 import { and, eq, desc, ne, inArray, isNotNull, or, isNull } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { Flag, Plus, Repeat } from "lucide-react";
@@ -129,7 +130,7 @@ export default async function EntrenarPage({
       gifUrl: exerciseGif,
       bodyPart: exercises.bodyPart,
       equipment: exercises.equipment,
-      instructions: exercises.instructions,
+      instructions: exerciseInstructions,
       targetSets: routineExercises.targetSets,
       targetReps: routineExercises.targetReps,
       loadUnit: routineExercises.loadUnit,

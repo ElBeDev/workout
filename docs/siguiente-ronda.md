@@ -17,7 +17,7 @@ al registro de cambios de [PLAN.md](./PLAN.md), como manda
 ## Orden de ataque
 
 1. [x] Descanso: que sobreviva y que suene — **hecho**
-2. [ ] Instrucciones de ejercicio en español
+2. [~] Instrucciones de ejercicio en español — **los 39 en uso, hechos**; falta el resto del catálogo
 3. [ ] App bilingüe con selector de idioma
 4. [ ] Recordatorio de "hoy toca"
 5. [ ] Aviso de récord en el momento
@@ -109,9 +109,21 @@ pendiente más viejo del proyecto: viene desde la fase 2.
 comprobación automática de que ningún ejercicio quedó con `instructions_es`
 vacío o con más/menos pasos que el original.
 
-**Hecho cuando**: abres "cómo se hace" de cualquier ejercicio de tus rutinas y
-los pasos están en español correcto. Esfuerzo: es el punto más largo, pero es
-proceso, no dificultad.
+**Hecho a medias** (2026-09-22): **los 39 ejercicios que están en alguna rutina
+ya están en español**, que es el 100% de lo que ves al entrenar. Falta el resto
+del catálogo (1,461), que se traduce igual, por lotes.
+
+Cómo quedó montado:
+
+- Columna `exercises.instructions_es` (migración aditiva) y
+  `src/db/exercise-instructions.ts` con `coalesce(instructions_es,
+  instructions)` — mismo patrón que `exerciseGif`, así ninguna pantalla tiene
+  que acordarse de elegir idioma. Las tres consultas que leían `instructions`
+  ahora leen ese helper, y la interfaz no cambió ni una línea.
+- Validación antes de escribir a la base: mismo número de pasos que el
+  original, sin inglés residual, sin faltantes ni duplicados. Las 39 pasaron.
+- Comprobado en la app: la hoja de "cómo se hace" muestra 7 pasos, todos en
+  español ("Ajusta la máquina a tu cuerpo y elige el peso que vas a usar").
 
 ---
 

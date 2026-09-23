@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { exercises } from "@/db/schema";
 import { exerciseGif } from "@/db/exercise-gif";
+import { exerciseInstructions } from "@/db/exercise-instructions";
 import { and, asc, desc, eq, ilike, isNull, or, SQL } from "drizzle-orm";
 import { getCurrentUserId } from "@/lib/session";
 
@@ -39,7 +40,7 @@ export async function GET(req: NextRequest) {
       bodyPart: exercises.bodyPart,
       equipment: exercises.equipment,
       gifUrl: exerciseGif,
-      instructions: exercises.instructions,
+      instructions: exerciseInstructions,
       isCustom: exercises.isCustom,
     })
     .from(exercises)
