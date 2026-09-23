@@ -405,6 +405,8 @@ Todo el trabajo fue en un solo día; el historial fino está en `git log`. Resum
 | `acbac55` | Progreso: etiquetar "series" en el porcentaje chico de la tarjeta de tendencia (salían dos porcentajes juntos sin decir cuál era cuál) |
 | `16419ee` | Descartar entrenamiento confirma en hoja de acción: inline se desbordaba de la tarjeta de "En curso" y el botón quedaba cortado por el borde |
 | `acec7ac` | Copiado de gifs a Blob sale de Perfil y se va a /admin → "Mantenimiento"; sin `BLOB_READ_WRITE_TOKEN` el bloque ni se renderiza |
+| `452bdf8` | Presentación de los gifs: escenario propio con hairline y esqueleto, atenuado en oscuro, la hoja deja de estirarlos a ancho completo (tope 300 px), nombres a dos líneas, explorador limpio |
+| `28715f2` | Selector de tema en Perfil (Sistema / Claro / Oscuro): `data-theme` manda sobre `prefers-color-scheme`, aplicado antes del primer pintado |
 
 ## 12. Siguiente ronda (acordada 2026-09-03)
 
