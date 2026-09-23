@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { X, Info } from "lucide-react";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { bodyPartLabel } from "@/lib/body-parts";
+import { useT } from "@/i18n/client";
 
 export type ExerciseInfo = {
   name: string;
@@ -36,6 +37,7 @@ export function ExerciseInfoSheet({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const t = useT();
 
   useEffect(() => {
     if (!open) return;
@@ -58,7 +60,7 @@ export function ExerciseInfoSheet({
         type="button"
         onClick={() => setOpen(true)}
         className={`text-left ${className}`}
-        aria-label={`Ver cómo se hace: ${title}`}
+        aria-label={t.ejercicios.verComoSeHace(title)}
       >
         {children}
       </button>
@@ -88,7 +90,7 @@ export function ExerciseInfoSheet({
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  aria-label="Cerrar"
+                  aria-label={t.ejercicios.cerrar}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-muted transition active:scale-90"
                 >
                   <X className="h-4 w-4" />
@@ -112,7 +114,7 @@ export function ExerciseInfoSheet({
                 <div className="flex flex-wrap gap-2">
                   {exercise.bodyPart && (
                     <span className="rounded-full bg-surface-2 px-3 py-1.5 text-[13px] font-semibold text-foreground">
-                      {bodyPartLabel(exercise.bodyPart)}
+                      {bodyPartLabel(exercise.bodyPart, t)}
                     </span>
                   )}
                   {exercise.equipment && (
@@ -136,7 +138,7 @@ export function ExerciseInfoSheet({
                 </ol>
               ) : (
                 <p className="flex items-center gap-2 text-sm text-muted">
-                  <Info className="h-4 w-4" /> Sin instrucciones para este ejercicio.
+                  <Info className="h-4 w-4" /> {t.ejercicios.sinInstrucciones}
                 </p>
               )}
             </div>

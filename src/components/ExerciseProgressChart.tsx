@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useT } from "@/i18n/client";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -29,15 +30,16 @@ export function ExerciseProgressChart({
   defaultMetric?: Metric;
   weightUnit?: "kg" | "lbs";
 }) {
+  const t = useT();
   const [metric, setMetric] = useState<Metric>(defaultMetric);
   const weightUnitLabel = weightUnit === "lbs" ? "lb" : "kg";
   const ALL_METRICS: { key: Metric; label: string; unit: string }[] = [
-    { key: "maxWeight", label: "Peso máx.", unit: weightUnitLabel },
-    { key: "maxPlates", label: "Placas máx.", unit: "placas" },
-    { key: "maxReps", label: "Reps máx.", unit: "reps" },
+    { key: "maxWeight", label: t.progreso.metricaPesoMax, unit: weightUnitLabel },
+    { key: "maxPlates", label: t.progreso.metricaPlacasMax, unit: t.progreso.unidadPlacas },
+    { key: "maxReps", label: t.progreso.metricaRepsMax, unit: t.progreso.unidadReps },
     // Volume is always summed in kg (see progreso/[exerciseId]/page.tsx) so
     // it stays a coherent number even for exercises tracked in lb.
-    { key: "volume", label: "Volumen", unit: "kg" },
+    { key: "volume", label: t.progreso.metricaVolumen, unit: "kg" },
   ];
   // Only offer the toggles that have data (plates vs kg are exclusive in practice).
   const METRICS = ALL_METRICS.filter(
@@ -123,7 +125,7 @@ export function ExerciseProgressChart({
           </ResponsiveContainer>
         ) : (
           <p className="flex h-full items-center justify-center text-sm text-muted">
-            Sin datos de {meta.label.toLowerCase()} todavía.
+            {t.progreso.graficaSinDatos(meta.label)}
           </p>
         )}
       </div>

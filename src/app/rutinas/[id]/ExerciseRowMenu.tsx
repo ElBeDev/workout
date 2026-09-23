@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ArrowDown, ArrowUp, EllipsisVertical, Trash2, X } from "lucide-react";
+import { useT } from "@/i18n/client";
 
 /**
  * Las tres acciones de un ejercicio (subir, bajar, quitar) detrás de un "⋮":
@@ -23,6 +24,7 @@ export function ExerciseRowMenu({
   canMoveUp: boolean;
   canMoveDown: boolean;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -37,7 +39,7 @@ export function ExerciseRowMenu({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label={`Opciones de ${name}`}
+        aria-label={t.rutinas.menuEjercicio.opciones(name)}
         className="flex h-11 w-9 shrink-0 items-center justify-center rounded-full text-faint transition active:scale-90"
       >
         <EllipsisVertical className="h-5 w-5" />
@@ -51,7 +53,7 @@ export function ExerciseRowMenu({
           <div
             role="dialog"
             aria-modal="true"
-            aria-label={`Opciones de ${name}`}
+            aria-label={t.rutinas.menuEjercicio.opciones(name)}
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-md rounded-t-[1.75rem] bg-background p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))]"
           >
@@ -61,7 +63,7 @@ export function ExerciseRowMenu({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                aria-label="Cerrar"
+                aria-label={t.rutinas.cerrar}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-2"
               >
                 <X className="h-4 w-4" />
@@ -75,7 +77,7 @@ export function ExerciseRowMenu({
                   disabled={!canMoveUp}
                   className="flex w-full items-center gap-3 p-4 text-left text-[17px] disabled:opacity-30"
                 >
-                  <ArrowUp className="h-5 w-5 text-muted" /> Subir
+                  <ArrowUp className="h-5 w-5 text-muted" /> {t.rutinas.menuEjercicio.subir}
                 </button>
               </form>
               <form action={moveDown}>
@@ -84,7 +86,7 @@ export function ExerciseRowMenu({
                   disabled={!canMoveDown}
                   className="flex w-full items-center gap-3 p-4 text-left text-[17px] disabled:opacity-30"
                 >
-                  <ArrowDown className="h-5 w-5 text-muted" /> Bajar
+                  <ArrowDown className="h-5 w-5 text-muted" /> {t.rutinas.menuEjercicio.bajar}
                 </button>
               </form>
               <form action={remove}>
@@ -92,7 +94,7 @@ export function ExerciseRowMenu({
                   type="submit"
                   className="flex w-full items-center gap-3 p-4 text-left text-[17px] font-semibold text-danger"
                 >
-                  <Trash2 className="h-5 w-5" /> Quitar de la rutina
+                  <Trash2 className="h-5 w-5" /> {t.rutinas.menuEjercicio.quitar}
                 </button>
               </form>
             </div>

@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import { BottomNav } from "@/components/BottomNav";
 import { Connectivity } from "@/components/Connectivity";
 import { themeScript } from "@/lib/theme-script";
+import { getDict, getLocale } from "@/i18n";
+import { I18nProvider } from "@/i18n/client";
 import "./globals.css";
 
 // SF Pro está licenciada sólo para plataformas Apple; Inter es la sustituta
@@ -13,23 +15,28 @@ const inter = Inter({
   weight: ["400", "500", "600", "700"],
 });
 
-export const metadata: Metadata = {
-  title: "Workout",
-  description: "Lleva tus rutinas, pesos y repeticiones desde el celular.",
-  manifest: "/manifest.webmanifest",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
+// "Workout" es el nombre de la app: no se traduce. La descripción sí, porque
+// es la que se ve al compartir el enlace y en los resultados de búsqueda.
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getDict();
+  return {
     title: "Workout",
-  },
-  icons: {
-    icon: [
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: "/apple-touch-icon.png",
-  },
-};
+    description: t.comun.meta.descripcion,
+    manifest: "/manifest.webmanifest",
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: "Workout",
+    },
+    icons: {
+      icon: [
+        { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+        { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      ],
+      apple: "/apple-touch-icon.png",
+    },
+  };
+}
 
 // El `theme-color` lo maneja `themeScript`: con tema forzado desde Perfil, un
 // meta por media query diría lo contrario a lo que se ve en pantalla.
@@ -38,18 +45,21 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const locale = await getLocale();
   return (
-    <html lang="es" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang={locale} className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="flex min-h-full flex-col bg-background text-foreground">
-        <Connectivity />
-        <main className="mx-auto w-full max-w-md flex-1 px-5 pb-32 pt-4">
-          {children}
-        </main>
-        <BottomNav />
+        <I18nProvider locale={locale}>
+          <Connectivity />
+          <main className="mx-auto w-full max-w-md flex-1 px-5 pb-32 pt-4">
+            {children}
+          </main>
+          <BottomNav />
+        </I18nProvider>
       </body>
     </html>
   );

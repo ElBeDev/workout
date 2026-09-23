@@ -1,12 +1,8 @@
 import Link from "next/link";
 import { Dumbbell } from "lucide-react";
 import { Card, Input, PrimaryButton } from "@/components/ui";
+import { getDict } from "@/i18n";
 import { loginAction } from "./actions";
-
-const ERROR_MESSAGES: Record<string, string> = {
-  invalid: "Usuario o contraseña incorrectos.",
-  locked: "Demasiados intentos. Espera 15 minutos e inténtalo de nuevo.",
-};
 
 export default async function LoginPage({
   searchParams,
@@ -14,6 +10,8 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
+  const t = await getDict();
+  const errores: Record<string, string | undefined> = t.acceso.login.errores;
 
   return (
     <div className="flex min-h-[85vh] flex-col justify-center gap-6">
@@ -23,7 +21,7 @@ export default async function LoginPage({
         </div>
         <div>
           <h1 className="text-[34px] font-bold tracking-[-0.02em]">Workout</h1>
-          <p className="text-[15px] text-muted">Inicia sesión para ver tus rutinas.</p>
+          <p className="text-[15px] text-muted">{t.acceso.login.subtitulo}</p>
         </div>
       </div>
 
@@ -31,30 +29,30 @@ export default async function LoginPage({
         <form action={loginAction} className="flex flex-col gap-3">
           {error && (
             <p className="rounded-xl bg-danger/10 px-4 py-3 text-[14px] font-semibold text-danger">
-              {ERROR_MESSAGES[error] ?? "Algo salió mal, intenta de nuevo."}
+              {errores[error] ?? t.acceso.errorGenerico}
             </p>
           )}
 
           <label className="label flex flex-col gap-1.5 text-muted">
-            Usuario
+            {t.acceso.login.usuario}
             <Input name="username" required autoCapitalize="none" autoComplete="username" />
           </label>
 
           <label className="label flex flex-col gap-1.5 text-muted">
-            Contraseña
+            {t.acceso.login.contrasena}
             <Input name="password" type="password" required autoComplete="current-password" />
           </label>
 
           <PrimaryButton type="submit" className="mt-1">
-            Entrar
+            {t.acceso.login.entrar}
           </PrimaryButton>
         </form>
       </Card>
 
       <p className="text-center text-[15px] text-muted">
-        ¿No tienes cuenta?{" "}
+        {t.acceso.login.sinCuenta}{" "}
         <Link href="/registro" className="font-semibold text-accent">
-          Regístrate
+          {t.acceso.login.registrate}
         </Link>
       </p>
     </div>

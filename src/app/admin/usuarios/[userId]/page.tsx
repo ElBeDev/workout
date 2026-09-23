@@ -6,6 +6,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { getRoutineSummaries } from "@/db/queries";
 import { requireAdmin } from "@/lib/admin";
+import { getDict } from "@/i18n";
 import { Card, Input, PageHeader, PrimaryButton, SectionTitle } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { createRoutineForUser } from "../../actions";
@@ -19,6 +20,7 @@ export default async function AdminUserPage({
 }) {
   await requireAdmin();
   const { userId } = await params;
+  const t = await getDict();
 
   const [target] = await db
     .select({ id: users.id, username: users.username })
@@ -31,8 +33,8 @@ export default async function AdminUserPage({
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title={target.username ?? "Usuario"}
-        subtitle="Rutinas de este usuario"
+        title={target.username ?? t.admin.usuario.tituloSinNombre}
+        subtitle={t.admin.usuario.subtitulo}
         backHref="/admin"
         capitalize
       />
@@ -51,11 +53,11 @@ export default async function AdminUserPage({
                     <div className="mt-1 flex items-center gap-3 text-[13px] text-muted">
                       <span className="inline-flex items-center gap-1">
                         <Dumbbell className="h-3.5 w-3.5" />
-                        {r.exerciseCount} ejercicios
+                        {t.admin.usuario.ejercicios(r.exerciseCount)}
                       </span>
                       <span className="inline-flex items-center gap-1">
                         <Layers className="h-3.5 w-3.5" />
-                        {r.totalSets} series
+                        {t.admin.usuario.series(r.totalSets)}
                       </span>
                     </div>
                   </div>
@@ -65,16 +67,16 @@ export default async function AdminUserPage({
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-muted">Este usuario todavía no tiene rutinas.</p>
+        <p className="text-sm text-muted">{t.admin.usuario.sinRutinas}</p>
       )}
 
       <Card className="flex flex-col gap-3 p-4">
-        <SectionTitle>Nueva rutina</SectionTitle>
+        <SectionTitle>{t.admin.usuario.nuevaRutina}</SectionTitle>
         <form action={createRoutineForUser.bind(null, userId)} className="flex flex-col gap-3">
-          <Input name="name" placeholder="Nombre (ej. Push Day, Pierna)" required />
+          <Input name="name" placeholder={t.admin.usuario.nombrePlaceholder} required />
           <PrimaryButton type="submit">
             <Plus className="h-4 w-4" />
-            Crear rutina
+            {t.admin.usuario.crearRutina}
           </PrimaryButton>
         </form>
       </Card>

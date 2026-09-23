@@ -4,6 +4,7 @@ import { ChevronRight, ShieldCheck } from "lucide-react";
 import { db } from "@/db";
 import { users, routines } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin";
+import { getDict } from "@/i18n";
 import { blobConfigured, pendingGifIds } from "@/lib/blob";
 import { Card, PageHeader, SectionTitle } from "@/components/ui";
 import { MirrorGifsButton } from "@/components/MirrorGifsButton";
@@ -15,6 +16,7 @@ export const maxDuration = 30;
 
 export default async function AdminPage() {
   const adminId = await requireAdmin();
+  const t = await getDict();
 
   const [allUsers, counts] = await Promise.all([
     db
@@ -34,12 +36,12 @@ export default async function AdminPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Administrador"
-        subtitle="Elige un usuario para armarle rutinas"
+        title={t.admin.titulo}
+        subtitle={t.admin.subtitulo}
         backHref="/perfil"
       />
 
-      <SectionTitle>Usuarios</SectionTitle>
+      <SectionTitle>{t.admin.usuarios}</SectionTitle>
 
       <ul className="flex flex-col gap-3">
         {allUsers.map((u) => (
@@ -51,15 +53,15 @@ export default async function AdminPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[15px] font-semibold capitalize">
-                    {u.username ?? "Sin usuario"}
+                    {u.username ?? t.admin.sinUsuario}
                     {u.id === adminId && (
                       <span className="ml-1.5 inline-flex items-center gap-1 text-[11px] font-medium text-muted">
-                        <ShieldCheck className="h-3 w-3" /> tú
+                        <ShieldCheck className="h-3 w-3" /> {t.admin.tu}
                       </span>
                     )}
                   </p>
                   <p className="text-[13px] text-muted">
-                    {countByUser.get(u.id) ?? 0} {(countByUser.get(u.id) ?? 0) === 1 ? "rutina" : "rutinas"}
+                    {t.admin.rutinas(countByUser.get(u.id) ?? 0)}
                   </p>
                 </div>
                 <ChevronRight className="h-4 w-4 shrink-0 text-muted" />
@@ -70,18 +72,14 @@ export default async function AdminPage() {
       </ul>
 
       <section className="flex flex-col gap-3">
-        <SectionTitle>Mantenimiento</SectionTitle>
+        <SectionTitle>{t.admin.mantenimiento}</SectionTitle>
         <Card className="flex flex-col gap-3 p-4">
-          <p className="text-[13px] text-muted">
-            Respaldo de los gifs del catálogo en nuestro propio almacenamiento. Los
-            ejercicios nuevos se copian solos al agregarlos; el botón alcanza a los
-            viejos. El diagnóstico dice cuál pieza falla cuando no copia nada.
-          </p>
+          <p className="text-[13px] text-muted">{t.admin.respaldoExplicacion}</p>
           {blobConfigured() ? (
             <MirrorGifsButton pending={pendingGifs} />
           ) : (
             <p className="rounded-xl bg-warning/12 px-3 py-2 text-[13px] font-semibold text-warning">
-              Sin BLOB_READ_WRITE_TOKEN en este entorno: el respaldo no corre.
+              {t.admin.respaldoSinToken}
             </p>
           )}
           <BlobDiagnostics />

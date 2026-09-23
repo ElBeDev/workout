@@ -51,30 +51,35 @@ export function daysAgo(date: Date, now = new Date()): number {
   return Math.round((b.getTime() - a.getTime()) / 86400000);
 }
 
-/** Format for display, always in the app's time zone (the server runs in UTC). */
-export function fmtDate(date: Date, options: Intl.DateTimeFormatOptions): string {
-  return new Intl.DateTimeFormat("es-MX", { timeZone: APP_TIME_ZONE, ...options }).format(date);
+/**
+ * Formato de fecha, siempre en la zona horaria de la app (el servidor corre en
+ * UTC). El idioma entra por parámetro: cambiar la app a inglés cambia cómo se
+ * escribe la fecha, **no** la zona horaria — esa es la del gimnasio, no la del
+ * usuario (ver docs/siguiente-ronda.md §3).
+ */
+export function fmtDate(
+  date: Date,
+  options: Intl.DateTimeFormatOptions,
+  locale: string = "es-MX"
+): string {
+  return new Intl.DateTimeFormat(locale, { timeZone: APP_TIME_ZONE, ...options }).format(date);
 }
 
-/** "21 – 27 de septiembre" para la semana (lunes a domingo) que contiene `now`. */
-export function weekRangeLabel(now = new Date()): string {
+/**
+ * Rango de la semana (lunes a domingo) que contiene `now`, escrito como lo
+ * escribe cada idioma: "21 – 27 de septiembre" en español, "September 21 – 27"
+ * en inglés. Lo resuelve `formatRange`, que conoce esas convenciones; armarlo a
+ * mano daba "21 – September 27".
+ */
+export function weekRangeLabel(now = new Date(), locale: string = "es-MX"): string {
   const local = localDate(now);
   const monday = new Date(local);
   monday.setUTCDate(local.getUTCDate() - ((local.getUTCDay() + 6) % 7));
   const sunday = new Date(monday);
   sunday.setUTCDate(monday.getUTCDate() + 6);
-  const fmt = (d: Date, opts: Intl.DateTimeFormatOptions) =>
-    new Intl.DateTimeFormat("es-MX", { timeZone: "UTC", ...opts }).format(d);
-  const sameMonth = monday.getUTCMonth() === sunday.getUTCMonth();
-  return sameMonth
-    ? `${fmt(monday, { day: "numeric" })} – ${fmt(sunday, { day: "numeric", month: "long" })}`
-    : `${fmt(monday, { day: "numeric", month: "short" })} – ${fmt(sunday, { day: "numeric", month: "short" })}`;
-}
-
-export function daysAgoLabel(date: Date | null): string {
-  if (!date) return "Nunca";
-  const n = daysAgo(date);
-  if (n <= 0) return "Hoy";
-  if (n === 1) return "Ayer";
-  return `Hace ${n} días`;
+  return new Intl.DateTimeFormat(locale, {
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  }).formatRange(monday, sunday);
 }

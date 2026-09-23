@@ -3,9 +3,12 @@
 import { LogOut } from "lucide-react";
 import { SecondaryButton } from "@/components/ui";
 import { logoutAction } from "@/app/login/actions";
+import { useT } from "@/i18n/client";
 
 /** Clears offline caches for this device before ending the session. */
 export function LogoutButton() {
+  const t = useT();
+
   async function clearLocal() {
     try {
       Object.keys(localStorage)
@@ -30,7 +33,7 @@ export function LogoutButton() {
     >
       <SecondaryButton type="submit" className="w-full text-danger">
         <LogOut className="h-4 w-4" />
-        Cerrar sesión
+        {t.perfil.cerrarSesion}
       </SecondaryButton>
     </form>
   );

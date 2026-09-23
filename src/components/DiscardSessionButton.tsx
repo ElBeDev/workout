@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
+import { useT } from "@/i18n/client";
 import { PendingButton } from "@/components/PendingButton";
 import { discardSession } from "@/app/entrenar/actions";
 
@@ -17,6 +18,7 @@ export function DiscardSessionButton({
   sessionId: string;
   compact?: boolean;
 }) {
+  const t = useT().hoy;
   const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
@@ -43,8 +45,7 @@ export function DiscardSessionButton({
         }
       >
         {!compact && <Trash2 className="h-4 w-4" />}
-        Descartar
-        {!compact && " entrenamiento"}
+        {compact ? t.descartar : t.descartarEntrenamiento}
       </button>
 
       {confirming && (
@@ -61,19 +62,16 @@ export function DiscardSessionButton({
           >
             <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-border" />
             <h2 id="discard-title" className="text-[22px] font-bold tracking-[-0.02em]">
-              ¿Descartar el entrenamiento?
+              {t.descartarTitulo}
             </h2>
-            <p className="mt-2 text-[15px] text-muted">
-              Se borran las series que llevas registradas en esta sesión. No se puede
-              deshacer.
-            </p>
+            <p className="mt-2 text-[15px] text-muted">{t.descartarAviso}</p>
 
             <form action={discardSession.bind(null, sessionId)} className="mt-5">
               <PendingButton
-                pendingLabel="Descartando…"
+                pendingLabel={t.descartando}
                 className="flex h-13 w-full items-center justify-center gap-2 rounded-full bg-danger text-[17px] font-semibold text-white transition active:scale-[0.98] disabled:opacity-60"
               >
-                Sí, descartar
+                {t.descartarConfirmar}
               </PendingButton>
             </form>
             <button
@@ -81,7 +79,7 @@ export function DiscardSessionButton({
               onClick={() => setConfirming(false)}
               className="mt-2 flex h-13 w-full items-center justify-center rounded-full bg-surface-2 text-[17px] font-semibold text-foreground transition active:scale-[0.98]"
             >
-              Cancelar
+              {t.cancelar}
             </button>
           </div>
         </div>

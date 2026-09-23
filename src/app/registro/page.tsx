@@ -1,12 +1,8 @@
 import Link from "next/link";
 import { Dumbbell } from "lucide-react";
 import { Card, Input, PrimaryButton } from "@/components/ui";
+import { getDict } from "@/i18n";
 import { registerAction } from "./actions";
-
-const ERROR_MESSAGES: Record<string, string> = {
-  invalid: "Usuario de 3 a 40 caracteres (letras, números, . _ @ -) y contraseña de 4 a 128.",
-  taken: "Ese usuario ya existe, elige otro.",
-};
 
 export default async function RegistroPage({
   searchParams,
@@ -14,6 +10,8 @@ export default async function RegistroPage({
   searchParams: Promise<{ error?: string }>;
 }) {
   const { error } = await searchParams;
+  const t = await getDict();
+  const errores: Record<string, string | undefined> = t.acceso.registro.errores;
 
   return (
     <div className="flex min-h-[85vh] flex-col justify-center gap-6">
@@ -22,8 +20,8 @@ export default async function RegistroPage({
           <Dumbbell className="h-7 w-7" />
         </div>
         <div>
-          <h1 className="text-[34px] font-bold tracking-[-0.02em]">Crea tu cuenta</h1>
-          <p className="text-[15px] text-muted">Solo un usuario y una contraseña.</p>
+          <h1 className="text-[34px] font-bold tracking-[-0.02em]">{t.acceso.registro.titulo}</h1>
+          <p className="text-[15px] text-muted">{t.acceso.registro.subtitulo}</p>
         </div>
       </div>
 
@@ -31,12 +29,12 @@ export default async function RegistroPage({
         <form action={registerAction} className="flex flex-col gap-3">
           {error && (
             <p className="rounded-xl bg-danger/10 px-4 py-3 text-[14px] font-semibold text-danger">
-              {ERROR_MESSAGES[error] ?? "Algo salió mal, intenta de nuevo."}
+              {errores[error] ?? t.acceso.errorGenerico}
             </p>
           )}
 
           <label className="label flex flex-col gap-1.5 text-muted">
-            Usuario
+            {t.acceso.registro.usuario}
             <Input
               name="username"
               required
@@ -47,7 +45,7 @@ export default async function RegistroPage({
           </label>
 
           <label className="label flex flex-col gap-1.5 text-muted">
-            Contraseña
+            {t.acceso.registro.contrasena}
             <Input
               name="password"
               type="password"
@@ -58,19 +56,17 @@ export default async function RegistroPage({
           </label>
 
           <PrimaryButton type="submit" className="mt-1">
-            Crear cuenta
+            {t.acceso.registro.crearCuenta}
           </PrimaryButton>
 
-          <p className="text-center text-[12px] text-muted">
-            No pedimos correo: si olvidas la contraseña no hay forma de recuperarla. Guárdala bien.
-          </p>
+          <p className="text-center text-[12px] text-muted">{t.acceso.registro.avisoSinCorreo}</p>
         </form>
       </Card>
 
       <p className="text-center text-[15px] text-muted">
-        ¿Ya tienes cuenta?{" "}
+        {t.acceso.registro.yaTienesCuenta}{" "}
         <Link href="/login" className="font-semibold text-accent">
-          Inicia sesión
+          {t.acceso.registro.iniciaSesion}
         </Link>
       </p>
     </div>

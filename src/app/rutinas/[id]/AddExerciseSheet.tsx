@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Plus, X } from "lucide-react";
 import { ExercisePicker } from "@/components/ExercisePicker";
 import { PrimaryButton, SecondaryButton } from "@/components/ui";
+import { useT } from "@/i18n/client";
 import { addExerciseToRoutine } from "./actions";
 
 type SelectedExercise = {
@@ -28,6 +29,7 @@ export function AddExerciseSheet({
   routineId: string;
   photoEnabled?: boolean;
 }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState<SelectedExercise | null>(null);
   const [unit, setUnit] = useState<"kg" | "lbs" | "plates">("kg");
@@ -54,7 +56,7 @@ export function AddExerciseSheet({
     <>
       <SecondaryButton type="button" onClick={() => setOpen(true)} className="w-full">
         <Plus className="h-4 w-4" />
-        Agregar ejercicio
+        {t.rutinas.agregar.boton}
       </SecondaryButton>
 
       {open && (
@@ -72,12 +74,12 @@ export function AddExerciseSheet({
             <div className="mx-auto mb-4 h-1 w-9 rounded-full bg-border" />
             <div className="mb-4 flex items-center justify-between">
               <h2 id="add-exercise-sheet-title" className="truncate text-[22px] font-bold tracking-[-0.02em]">
-                {selected ? (selected.nameEs ?? selected.name) : "Agregar ejercicio"}
+                {selected ? (selected.nameEs ?? selected.name) : t.rutinas.agregar.titulo}
               </h2>
               <button
                 type="button"
                 onClick={close}
-                aria-label="Cerrar"
+                aria-label={t.rutinas.cerrar}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-2 text-foreground"
               >
                 <X className="h-4 w-4" />
@@ -120,7 +122,7 @@ export function AddExerciseSheet({
                         unit === u ? "bg-primary text-primary-foreground" : "text-muted"
                       }`}
                     >
-                      {u === "kg" ? "Kilos" : u === "lbs" ? "Libras" : "Placas"}
+                      {t.rutinas.unidades.larga(u)}
                     </button>
                   ))}
                 </div>
@@ -128,21 +130,21 @@ export function AddExerciseSheet({
 
                 <div className="grid grid-cols-3 gap-2">
                   <label className="label text-muted">
-                    Series
+                    {t.rutinas.campos.series}
                     <input name="targetSets" type="number" min={1} defaultValue={2} className={fieldClass} />
                   </label>
                   <label className="label text-muted">
-                    Reps
+                    {t.rutinas.campos.reps}
                     <input name="targetReps" type="number" min={1} defaultValue={10} className={fieldClass} />
                   </label>
                   <label className="label text-muted">
-                    {unit === "plates" ? "Placas" : unit === "lbs" ? "Peso (lb)" : "Peso (kg)"}
+                    {t.rutinas.unidades.campoPeso(unit)}
                     <input
                       name="targetWeight"
                       type="number"
                       step={unit === "plates" ? 1 : 0.5}
                       min={0}
-                      placeholder="—"
+                      placeholder={t.rutinas.campos.pesoPlaceholder}
                       className={fieldClass}
                     />
                   </label>
@@ -150,14 +152,14 @@ export function AddExerciseSheet({
 
                 <PrimaryButton type="submit">
                   <Plus className="h-4 w-4" />
-                  Agregar a la rutina
+                  {t.rutinas.agregar.confirmar}
                 </PrimaryButton>
                 <button
                   type="button"
                   onClick={() => setSelected(null)}
                   className="text-center text-sm font-medium text-muted"
                 >
-                  Elegir otro ejercicio
+                  {t.rutinas.agregar.otroEjercicio}
                 </button>
               </form>
             )}

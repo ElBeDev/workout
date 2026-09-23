@@ -2,20 +2,28 @@
 
 import { useState } from "react";
 import { TrendingUp, RotateCcw, Check } from "lucide-react";
-import { loadLabel, type Suggestion } from "@/lib/suggest";
+import { useT } from "@/i18n/client";
+import type { Suggestion } from "@/lib/suggest";
 
 /**
  * Shows the suggested load for an exercise and, on tap, fills the empty
  * load/reps inputs of that exercise's set rows (forms carry data-exercise).
+ * El texto llega ya armado desde el servidor: la razón se construye con datos
+ * de la sesión anterior que sólo la página tiene.
  */
 export function SuggestionPill({
   exerciseId,
   suggestion,
+  titulo,
+  razon,
 }: {
   exerciseId: string;
   suggestion: Suggestion;
+  titulo: string;
+  razon: string;
 }) {
   const [applied, setApplied] = useState(false);
+  const t = useT();
 
   function apply() {
     const forms = document.querySelectorAll<HTMLFormElement>(`form[data-exercise="${exerciseId}"]`);
@@ -30,8 +38,6 @@ export function SuggestionPill({
   }
 
   const Icon = suggestion.kind === "up" ? TrendingUp : RotateCcw;
-  const load = loadLabel(suggestion.weight, suggestion.plates, suggestion.unit);
-  const label = load ? `${load} × ${suggestion.reps}` : `${suggestion.reps} reps`;
 
   return (
     <div
@@ -41,10 +47,8 @@ export function SuggestionPill({
     >
       <Icon className="h-4 w-4 shrink-0" />
       <div className="min-w-0 flex-1">
-        <p className="text-[14px] font-semibold leading-tight">
-          {suggestion.kind === "up" ? "Sube a" : "Repite"} {label}
-        </p>
-        <p className="truncate text-[11px] opacity-80">{suggestion.reason}</p>
+        <p className="text-[14px] font-semibold leading-tight">{titulo}</p>
+        <p className="truncate text-[11px] opacity-80">{razon}</p>
       </div>
       <button
         type="button"
@@ -53,7 +57,7 @@ export function SuggestionPill({
         className="flex h-8 shrink-0 items-center gap-1 rounded-full bg-primary px-3 text-[13px] font-semibold text-primary-foreground disabled:opacity-60"
       >
         {applied ? <Check className="h-3.5 w-3.5" /> : null}
-        {applied ? "Listo" : "Usar"}
+        {applied ? t.entrenar.sugerencia.listo : t.entrenar.sugerencia.usar}
       </button>
     </div>
   );

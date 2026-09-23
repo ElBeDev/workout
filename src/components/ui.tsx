@@ -1,11 +1,20 @@
+"use client";
+
 import Link from "next/link";
 import { ChevronLeft, TrendingDown, TrendingUp, Minus } from "lucide-react";
 import type { ReactNode, ButtonHTMLAttributes } from "react";
+import { useT } from "@/i18n/client";
 
 /**
  * Primitivas del sistema visual (docs/diseno-apple-fitness.md):
  * superficie neutra + hairline, jerarquía por opacidad, y el color reservado
  * para los datos (carga / series / días).
+ *
+ * El módulo es de cliente porque dos primitivas traen texto propio
+ * (`BackButton`, `TrendPill`) y lo leen con `useT()`. No puede leerlo con
+ * `getDict()`: media app de cliente importa estas primitivas, y `@/i18n`
+ * arrastra `next/headers`, que no existe en el navegador. Siguen
+ * renderizándose en el servidor; sólo viaja su JS, que es marcado sin lógica.
  */
 
 export function Card({
@@ -114,10 +123,11 @@ export function CircleButton({
 }
 
 export function BackButton({ href }: { href: string }) {
+  const t = useT();
   return (
     <Link
       href={href}
-      aria-label="Volver"
+      aria-label={t.comun.volver}
       className="-ml-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-accent transition active:scale-95"
     >
       <ChevronLeft className="h-7 w-7" strokeWidth={2.5} />
@@ -283,10 +293,11 @@ export function TrendPill({
   label?: string;
   className?: string;
 }) {
+  const t = useT();
   if (pct === null) {
     return (
       <span className={`inline-flex items-center gap-1 text-[13px] font-semibold text-muted ${className}`}>
-        <Minus className="h-3.5 w-3.5" /> sin comparación
+        <Minus className="h-3.5 w-3.5" /> {t.comun.tendencia.sinComparacion}
       </span>
     );
   }
@@ -298,7 +309,7 @@ export function TrendPill({
     <span className={`inline-flex items-center gap-1 text-[13px] font-semibold ${color} ${className}`}>
       <Icon className="h-3.5 w-3.5" />
       {label && <span className="font-medium text-muted">{label}</span>}
-      {flat ? "igual" : `${up ? "+" : ""}${Math.round(pct)} %`}
+      {flat ? t.comun.tendencia.igual : t.comun.tendencia.porcentaje(pct)}
     </span>
   );
 }

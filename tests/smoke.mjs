@@ -33,6 +33,9 @@ async function main() {
   const userId = await createUser();
   const browser = await chromium.launch();
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  // La suite busca textos en español: se fija el idioma para que no dependa de
+  // la preferencia del navegador ni se caiga cuando la app está en inglés.
+  await ctx.addCookies([{ name: "workout:idioma", value: "es", url: BASE }]);
   const page = await ctx.newPage();
   try {
     await page.goto(`${BASE}/`, { waitUntil: "networkidle" });

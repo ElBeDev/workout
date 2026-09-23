@@ -17,7 +17,14 @@ import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { ExerciseInfoSheet } from "@/components/ExerciseInfoSheet";
 import { SessionHud } from "@/components/SessionHud";
 import { SuggestionPill } from "@/components/SuggestionPill";
-import { suggestNext, normalizeLoadUnit, type LoadUnit } from "@/lib/suggest";
+import {
+  suggestNext,
+  normalizeLoadUnit,
+  type LoadUnit,
+  type Suggestion,
+  type WeightUnit,
+} from "@/lib/suggest";
+import { getDict, type Dict } from "@/i18n";
 import { DiscardSessionButton } from "@/components/DiscardSessionButton";
 import { SessionNotes } from "./SessionNotes";
 import { SetRow } from "./SetRow";
@@ -31,6 +38,62 @@ type LastSet = {
   reps: number | null;
   weightUnit: "kg" | "lbs" | null;
 };
+
+/** Cómo se lee una carga en pantalla: placas si las hay, si no el peso. */
+function etiquetaCarga(
+  t: Dict,
+  peso: number | string | null,
+  placas: number | null,
+  unidad: WeightUnit
+): string | null {
+  if (placas !== null && placas > 0) return t.entrenar.carga.placas(placas);
+  if (peso !== null && Number(peso) > 0) return t.entrenar.carga.peso(peso, unidad);
+  return null;
+}
+
+function tituloSugerencia(t: Dict, s: Suggestion): string {
+  const carga = etiquetaCarga(t, s.weight, s.plates, s.unit);
+  const texto = carga
+    ? t.entrenar.sugerencia.cargaPorReps(carga, s.reps)
+    : t.entrenar.carga.reps(s.reps);
+  return s.kind === "up"
+    ? t.entrenar.sugerencia.subeA(texto)
+    : t.entrenar.sugerencia.repite(texto);
+}
+
+/**
+ * La razón de la sugerencia cita la carga de la vez pasada, que `suggestNext`
+ * ya no devuelve por separado: se recalcula aquí del mismo historial para
+ * poder escribirla en el idioma del usuario.
+ */
+function razonSugerencia(
+  t: Dict,
+  s: Suggestion,
+  lastTime: Map<number, LastSet>,
+  targetSets: number,
+  targetReps: number,
+  unidad: LoadUnit
+): string {
+  if (s.kind === "repeat") return t.entrenar.sugerencia.razonFaltaron;
+  const previos = Array.from(lastTime.values());
+  const anterior =
+    unidad === "plates"
+      ? etiquetaCarga(t, null, Math.max(0, ...previos.map((p) => p.plates ?? 0)), s.unit)
+      : etiquetaCarga(
+          t,
+          Math.max(
+            0,
+            ...previos.map((p) =>
+              p.weight !== null && (p.weightUnit ?? "kg") === s.unit ? Number(p.weight) : 0
+            )
+          ),
+          null,
+          s.unit
+        );
+  return anterior
+    ? t.entrenar.sugerencia.razonCompleta(targetSets, targetReps, anterior)
+    : t.entrenar.sugerencia.razonCompletaSinCarga(targetSets, targetReps);
+}
 
 /**
  * For each exercise, the sets of the most recent *finished* session (other
@@ -96,6 +159,7 @@ export default async function EntrenarPage({
 }) {
   const { sessionId } = await params;
   const userId = await requireUserId();
+  const t = await getDict();
 
   const [session] = await db
     .select()
@@ -211,7 +275,7 @@ export default async function EntrenarPage({
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     <span className="inline-flex items-center gap-1 text-[13px] text-muted">
                       <Repeat className="h-3.5 w-3.5" />
-                      {item.targetSets} × {item.targetReps} reps
+                      {t.entrenar.ejercicio.seriesPorReps(item.targetSets, item.targetReps)}
                     </span>
                     <LoadUnitPicker
                       sessionId={sessionId}
@@ -223,14 +287,30 @@ export default async function EntrenarPage({
                 </div>
               </div>
 
-              {suggestion && <SuggestionPill exerciseId={item.exerciseId} suggestion={suggestion} />}
+              {suggestion && (
+                <SuggestionPill
+                  exerciseId={item.exerciseId}
+                  suggestion={suggestion}
+                  titulo={tituloSugerencia(t, suggestion)}
+                  razon={razonSugerencia(
+                    t,
+                    suggestion,
+                    lastTime,
+                    item.targetSets,
+                    item.targetReps,
+                    unit
+                  )}
+                />
+              )}
 
               <div className="mb-1 flex items-center gap-2 pl-1 pr-14">
                 <span className="w-8 shrink-0" />
                 <span className="label flex-1 text-center text-faint">
-                  {unit === "plates" ? "Placas" : unit === "lbs" ? "Libras" : "Kilos"}
+                  {t.entrenar.unidad.opciones[unit].titulo}
                 </span>
-                <span className="label flex-1 text-center text-faint">Reps</span>
+                <span className="label flex-1 text-center text-faint">
+                  {t.entrenar.ejercicio.columnaReps}
+                </span>
               </div>
 
               <div className="flex flex-col gap-2">
@@ -252,12 +332,14 @@ export default async function EntrenarPage({
                       loadUnit={unit}
                       loadPlaceholder={
                         unit === "plates"
-                          ? last?.plates ? `${last.plates} placas` : "placas"
+                          ? last?.plates
+                            ? t.entrenar.carga.placas(last.plates)
+                            : t.entrenar.carga.corta(unit)
                           : last?.weight && (last.weightUnit ?? "kg") === unit
-                            ? `${last.weight} ${unit === "lbs" ? "lb" : "kg"}`
-                            : unit === "lbs" ? "lb" : "kg"
+                            ? t.entrenar.carga.peso(last.weight, unit)
+                            : t.entrenar.carga.corta(unit)
                       }
-                      repsPlaceholder={last?.reps ? `${last.reps} reps` : `${item.targetReps} reps`}
+                      repsPlaceholder={t.entrenar.carga.reps(last?.reps || item.targetReps)}
                     />
                   );
                 })}
@@ -268,7 +350,7 @@ export default async function EntrenarPage({
                     className="mt-1 inline-flex h-9 items-center gap-1 rounded-full px-2 text-[14px] font-semibold text-accent"
                   >
                     <Plus className="h-3.5 w-3.5" />
-                    Agregar serie
+                    {t.entrenar.ejercicio.agregarSerie}
                   </button>
                 </form>
               </div>
@@ -282,7 +364,7 @@ export default async function EntrenarPage({
       <form action={finishSession.bind(null, sessionId)}>
         <PrimaryButton type="submit">
           <Flag className="h-4 w-4" />
-          Terminar entrenamiento
+          {t.entrenar.terminarEntrenamiento}
         </PrimaryButton>
       </form>
 

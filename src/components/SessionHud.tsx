@@ -5,6 +5,7 @@ import { Minus, Plus, X } from "lucide-react";
 import { Ring } from "@/components/Rings";
 import { fmtClock } from "@/lib/format";
 import { desbloquearSonido, sonarFinDescanso } from "@/lib/rest-sound";
+import { useT } from "@/i18n/client";
 
 const REST_SECONDS = 180;
 
@@ -55,6 +56,7 @@ export function SessionHud({
   // Start from the session's own timestamp so server and client render the
   // same text (no hydration mismatch); the clock catches up on mount.
   const [now, setNow] = useState(startedAtMs);
+  const t = useT();
 
   const finDescanso = useSyncExternalStore(
     useCallback((cb: () => void) => {
@@ -135,7 +137,7 @@ export function SessionHud({
 
         <div className="min-w-0 flex-1">
           <p className={`label ${descansando ? "text-days" : "text-sets"}`}>
-            {descansando ? "Descanso" : "Entrenando"}
+            {descansando ? t.entrenar.hud.descanso : t.entrenar.hud.entrenando}
           </p>
           <p className="text-[44px] font-bold leading-none tracking-[-0.03em] tabular-nums">
             {fmtClock(descansando ? (restante ?? 0) : elapsed)}
@@ -150,32 +152,32 @@ export function SessionHud({
             onClick={() => ajustar(-15)}
             className="flex h-10 items-center gap-1 rounded-full bg-surface-2 px-4 text-[14px] font-semibold text-foreground active:scale-95"
           >
-            <Minus className="h-3.5 w-3.5" /> 15s
+            <Minus className="h-3.5 w-3.5" /> {t.entrenar.hud.ajuste15}
           </button>
           <button
             type="button"
             onClick={saltar}
             className="flex h-10 items-center gap-1 rounded-full bg-primary px-5 text-[14px] font-semibold text-primary-foreground active:scale-95"
           >
-            <X className="h-3.5 w-3.5" /> Saltar
+            <X className="h-3.5 w-3.5" /> {t.entrenar.hud.saltar}
           </button>
           <button
             type="button"
             onClick={() => ajustar(15)}
             className="flex h-10 items-center gap-1 rounded-full bg-surface-2 px-4 text-[14px] font-semibold text-foreground active:scale-95"
           >
-            <Plus className="h-3.5 w-3.5" /> 15s
+            <Plus className="h-3.5 w-3.5" /> {t.entrenar.hud.ajuste15}
           </button>
         </div>
       )}
 
       <div className="mt-4 grid grid-cols-2 border-t border-border pt-3">
         <div>
-          <p className="label text-muted">Transcurrido</p>
+          <p className="label text-muted">{t.entrenar.hud.transcurrido}</p>
           <p className="text-[17px] font-semibold tabular-nums">{fmtClock(elapsed)}</p>
         </div>
         <div className="text-right">
-          <p className="label text-muted">Series</p>
+          <p className="label text-muted">{t.entrenar.hud.series}</p>
           <p className="text-[17px] font-semibold tabular-nums">
             {completed}
             <span className="text-muted">/{total}</span>

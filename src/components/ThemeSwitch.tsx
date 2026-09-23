@@ -2,13 +2,14 @@
 
 import { useSyncExternalStore } from "react";
 import { Moon, Smartphone, Sun } from "lucide-react";
+import { useT } from "@/i18n/client";
 
 type Tema = "sistema" | "claro" | "oscuro";
 
-const OPCIONES: { id: Tema; label: string; Icono: typeof Sun }[] = [
-  { id: "sistema", label: "Sistema", Icono: Smartphone },
-  { id: "claro", label: "Claro", Icono: Sun },
-  { id: "oscuro", label: "Oscuro", Icono: Moon },
+const OPCIONES: { id: Tema; Icono: typeof Sun }[] = [
+  { id: "sistema", Icono: Smartphone },
+  { id: "claro", Icono: Sun },
+  { id: "oscuro", Icono: Moon },
 ];
 
 declare global {
@@ -33,16 +34,17 @@ const enServidor = (): Tema => "sistema";
  * y le pide que la aplique, sin recargar.
  */
 export function ThemeSwitch() {
+  const t = useT();
   const tema = useSyncExternalStore(suscribir, leer, enServidor);
 
-  function elegir(t: Tema) {
-    window.__tema?.set(t);
+  function elegir(elegido: Tema) {
+    window.__tema?.set(elegido);
     oyentes.forEach((fn) => fn());
   }
 
   return (
     <div className="flex gap-1 rounded-full bg-surface-2 p-1">
-      {OPCIONES.map(({ id, label, Icono }) => {
+      {OPCIONES.map(({ id, Icono }) => {
         const activo = tema === id;
         return (
           <button
@@ -55,7 +57,7 @@ export function ThemeSwitch() {
             }`}
           >
             <Icono className="h-4 w-4" />
-            {label}
+            {t.perfil.apariencia[id]}
           </button>
         );
       })}

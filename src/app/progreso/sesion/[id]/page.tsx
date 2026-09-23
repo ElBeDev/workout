@@ -9,6 +9,7 @@ import { requireUserId } from "@/lib/session";
 import { bodyPartLabel } from "@/lib/body-parts";
 import { fmtDate } from "@/lib/dates";
 import { fmtKg } from "@/lib/format";
+import { getDict, type Dict } from "@/i18n";
 import { getWeeklyRings } from "@/db/queries";
 import { RingTrio } from "@/components/Rings";
 import { toKg, type WeightUnit } from "@/lib/suggest";
@@ -18,10 +19,12 @@ import { SetRowEditor } from "./SetRowEditor";
 
 export const dynamic = "force-dynamic";
 
-function formatDuration(start: Date, end: Date | null) {
+function formatDuration(start: Date, end: Date | null, t: Dict) {
   if (!end) return "—";
   const min = Math.max(1, Math.round((end.getTime() - start.getTime()) / 60000));
-  return min >= 60 ? `${Math.floor(min / 60)} h ${min % 60} min` : `${min} min`;
+  return min >= 60
+    ? t.progreso.duracionHorasMinutos(Math.floor(min / 60), min % 60)
+    : t.progreso.duracionMinutos(min);
 }
 
 export default async function SessionDetailPage({
@@ -34,6 +37,7 @@ export default async function SessionDetailPage({
   const { id } = await params;
   const { done } = await searchParams;
   const userId = await requireUserId();
+  const t = await getDict();
 
   const [session] = await db
     .select({
@@ -119,26 +123,26 @@ export default async function SessionDetailPage({
       sets: me?.goalWeeklySets ?? 60,
       days: me?.goalWeeklyDays ?? 4,
     });
-    const v = fmtKg(weekly.volumeKg);
-    const g = fmtKg(weekly.volumeGoal);
+    const v = fmtKg(weekly.volumeKg, t.comun.intl);
+    const g = fmtKg(weekly.volumeGoal, t.comun.intl);
     rings = [
       {
         tone: "load" as const,
-        label: `Carga (${v.unit})`,
+        label: t.progreso.anilloCarga(v.unit),
         value: weekly.volumeKg,
         goal: weekly.volumeGoal,
         display: `${v.value}/${g.value}`,
       },
       {
         tone: "sets" as const,
-        label: "Series",
+        label: t.progreso.anilloSeries,
         value: weekly.sets,
         goal: weekly.setsGoal,
         display: `${weekly.sets}/${weekly.setsGoal}`,
       },
       {
         tone: "days" as const,
-        label: "Días",
+        label: t.progreso.anilloDias,
         value: weekly.days,
         goal: weekly.daysGoal,
         display: `${weekly.days}/${weekly.daysGoal}`,
@@ -149,17 +153,17 @@ export default async function SessionDetailPage({
   return (
     <div className="flex flex-col gap-5">
       <PageHeader
-        title={session.routineName ?? "Rutina eliminada"}
+        title={session.routineName ?? t.progreso.rutinaEliminada}
         backHref="/progreso"
-        eyebrow={finishedNow ? "Entrenamiento terminado" : undefined}
-        subtitle={fmtDate(session.startedAt, { dateStyle: "full", timeStyle: "short" })}
+        eyebrow={finishedNow ? t.progreso.entrenamientoTerminado : undefined}
+        subtitle={fmtDate(session.startedAt, { dateStyle: "full", timeStyle: "short" }, t.comun.intl)}
       />
 
       {rings && (
         <Card hero className="flex flex-col items-center gap-3 p-5">
           <RingTrio data={rings} size={132} />
           <p className="text-center text-[15px] text-muted">
-            Así va tu semana con este entrenamiento dentro.
+            {t.progreso.semanaConEsteEntrenamiento}
           </p>
           <div className="grid w-full grid-cols-3 gap-2">
             {rings.map((r) => (
@@ -181,32 +185,32 @@ export default async function SessionDetailPage({
             href="/"
             className="mt-1 flex h-12 w-full items-center justify-center rounded-full bg-primary text-[17px] font-semibold text-primary-foreground"
           >
-            Listo
+            {t.progreso.listo}
           </Link>
         </Card>
       )}
 
       <Card hero className="grid grid-cols-2 gap-x-4 gap-y-5 p-5">
         <Stat
-          label="Duración"
-          value={formatDuration(session.startedAt, session.finishedAt)}
+          label={t.progreso.duracion}
+          value={formatDuration(session.startedAt, session.finishedAt, t)}
           tone="text-days"
         />
-        <Stat label="Series" value={String(sets.length)} tone="text-sets" />
+        <Stat label={t.progreso.statSeries} value={String(sets.length)} tone="text-sets" />
         <Stat
-          label="Carga total"
-          value={volume ? fmtKg(volume).value : "—"}
-          unit={volume ? fmtKg(volume).unit : undefined}
+          label={t.progreso.cargaTotal}
+          value={volume ? fmtKg(volume, t.comun.intl).value : "—"}
+          unit={volume ? fmtKg(volume, t.comun.intl).unit : undefined}
           tone="text-load"
         />
-        <Stat label="Ejercicios" value={String(groups.length)} tone="text-muted" />
+        <Stat label={t.progreso.statEjercicios} value={String(groups.length)} tone="text-muted" />
       </Card>
 
       {groups.length === 0 ? (
-        <Card className="p-6 text-center text-sm text-muted">Esta sesión no tiene series registradas.</Card>
+        <Card className="p-6 text-center text-sm text-muted">{t.progreso.sesionSinSeries}</Card>
       ) : (
         <section className="flex flex-col gap-3">
-          <SectionTitle>Ejercicios</SectionTitle>
+          <SectionTitle>{t.progreso.ejercicios}</SectionTitle>
           {groups.map((g) => (
             <Card key={g.exerciseId} className="p-3">
               <Link href={`/progreso/${g.exerciseId}`} className="flex items-center gap-3">
@@ -240,7 +244,7 @@ export default async function SessionDetailPage({
       {session.notes && (
         <Card className="flex flex-col gap-2 p-4">
           <SectionTitle className="flex items-center gap-2">
-            <NotebookPen className="h-4 w-4 text-muted" /> Notas
+            <NotebookPen className="h-4 w-4 text-muted" /> {t.progreso.notas}
           </SectionTitle>
           <p className="whitespace-pre-wrap text-[15px]">{session.notes}</p>
         </Card>

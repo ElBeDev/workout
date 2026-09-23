@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { WifiOff } from "lucide-react";
+import { useT } from "@/i18n/client";
 
 // Must match `pages-${VERSION}` in public/sw.js.
 const PAGE_CACHE = "pages-v3";
@@ -15,6 +16,7 @@ const PAGE_CACHE = "pages-v3";
 export function Connectivity() {
   const [offline, setOffline] = useState(false);
   const pathname = usePathname();
+  const t = useT();
 
   useEffect(() => {
     const update = () => setOffline(!navigator.onLine);
@@ -51,7 +53,7 @@ export function Connectivity() {
     <div className="pointer-events-none fixed inset-x-0 top-0 z-70 flex justify-center px-5 pt-[max(0.75rem,env(safe-area-inset-top))]">
       <div className="glass pointer-events-auto flex items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-foreground shadow-[0_8px_24px_rgba(0,0,0,0.25)]">
         <WifiOff className="h-4 w-4 text-warning" />
-        Sin conexión — las series se guardan aquí y se envían al reconectar
+        {t.comun.sinConexion.aviso}
       </div>
     </div>
   );

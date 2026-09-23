@@ -1,8 +1,11 @@
 "use client";
 
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
+import { useT } from "@/i18n/client";
 
 export function BodyWeightChart({ data }: { data: { date: string; weight: number }[] }) {
+  const t = useT();
+
   return (
     <div className="h-40 w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -16,7 +19,7 @@ export function BodyWeightChart({ data }: { data: { date: string; weight: number
           <XAxis dataKey="date" tick={{ fontSize: 11, fill: "currentColor", opacity: 0.45 }} tickLine={false} axisLine={false} minTickGap={24} />
           <YAxis tick={{ fontSize: 11, fill: "currentColor", opacity: 0.45 }} tickLine={false} axisLine={false} width={38} tickCount={3} domain={["auto", "auto"]} />
           <Tooltip
-            formatter={(v) => [`${v} kg`, "Peso"]}
+            formatter={(v) => [`${v} ${t.perfil.peso.kg}`, t.perfil.peso.serie]}
             contentStyle={{
               fontSize: 13,
               fontWeight: 600,

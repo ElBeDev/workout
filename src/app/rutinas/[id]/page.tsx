@@ -9,6 +9,7 @@ import { requireUserId } from "@/lib/session";
 import { isAdminUser } from "@/lib/admin";
 import { normalizeLoadUnit } from "@/lib/suggest";
 import { blobConfigured } from "@/lib/blob";
+import { getDict } from "@/i18n";
 import { Card, GroupedList, PageHeader, PrimaryButton, SectionTitle } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { ExerciseInfoSheet } from "@/components/ExerciseInfoSheet";
@@ -31,6 +32,7 @@ export default async function RutinaDetailPage({
   const { id } = await params;
   const { error } = await searchParams;
   const userId = await requireUserId();
+  const t = await getDict();
 
   const [routine] = await db.select().from(routines).where(eq(routines.id, id));
   if (!routine) notFound();
@@ -76,37 +78,39 @@ export default async function RutinaDetailPage({
       {!isOwner && (
         <p className="flex items-center gap-2 rounded-xl bg-accent/12 px-4 py-3 text-[14px] font-semibold text-accent">
           <ShieldCheck className="h-4 w-4 shrink-0" />
-          Editando como admin la rutina de <span className="capitalize">{ownerName ?? "otro usuario"}</span>
+          {t.rutinas.detalle.editandoComoAdmin(
+            ownerName
+              ? ownerName.charAt(0).toUpperCase() + ownerName.slice(1)
+              : t.rutinas.detalle.otroUsuario,
+          )}
         </p>
       )}
 
       {error === "open-session" && (
         <p className="rounded-xl bg-danger/10 px-4 py-3 text-[14px] font-semibold text-danger">
-          Tienes un entrenamiento en curso con esta rutina. Termínalo o descártalo desde Hoy antes de eliminarla.
+          {t.rutinas.detalle.sesionAbierta}
         </p>
       )}
 
       <Card hero className="grid grid-cols-3 divide-x divide-border p-4">
-        <Stat value={items.length} label="Ejercicios" tone="text-days" />
-        <Stat value={totalSets} label="Series" tone="text-sets" />
-        <Stat value={muscleGroups} label="Músculos" tone="text-load" />
+        <Stat value={items.length} label={t.rutinas.detalle.ejercicios} tone="text-days" />
+        <Stat value={totalSets} label={t.rutinas.detalle.series} tone="text-sets" />
+        <Stat value={muscleGroups} label={t.rutinas.detalle.musculos} tone="text-load" />
       </Card>
 
       {isOwner && items.length > 0 && (
         <form action={startSession.bind(null, routine.id)}>
           <PrimaryButton type="submit" tone="accent">
             <Play className="h-4 w-4" fill="currentColor" />
-            Empezar entrenamiento
+            {t.rutinas.detalle.empezar}
           </PrimaryButton>
         </form>
       )}
 
       <section className="flex flex-col gap-3">
-        <SectionTitle>Ejercicios</SectionTitle>
+        <SectionTitle>{t.rutinas.detalle.ejercicios}</SectionTitle>
         {items.length === 0 ? (
-          <p className="text-sm text-muted">
-            Esta rutina todavía no tiene ejercicios. Agrega el primero abajo.
-          </p>
+          <p className="text-sm text-muted">{t.rutinas.detalle.sinEjercicios}</p>
         ) : (
           <GroupedList>
             {items.map((item, index) => (

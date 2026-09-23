@@ -1,13 +1,20 @@
-const NUM = new Intl.NumberFormat("es-MX");
+/** El separador de miles cambia entre idiomas: 7,200 en inglés y en español de
+ *  México, pero 7.200 en otros. Se resuelve por locale para no clavarlo. */
+const cache = new Map<string, Intl.NumberFormat>();
+function nf(locale: string) {
+  let f = cache.get(locale);
+  if (!f) { f = new Intl.NumberFormat(locale); cache.set(locale, f); }
+  return f;
+}
 
-export function fmtNumber(n: number): string {
-  return NUM.format(Math.round(n));
+export function fmtNumber(n: number, locale = "es-MX"): string {
+  return nf(locale).format(Math.round(n));
 }
 
 /** 4,280 kg · 18.4 t cuando el número deja de caber de forma legible. */
-export function fmtKg(kg: number): { value: string; unit: string } {
-  if (kg >= 100000) return { value: (kg / 1000).toFixed(1).replace(".", ","), unit: "t" };
-  return { value: NUM.format(Math.round(kg)), unit: "kg" };
+export function fmtKg(kg: number, locale = "es-MX"): { value: string; unit: string } {
+  if (kg >= 100000) return { value: nf(locale).format(Math.round(kg / 100) / 10), unit: "t" };
+  return { value: nf(locale).format(Math.round(kg)), unit: "kg" };
 }
 
 /** 74 → "1 h 14 min"; 42 → "42 min". */

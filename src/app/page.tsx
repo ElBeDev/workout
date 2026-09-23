@@ -11,8 +11,9 @@ import {
   type RoutineSummary,
 } from "@/db/queries";
 import { requireUserId } from "@/lib/session";
-import { daysAgoLabel, fmtDate, todayWeekday, weekRangeLabel, WEEKDAYS } from "@/lib/dates";
+import { daysAgo, fmtDate, todayWeekday, weekRangeLabel } from "@/lib/dates";
 import { fmtKg, fmtNumber } from "@/lib/format";
+import { getDict, type Dict } from "@/i18n";
 import { Card, GroupedList, PageHeader, SectionTitle } from "@/components/ui";
 import { RingTrio, RingLegend, type RingDatum } from "@/components/Rings";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
@@ -21,16 +22,18 @@ import { startSession } from "./entrenar/actions";
 
 export const dynamic = "force-dynamic";
 
-function timeAgo(date: Date) {
+function timeAgo(date: Date, t: Dict["hoy"]) {
   const minutes = Math.max(1, Math.round((Date.now() - date.getTime()) / 60000));
-  if (minutes < 60) return `${minutes} min`;
+  if (minutes < 60) return t.haceMinutos(minutes);
   const hours = Math.round(minutes / 60);
-  if (hours < 48) return `${hours} h`;
-  return `${Math.round(hours / 24)} días`;
+  if (hours < 48) return t.haceHoras(hours);
+  return t.haceDias(Math.round(hours / 24));
 }
 
 export default async function HomePage() {
   const userId = await requireUserId();
+  const dict = await getDict();
+  const t = dict.hoy;
   const [user] = await db.select().from(users).where(eq(users.id, userId));
   const [myRoutines, openSession, weekly, rings] = await Promise.all([
     getRoutineSummaries(userId),
@@ -44,31 +47,31 @@ export default async function HomePage() {
   ]);
 
   const today = todayWeekday();
-  const todayName = WEEKDAYS.find((d) => d.value === today)?.long ?? "";
+  const todayName = t.diaSemana(today);
   const planned = myRoutines.filter((r) => r.days.includes(today));
   const others = myRoutines.filter((r) => !r.days.includes(today));
 
-  const volume = fmtKg(rings.volumeKg);
-  const goalVolume = fmtKg(rings.volumeGoal);
+  const volume = fmtKg(rings.volumeKg, dict.comun.intl);
+  const goalVolume = fmtKg(rings.volumeGoal, dict.comun.intl);
   const ringData: RingDatum[] = [
     {
       tone: "load",
       // La unidad va en la etiqueta: "7,200/5,000 kg" no cabe en la leyenda.
-      label: `Carga (${volume.unit})`,
+      label: t.carga(volume.unit),
       value: rings.volumeKg,
       goal: rings.volumeGoal,
       display: `${volume.value}/${goalVolume.value}`,
     },
     {
       tone: "sets",
-      label: "Series",
+      label: t.series,
       value: rings.sets,
       goal: rings.setsGoal,
-      display: `${fmtNumber(rings.sets)}/${fmtNumber(rings.setsGoal)}`,
+      display: `${fmtNumber(rings.sets, dict.comun.intl)}/${fmtNumber(rings.setsGoal, dict.comun.intl)}`,
     },
     {
       tone: "days",
-      label: "Días",
+      label: t.dias,
       value: rings.days,
       goal: rings.daysGoal,
       display: `${rings.days}/${rings.daysGoal}`,
@@ -78,12 +81,12 @@ export default async function HomePage() {
   return (
     <div className="flex flex-col gap-7">
       <PageHeader
-        eyebrow={fmtDate(new Date(), { weekday: "long", day: "numeric", month: "long" })}
-        title="Resumen"
+        eyebrow={fmtDate(new Date(), { weekday: "long", day: "numeric", month: "long" }, dict.comun.intl)}
+        title={t.titulo}
         right={
           <Link
             href="/perfil"
-            aria-label="Perfil"
+            aria-label={t.perfil}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 text-[17px] font-bold uppercase text-muted"
           >
             {(user?.username ?? "?").slice(0, 1)}
@@ -97,15 +100,15 @@ export default async function HomePage() {
           <RingLegend data={ringData} />
         </div>
         <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-3">
-          <p className="text-[13px] text-muted">{weekRangeLabel()}</p>
+          <p className="text-[13px] text-muted">{weekRangeLabel(new Date(), dict.comun.intl)}</p>
           {weekly.streakWeeks >= 2 ? (
             <p className="inline-flex items-center gap-1 text-[13px] font-semibold text-load">
               <Flame className="h-4 w-4" />
-              {weekly.streakWeeks} semanas seguidas
+              {t.rachaSemanas(weekly.streakWeeks)}
             </p>
           ) : (
             <p className="text-[13px] font-semibold text-muted">
-              {Math.round(Math.min(rings.overall, 9.99) * 100)} % de tus metas
+              {t.porcentajeMetas(Math.round(Math.min(rings.overall, 9.99) * 100))}
             </p>
           )}
         </div>
@@ -115,14 +118,14 @@ export default async function HomePage() {
         <Card className="border-accent/40 p-4">
           <div className="flex items-center gap-3">
             <span className="animate-dot h-2.5 w-2.5 shrink-0 rounded-full bg-accent" />
-            <p className="label text-accent">En curso</p>
+            <p className="label text-accent">{t.enCurso}</p>
             <p className="ml-auto inline-flex items-center gap-1 text-[13px] font-semibold text-muted">
               <Timer className="h-3.5 w-3.5" />
-              {timeAgo(openSession.startedAt)}
+              {timeAgo(openSession.startedAt, t)}
             </p>
           </div>
           <p className="mt-2 truncate text-[22px] font-bold tracking-[-0.02em]">
-            {openSession.routineName ?? "Rutina eliminada"}
+            {openSession.routineName ?? t.rutinaEliminada}
           </p>
           <div className="mt-4 flex items-center gap-3">
             <Link
@@ -130,7 +133,7 @@ export default async function HomePage() {
               className="flex h-12 flex-1 items-center justify-center gap-2 rounded-full bg-accent text-[17px] font-semibold text-accent-foreground transition active:scale-[0.98]"
             >
               <Play className="h-4 w-4" fill="currentColor" />
-              Continuar
+              {t.continuar}
             </Link>
             <DiscardSessionButton sessionId={openSession.id} compact />
           </div>
@@ -139,20 +142,18 @@ export default async function HomePage() {
 
       {myRoutines.length === 0 ? (
         <section className="flex flex-col gap-3">
-          <SectionTitle>Tus rutinas</SectionTitle>
+          <SectionTitle>{t.tusRutinas}</SectionTitle>
           <Card className="flex flex-col items-center gap-3 p-8 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-surface-2 text-muted">
               <Dumbbell className="h-6 w-6" />
             </div>
-            <p className="text-[15px] text-muted">
-              Todavía no tienes rutinas. Crea la primera para empezar.
-            </p>
+            <p className="text-[15px] text-muted">{t.sinRutinas}</p>
             <Link
               href="/rutinas"
               className="inline-flex h-11 items-center gap-1.5 rounded-full bg-accent px-5 text-[15px] font-semibold text-accent-foreground"
             >
               <Plus className="h-4 w-4" />
-              Crear rutina
+              {t.crearRutina}
             </Link>
           </Card>
         </section>
@@ -160,10 +161,10 @@ export default async function HomePage() {
         <>
           {planned.length > 0 && (
             <section className="flex flex-col gap-3">
-              <SectionTitle>Hoy toca · {todayName}</SectionTitle>
+              <SectionTitle>{t.hoyToca(todayName)}</SectionTitle>
               <div className="flex flex-col gap-3">
                 {planned.map((routine) => (
-                  <TodayCard key={routine.id} routine={routine} />
+                  <TodayCard key={routine.id} routine={routine} t={t} />
                 ))}
               </div>
             </section>
@@ -172,9 +173,9 @@ export default async function HomePage() {
           {others.length > 0 && (
             <section className="flex flex-col gap-3">
               <div className="flex items-baseline justify-between">
-                <SectionTitle>{planned.length > 0 ? "Otras rutinas" : "Tus rutinas"}</SectionTitle>
+                <SectionTitle>{planned.length > 0 ? t.otrasRutinas : t.tusRutinas}</SectionTitle>
                 <Link href="/rutinas" className="text-[13px] font-semibold text-accent">
-                  Ver todas
+                  {t.verTodas}
                 </Link>
               </div>
               <GroupedList>
@@ -190,7 +191,7 @@ export default async function HomePage() {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[17px] font-semibold">{routine.name}</p>
                       <p className="text-[13px] text-muted">
-                        {routine.exerciseCount} ejercicios · {routine.totalSets} series
+                        {t.ejerciciosYSeries(routine.exerciseCount, routine.totalSets)}
                       </p>
                     </div>
                     <ChevronRight className="h-5 w-5 shrink-0 text-faint" />
@@ -206,7 +207,7 @@ export default async function HomePage() {
 }
 
 /** Tarjeta grande de la rutina del día: el CTA principal de la pantalla. */
-function TodayCard({ routine }: { routine: RoutineSummary }) {
+function TodayCard({ routine, t }: { routine: RoutineSummary; t: Dict["hoy"] }) {
   return (
     <Card className="overflow-hidden">
       <div className="flex items-center gap-3 p-3">
@@ -217,15 +218,17 @@ function TodayCard({ routine }: { routine: RoutineSummary }) {
           <div className="min-w-0 flex-1">
             <p className="truncate text-[20px] font-bold tracking-[-0.02em]">{routine.name}</p>
             <p className="text-[13px] text-muted">
-              {routine.exerciseCount} ejercicios · {routine.totalSets} series
+              {t.ejerciciosYSeries(routine.exerciseCount, routine.totalSets)}
             </p>
-            <p className="text-[13px] text-faint">{daysAgoLabel(routine.lastDoneAt)}</p>
+            <p className="text-[13px] text-faint">
+              {t.ultimaVez(routine.lastDoneAt ? daysAgo(routine.lastDoneAt) : null)}
+            </p>
           </div>
         </Link>
         <form action={startSession.bind(null, routine.id)}>
           <button
             type="submit"
-            aria-label={`Empezar ${routine.name}`}
+            aria-label={t.empezarRutina(routine.name)}
             disabled={routine.exerciseCount === 0}
             className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground transition active:scale-95 disabled:opacity-30"
           >

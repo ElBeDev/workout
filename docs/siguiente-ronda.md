@@ -17,8 +17,8 @@ al registro de cambios de [PLAN.md](./PLAN.md), como manda
 ## Orden de ataque
 
 1. [x] Descanso: que sobreviva y que suene — **hecho**
-2. [~] Instrucciones de ejercicio en español — **los 39 en uso, hechos**; falta el resto del catálogo
-3. [ ] App bilingüe con selector de idioma
+2. [x] Instrucciones de ejercicio en español — **hecho: los 1,500**
+3. [x] App bilingüe con selector de idioma — **hecho**
 4. [ ] Recordatorio de "hoy toca"
 5. [ ] Aviso de récord en el momento
 6. [ ] Migraciones versionadas
@@ -109,9 +109,10 @@ pendiente más viejo del proyecto: viene desde la fase 2.
 comprobación automática de que ningún ejercicio quedó con `instructions_es`
 vacío o con más/menos pasos que el original.
 
-**Hecho a medias** (2026-09-22): **los 39 ejercicios que están en alguna rutina
-ya están en español**, que es el 100% de lo que ves al entrenar. Falta el resto
-del catálogo (1,461), que se traduce igual, por lotes.
+**Hecho** (2026-09-22): **los 1,500 ejercicios del catálogo están traducidos**.
+Se hizo en tres tandas —39 en uso, 1,225 del catálogo, 236 rezagados— y las
+1,500 pasaron la misma validación: mismo número de pasos que el original, sin
+inglés residual, sin faltantes ni duplicados. Cero rechazadas.
 
 Cómo quedó montado:
 
@@ -163,9 +164,32 @@ anillos.
 rutina"`, `"Empezar entrenamiento"`). La suite tiene que fijar el idioma a
 español con la cookie, o se va a caer en cuanto exista el inglés.
 
-**Hecho cuando**: cambias a English en Perfil, recorres las siete pantallas y
-no queda un solo texto en español; vuelves a Español y todo regresa. Y
-`npm run smoke` sigue en 9/9. Esfuerzo: es el punto más grande de la ronda.
+**Hecho** (2026-09-22). Comprobado recorriendo Hoy, Rutinas, detalle de rutina,
+Progreso, detalle de sesión y Perfil en los dos idiomas, con un detector de
+palabras que sólo existen en español: **cero fugas** en inglés, y `<html lang>`
+cambia con el idioma. `npm run smoke` sigue en 9/9 (se le fijó la cookie a
+español, como estaba previsto).
+
+Tres cosas que salieron al hacerlo y que vale la pena tener escritas:
+
+1. **El diccionario no puede cruzar la frontera servidor→cliente.** Los textos
+   con números y plurales son funciones, y React no serializa funciones: la app
+   tiraba 500 en cuanto una pantalla las pasaba a un componente de cliente. Lo
+   que cruza ahora es **sólo el idioma** (un string); cada lado importa el
+   diccionario de `src/i18n/dicts.ts`, que no toca `next/headers` y por eso
+   puede vivir en los dos mundos.
+2. **Las fechas y los números también cambian de idioma, la zona horaria no.**
+   `fmtDate`, `weekRangeLabel`, `fmtNumber` y `fmtKg` reciben el locale;
+   `America/Mexico_City` se queda fija, porque es la del gimnasio y no la del
+   usuario. El rango de semana usa `Intl.formatRange`, que sabe que en español
+   es "21–27 de septiembre" y en inglés "September 21 – 27"; armarlo a mano
+   daba "21 – September 27".
+3. **`daysAgoLabel` se eliminó**: devolvía "Nunca / Hoy / Ayer / Hace N días" en
+   español duro y ya nadie lo llamaba.
+
+Lo que **no** cambia de idioma, a propósito: los nombres de rutina (los
+escribes tú) y los de ejercicio (vienen del catálogo, que ya tiene columna en
+cada idioma).
 
 ---
 

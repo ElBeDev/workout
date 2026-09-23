@@ -4,12 +4,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Home, Dumbbell, ChartNoAxesColumn, User } from "lucide-react";
+import { useT } from "@/i18n/client";
 
+// La etiqueta se resuelve al renderizar (`t.comun.nav[tab.clave]`): el
+// diccionario depende del idioma y esta lista es de módulo.
 const TABS = [
-  { href: "/", label: "Hoy", icon: Home },
-  { href: "/rutinas", label: "Rutinas", icon: Dumbbell },
-  { href: "/progreso", label: "Progreso", icon: ChartNoAxesColumn },
-  { href: "/perfil", label: "Perfil", icon: User },
+  { href: "/", clave: "hoy", icon: Home },
+  { href: "/rutinas", clave: "rutinas", icon: Dumbbell },
+  { href: "/progreso", clave: "progreso", icon: ChartNoAxesColumn },
+  { href: "/perfil", clave: "perfil", icon: User },
 ] as const;
 
 const HIDDEN_ON = ["/login", "/registro"];
@@ -21,6 +24,7 @@ const HIDDEN_ON = ["/login", "/registro"];
 export function BottomNav() {
   const pathname = usePathname();
   const [compact, setCompact] = useState(false);
+  const t = useT();
 
   useEffect(() => {
     let last = window.scrollY;
@@ -67,7 +71,7 @@ export function BottomNav() {
                     compact ? "h-0 opacity-0" : "h-3 opacity-100"
                   }`}
                 >
-                  {tab.label}
+                  {t.comun.nav[tab.clave]}
                 </span>
               </Link>
             </li>

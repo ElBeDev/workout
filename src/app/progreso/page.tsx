@@ -16,6 +16,7 @@ import {
   getPersonalRecords,
   getSessionSummaries,
 } from "@/db/queries";
+import { getDict } from "@/i18n";
 import { ConsistencyCalendar } from "@/components/ConsistencyCalendar";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import {
@@ -31,9 +32,9 @@ import {
 export const dynamic = "force-dynamic";
 
 const RANGES = [
-  { days: 7, label: "Semana" },
-  { days: 30, label: "Mes" },
-  { days: 365, label: "Año" },
+  { days: 7, label: "rangoSemana" },
+  { days: 30, label: "rangoMes" },
+  { days: 365, label: "rangoAnio" },
 ] as const;
 
 export default async function ProgresoPage({
@@ -42,6 +43,7 @@ export default async function ProgresoPage({
   searchParams: Promise<{ r?: string }>;
 }) {
   const userId = await requireUserId();
+  const t = await getDict();
   const { r } = await searchParams;
   const range = RANGES.find((x) => String(x.days) === r) ?? RANGES[1];
 
@@ -72,12 +74,12 @@ export default async function ProgresoPage({
       .orderBy(exercises.name),
   ]);
 
-  const volume = fmtKg(stats.volumeKg);
+  const volume = fmtKg(stats.volumeKg, t.comun.intl);
   const trendUp = (stats.volumeTrendPct ?? 0) > 0;
 
   return (
     <div className="flex flex-col gap-7">
-      <PageHeader title="Progreso" />
+      <PageHeader title={t.progreso.titulo} />
 
       <div className="flex gap-1 rounded-full bg-surface-2 p-1">
         {RANGES.map((option) => {
@@ -91,40 +93,50 @@ export default async function ProgresoPage({
                 active ? "bg-surface text-foreground shadow-hero" : "text-muted"
               }`}
             >
-              {option.label}
+              {t.progreso[option.label]}
             </Link>
           );
         })}
       </div>
 
       <Card hero className="p-5">
-        <p className="label text-load">Tendencia de carga</p>
+        <p className="label text-load">{t.progreso.tendenciaDeCarga}</p>
         <div className="mt-1 flex items-baseline gap-3">
           <p className="text-[34px] font-bold leading-none tracking-[-0.02em]">
             {stats.volumeTrendPct === null
               ? "—"
-              : `${trendUp ? "+" : ""}${Math.round(stats.volumeTrendPct)} %`}
+              : t.progreso.porcentajeTendencia(Math.round(stats.volumeTrendPct))}
           </p>
-          {stats.volumeTrendPct !== null && <TrendPill pct={stats.setsTrendPct} label="series" />}
+          {stats.volumeTrendPct !== null && (
+            <TrendPill pct={stats.setsTrendPct} label={t.progreso.tendenciaSeries} />
+          )}
         </div>
         <p className="mt-2 text-[15px] text-muted">
           {stats.volumeTrendPct === null
-            ? `Aún no hay con qué comparar estos ${range.days} días. Sigue entrenando.`
+            ? t.progreso.tendenciaSinComparacion(range.days)
             : trendUp
-              ? `Levantaste ${Math.round(stats.volumeTrendPct)} % más carga que los ${range.days} días anteriores.`
-              : `Levantaste ${Math.abs(Math.round(stats.volumeTrendPct))} % menos carga que los ${range.days} días anteriores.`}
+              ? t.progreso.tendenciaSubio(Math.round(stats.volumeTrendPct), range.days)
+              : t.progreso.tendenciaBajo(
+                  Math.abs(Math.round(stats.volumeTrendPct)),
+                  range.days
+                )}
         </p>
       </Card>
 
       <StatGrid>
-        <MetricTile label="Sesiones" value={fmtNumber(stats.sessions)} tone="days" />
-        <MetricTile label="Series" value={fmtNumber(stats.sets)} tone="sets" />
-        <MetricTile label="Carga" value={volume.value} unit={volume.unit} tone="load" />
-        <MetricTile label="Tiempo" value={fmtMinutesShort(stats.minutes)} />
+        <MetricTile label={t.progreso.metricaSesiones} value={fmtNumber(stats.sessions, t.comun.intl)} tone="days" />
+        <MetricTile label={t.progreso.metricaSeries} value={fmtNumber(stats.sets, t.comun.intl)} tone="sets" />
+        <MetricTile
+          label={t.progreso.metricaCarga}
+          value={volume.value}
+          unit={volume.unit}
+          tone="load"
+        />
+        <MetricTile label={t.progreso.metricaTiempo} value={fmtMinutesShort(stats.minutes)} />
       </StatGrid>
 
       <section className="flex flex-col gap-3">
-        <SectionTitle>Días entrenados</SectionTitle>
+        <SectionTitle>{t.progreso.diasEntrenados}</SectionTitle>
         <Card className="p-4">
           <ConsistencyCalendar byDay={byDay} goals={goals} />
         </Card>
@@ -132,12 +144,12 @@ export default async function ProgresoPage({
 
       {trainedExercises.length > 0 && (
         <section className="flex flex-col gap-3">
-          <SectionTitle>Por ejercicio</SectionTitle>
+          <SectionTitle>{t.progreso.porEjercicio}</SectionTitle>
           <GroupedList>
             {trainedExercises.map((ex) => {
               const pr = records.get(ex.id);
               const prLabel = pr
-                ? (loadLabel(pr.weight, pr.plates, pr.weightUnit) ?? `${pr.reps} reps`)
+                ? (loadLabel(pr.weight, pr.plates, pr.weightUnit) ?? t.progreso.reps(pr.reps))
                 : null;
               return (
                 <Link
@@ -176,17 +188,15 @@ export default async function ProgresoPage({
       )}
 
       <section className="flex flex-col gap-3">
-        <SectionTitle>Sesiones</SectionTitle>
+        <SectionTitle>{t.progreso.sesiones}</SectionTitle>
         {sessions.length === 0 ? (
           <Card className="p-6 text-center">
-            <p className="text-[15px] text-muted">
-              Todavía no tienes sesiones registradas. Termina un entrenamiento para verlo aquí.
-            </p>
+            <p className="text-[15px] text-muted">{t.progreso.sinSesiones}</p>
           </Card>
         ) : (
           <GroupedList>
             {sessions.map((s) => {
-              const vol = fmtKg(s.volumeKg);
+              const vol = fmtKg(s.volumeKg, t.comun.intl);
               return (
                 <Link
                   key={s.id}
@@ -199,13 +209,13 @@ export default async function ProgresoPage({
                         s.routineName ? "" : "text-muted"
                       }`}
                     >
-                      {s.routineName ?? "Rutina eliminada"}
+                      {s.routineName ?? t.progreso.rutinaEliminada}
                     </p>
                     <p className="text-[13px] text-muted">
-                      {fmtDate(s.startedAt, { dateStyle: "medium" })} · {fmtMinutes(s.minutes)}
+                      {fmtDate(s.startedAt, { dateStyle: "medium" }, t.comun.intl)} · {fmtMinutes(s.minutes)}
                     </p>
                     <p className="mt-0.5 flex items-center gap-2 text-[13px]">
-                      <span className="font-semibold text-sets">{s.sets} series</span>
+                      <span className="font-semibold text-sets">{t.progreso.series(s.sets)}</span>
                       {s.volumeKg > 0 && (
                         <span className="font-semibold text-load">
                           {vol.value} {vol.unit}

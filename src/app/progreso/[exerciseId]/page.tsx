@@ -9,6 +9,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Trophy } from "lucide-react";
 import { bodyPartLabel } from "@/lib/body-parts";
+import { getDict } from "@/i18n";
 import { Card, GroupedList, PageHeader } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { ExerciseProgressChart, type Metric } from "@/components/ExerciseProgressChart";
@@ -22,6 +23,7 @@ export default async function ExerciseProgressPage({
 }) {
   const { exerciseId } = await params;
   const userId = await requireUserId();
+  const t = await getDict();
 
   const [exercise] = await db
     .select()
@@ -91,7 +93,7 @@ export default async function ExerciseProgressPage({
   }
 
   const chartData = rows.map((r) => ({
-    date: fmtDate(r.startedAt, { day: "2-digit", month: "short" }),
+    date: fmtDate(r.startedAt, { day: "2-digit", month: "short" }, t.comun.intl),
     maxWeight: r.maxWeight,
     maxPlates: r.maxPlates,
     maxReps: r.maxReps,
@@ -105,7 +107,13 @@ export default async function ExerciseProgressPage({
   // an exercise rarely switches equipment/unit from one session to the next.
   const weightUnit: WeightUnit =
     [...rows].reverse().find((r) => r.weightUnit !== null)?.weightUnit ?? "kg";
-  const unit = anyWeight ? (weightUnit === "lbs" ? "lb" : "kg") : anyPlates ? "placas" : "reps";
+  const unit = anyWeight
+    ? weightUnit === "lbs"
+      ? "lb"
+      : "kg"
+    : anyPlates
+      ? t.progreso.unidadPlacas
+      : t.progreso.unidadReps;
   const pick = (r: Row) => (anyWeight ? r.maxWeight : anyPlates ? r.maxPlates : r.maxReps);
   const best = rows.reduce<number | null>((acc, r) => {
     const v = pick(r);
@@ -132,7 +140,7 @@ export default async function ExerciseProgressPage({
         <div className="grid flex-1 grid-cols-2 gap-3 pl-1">
           <div>
             <p className="label flex items-center gap-1 text-load">
-              <Trophy className="h-3 w-3" /> Récord
+              <Trophy className="h-3 w-3" /> {t.progreso.record}
             </p>
             <p className="mt-1 text-[26px] font-bold leading-none tracking-[-0.02em] tabular-nums">
               {best !== null ? `${best}` : "—"}
@@ -140,7 +148,7 @@ export default async function ExerciseProgressPage({
             </p>
           </div>
           <div>
-            <p className="label text-muted">Última</p>
+            <p className="label text-muted">{t.progreso.ultima}</p>
             <p className="mt-1 text-[26px] font-bold leading-none tracking-[-0.02em] tabular-nums">
               {latest !== null ? `${latest}` : "—"}
               <span className="ml-1 text-[13px] font-semibold text-muted">{unit}</span>
@@ -151,14 +159,12 @@ export default async function ExerciseProgressPage({
 
       {rows.length === 0 ? (
         <Card className="p-6 text-center">
-          <p className="text-sm text-muted">
-            Todavía no tienes sesiones registradas para este ejercicio.
-          </p>
+          <p className="text-sm text-muted">{t.progreso.ejercicioSinSesiones}</p>
         </Card>
       ) : (
         <>
           <Card className="p-4">
-            <p className="label mb-3 text-muted">Por sesión</p>
+            <p className="label mb-3 text-muted">{t.progreso.porSesion}</p>
             <ExerciseProgressChart data={chartData} defaultMetric={defaultMetric} weightUnit={weightUnit} />
           </Card>
 
@@ -170,17 +176,17 @@ export default async function ExerciseProgressPage({
                 className="flex items-center justify-between px-4 py-3.5 text-[15px] transition active:bg-surface-2"
               >
                     <span className="text-muted">
-                      {fmtDate(r.startedAt, { dateStyle: "medium" })}
+                      {fmtDate(r.startedAt, { dateStyle: "medium" }, t.comun.intl)}
                     </span>
                     <span className="flex items-center gap-3 tabular-nums">
-                      <span className="text-muted">{r.sets} series</span>
+                      <span className="text-muted">{t.progreso.series(r.sets)}</span>
                       <span className="font-semibold">
                         {r.maxWeight !== null
                           ? `${r.maxWeight} ${r.weightUnit === "lbs" ? "lb" : "kg"}`
                           : r.maxPlates !== null
-                            ? `${r.maxPlates} placas`
+                            ? t.progreso.placas(r.maxPlates)
                             : r.maxReps !== null
-                              ? `${r.maxReps} reps`
+                              ? t.progreso.reps(r.maxReps)
                               : "—"}
                       </span>
                     </span>

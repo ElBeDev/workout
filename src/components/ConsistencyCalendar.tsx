@@ -1,22 +1,23 @@
 import { localDate } from "@/lib/dates";
+import { getDict } from "@/i18n";
 import { MiniRings } from "@/components/Rings";
 import type { TrainingDay } from "@/db/queries";
 
 const WEEKS = 14;
-const DAY_LABELS = ["L", "M", "X", "J", "V", "S", "D"];
 
 /**
  * Historial de constancia: cada día es un trío de anillos en miniatura, como
  * el calendario de Actividad de Fitness. Las metas diarias salen de repartir
  * las metas semanales entre los días que te propusiste entrenar.
  */
-export function ConsistencyCalendar({
+export async function ConsistencyCalendar({
   byDay,
   goals,
 }: {
   byDay: Map<string, TrainingDay>;
   goals: { volumeKg: number; sets: number; days: number };
 }) {
+  const t = await getDict();
   const perDay = Math.max(goals.days, 1);
   const volumeTarget = Math.max(goals.volumeKg / perDay, 1);
   const setsTarget = Math.max(goals.sets / perDay, 1);
@@ -38,15 +39,18 @@ export function ConsistencyCalendar({
     columns.push(col);
   }
 
-  const monthLabel = new Intl.DateTimeFormat("es-MX", { month: "short", timeZone: "UTC" });
+  const monthLabel = new Intl.DateTimeFormat(t.progreso.calendarioLocale, {
+    month: "short",
+    timeZone: "UTC",
+  });
   const trainedDays = Array.from(byDay.values()).filter((d) => d.sets > 0).length;
 
   return (
     <div className="flex flex-col gap-2">
       <div className="flex gap-1 overflow-x-auto pb-1">
         <div className="flex flex-col gap-1 pr-1 pt-4">
-          {DAY_LABELS.map((l, i) => (
-            <span key={l} className="flex h-4 items-center text-[10px] leading-none text-faint">
+          {t.progreso.calendarioDias.map((l, i) => (
+            <span key={i} className="flex h-4 items-center text-[10px] leading-none text-faint">
               {i % 2 === 0 ? l : ""}
             </span>
           ))}
@@ -68,7 +72,7 @@ export function ConsistencyCalendar({
                     key={k}
                     title={
                       entry
-                        ? `${k} · ${entry.sets} series · ${Math.round(entry.volumeKg)} kg`
+                        ? t.progreso.calendarioDia(k, entry.sets, Math.round(entry.volumeKg))
                         : k
                     }
                     className={future ? "opacity-15" : undefined}
@@ -89,10 +93,7 @@ export function ConsistencyCalendar({
           );
         })}
       </div>
-      <p className="text-[13px] text-muted">
-        {trainedDays} {trainedDays === 1 ? "día entrenado" : "días entrenados"} en las últimas{" "}
-        {WEEKS} semanas
-      </p>
+      <p className="text-[13px] text-muted">{t.progreso.calendarioResumen(trainedDays, WEEKS)}</p>
     </div>
   );
 }

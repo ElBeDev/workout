@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { AlertCircle, Check, CloudOff, Loader2 } from "lucide-react";
 import { enqueueSet, findPendingSet } from "@/lib/offline-queue";
 import { desbloquearSonido } from "@/lib/rest-sound";
+import { useT } from "@/i18n/client";
 import type { LoadUnit } from "@/lib/suggest";
 import { logSet } from "./actions";
 
@@ -49,6 +50,7 @@ export function SetRow({
   const [status, setStatus] = useState<Status>(completed ? "done" : "idle");
   const [, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
+  const t = useT();
   const isPlates = loadUnit === "plates";
   const weightUnit: "kg" | "lbs" = loadUnit === "lbs" ? "lbs" : "kg";
 
@@ -151,12 +153,12 @@ export function SetRow({
 
   const label =
     status === "saving"
-      ? "Guardando serie"
+      ? t.entrenar.serie.guardando
       : status === "queued"
-        ? "Serie pendiente de sincronizar"
+        ? t.entrenar.serie.pendiente
         : status === "error"
-          ? "No se pudo guardar, toca para reintentar"
-          : "Marcar serie";
+          ? t.entrenar.serie.error
+          : t.entrenar.serie.marcar;
 
   const done = status === "done" || status === "saving";
 
@@ -189,7 +191,11 @@ export function SetRow({
         inputMode={isPlates ? "numeric" : "decimal"}
         defaultValue={isPlates ? (plates ?? undefined) : (weight ?? undefined)}
         placeholder={loadPlaceholder}
-        aria-label={isPlates ? `Placas serie ${setNumber}` : `Peso serie ${setNumber} (${weightUnit === "lbs" ? "lb" : "kg"})`}
+        aria-label={
+          isPlates
+            ? t.entrenar.serie.ariaPlacas(setNumber)
+            : t.entrenar.serie.ariaPeso(setNumber, weightUnit)
+        }
         className={fieldClass}
       />
       <input
@@ -198,7 +204,7 @@ export function SetRow({
         inputMode="numeric"
         defaultValue={reps ?? undefined}
         placeholder={repsPlaceholder}
-        aria-label={`Repeticiones serie ${setNumber}`}
+        aria-label={t.entrenar.serie.ariaReps(setNumber)}
         className={fieldClass}
       />
 
@@ -207,7 +213,7 @@ export function SetRow({
         onClick={startRest}
         disabled={status === "saving"}
         aria-label={label}
-        title={status === "queued" ? "Se guardará al reconectar" : undefined}
+        title={status === "queued" ? t.entrenar.serie.seGuardaAlReconectar : undefined}
         className={`ml-auto flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition active:scale-95 disabled:opacity-70 ${buttonClass} ${
           status === "done" ? "animate-pop" : ""
         }`}

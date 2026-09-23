@@ -7,6 +7,7 @@ import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { ExerciseInfoSheet } from "@/components/ExerciseInfoSheet";
 import { CustomExerciseForm } from "@/components/CustomExerciseForm";
 import { Chip, SecondaryButton } from "@/components/ui";
+import { useT } from "@/i18n/client";
 
 export type ExerciseResult = {
   id: string;
@@ -33,6 +34,7 @@ export function ExercisePicker({
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(false);
   const requestId = useRef(0);
+  const t = useT();
 
   useEffect(() => {
     if (query.trim().length === 1) return;
@@ -86,14 +88,14 @@ export function ExercisePicker({
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar (ej. press de banca, curl)"
+          placeholder={t.ejercicios.buscarPlaceholder}
           className="w-full rounded-xl bg-surface-2 py-3.5 pl-11 pr-4 text-[17px] text-foreground outline-none focus:ring-2 focus:ring-accent"
         />
       </div>
 
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <Chip active={bodyPart === ""} onClick={() => setBodyPart("")}>
-          Todos
+          {t.ejercicios.todos}
         </Chip>
         {BODY_PARTS.map((bp) => (
           <Chip
@@ -101,7 +103,7 @@ export function ExercisePicker({
             active={bodyPart === bp.value}
             onClick={() => setBodyPart(bp.value)}
           >
-            {bp.label}
+            {bodyPartLabel(bp.value, t)}
           </Chip>
         ))}
       </div>
@@ -123,7 +125,7 @@ export function ExercisePicker({
               <div className="flex flex-col gap-0.5 p-2.5">
                 {ex.isCustom && (
                   <span className="mb-0.5 w-fit rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-accent-foreground">
-                    Propio
+                    {t.ejercicios.propio}
                   </span>
                 )}
                 <span className="line-clamp-2 text-[13px] font-semibold capitalize leading-tight">
@@ -133,7 +135,7 @@ export function ExercisePicker({
                   <span className="line-clamp-1 text-[11px] capitalize text-muted/80">{ex.name}</span>
                 )}
                 <span className="text-[11px] text-muted">
-                  {[bodyPartLabel(ex.bodyPart), ex.equipment].filter(Boolean).join(" · ")}
+                  {[bodyPartLabel(ex.bodyPart, t), ex.equipment].filter(Boolean).join(" · ")}
                 </span>
               </div>
             </button>
@@ -149,19 +151,19 @@ export function ExercisePicker({
 
       {loading && items.length === 0 && (
         <p className="flex items-center justify-center gap-2 py-6 text-xs text-muted">
-          <Loader2 className="h-4 w-4 animate-spin" /> Buscando...
+          <Loader2 className="h-4 w-4 animate-spin" /> {t.ejercicios.buscando}
         </p>
       )}
 
       {!loading && items.length === 0 && (
         <p className="py-6 text-center text-xs text-muted">
-          No encontramos ejercicios con ese filtro.
+          {t.ejercicios.sinResultados}
         </p>
       )}
 
       {hasMore && (
         <SecondaryButton type="button" onClick={loadMore} disabled={loading}>
-          {loading ? "Cargando..." : "Cargar más"}
+          {loading ? t.ejercicios.cargando : t.ejercicios.cargarMas}
         </SecondaryButton>
       )}
 

@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { CloudDownload, Loader2, Check } from "lucide-react";
 import { mirrorMyGifs } from "@/app/perfil/actions";
+import { useT } from "@/i18n/client";
 
 export function MirrorGifsButton({ pending }: { pending: number }) {
+  const t = useT();
   const [left, setLeft] = useState(pending);
   const [running, setRunning] = useState(false);
   const [done, setDone] = useState(0);
@@ -19,20 +21,20 @@ export function MirrorGifsButton({ pending }: { pending: number }) {
       while (remaining > 0 && guard < 60) {
         const res = await mirrorMyGifs();
         if (!res.enabled) {
-          setError("Vercel Blob no está configurado en este entorno.");
+          setError(t.admin.espejo.sinBlob);
           break;
         }
         setDone((d) => d + res.mirrored);
         remaining = res.remaining;
         setLeft(remaining);
         if (res.mirrored === 0 && remaining > 0) {
-          setError("Algunos gifs no se pudieron descargar; inténtalo más tarde.");
+          setError(t.admin.espejo.descargaFallida);
           break;
         }
         guard += 1;
       }
     } catch {
-      setError("Se perdió la conexión; vuelve a intentar.");
+      setError(t.admin.espejo.sinConexion);
     } finally {
       setRunning(false);
     }
@@ -41,7 +43,7 @@ export function MirrorGifsButton({ pending }: { pending: number }) {
   if (left === 0 && done === 0) {
     return (
       <p className="flex items-center gap-2 text-[13px] text-muted">
-        <Check className="h-4 w-4 text-sets" /> Todos tus ejercicios ya tienen copia propia.
+        <Check className="h-4 w-4 text-sets" /> {t.admin.espejo.todoCopiado}
       </p>
     );
   }
@@ -56,10 +58,10 @@ export function MirrorGifsButton({ pending }: { pending: number }) {
       >
         {running ? <Loader2 className="h-4 w-4 animate-spin" /> : left === 0 ? <Check className="h-4 w-4" /> : <CloudDownload className="h-4 w-4" />}
         {running
-          ? `Copiando… faltan ${left}`
+          ? t.admin.espejo.copiando(left)
           : left === 0
-            ? `Listo: ${done} copiados`
-            : `Copiar ${left} ${left === 1 ? "gif" : "gifs"} a tu almacenamiento`}
+            ? t.admin.espejo.listo(done)
+            : t.admin.espejo.copiar(left)}
       </button>
       {error && <p className="text-[12px] text-danger">{error}</p>}
     </div>
