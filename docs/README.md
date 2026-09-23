@@ -6,6 +6,7 @@ arranque rápido (instalar, correr, scripts).
 | Documento | Qué contiene |
 |---|---|
 | [PLAN.md](./PLAN.md) | El plan maestro: estado actual, visión, modelo de datos, stack, pantallas, roadmap, mapa del código, notas de infra, registro de cambios por commit y la auditoría. **Es el documento vivo del proyecto**: cada ronda de trabajo agrega su fila a la tabla de cambios. |
+| [siguiente-ronda.md](./siguiente-ronda.md) | Lo que se está por hacer: descanso que sobrevive y suena, instrucciones en español, app bilingüe con selector, recordatorios, aviso de récord, migraciones versionadas. Con las decisiones ya tomadas y lo que queda bloqueado. Se vacía conforme se sube. |
 | [diseno-apple-fitness.md](./diseno-apple-fitness.md) | El sistema visual estilo Apple Fitness: la investigación, los tokens (color, tipografía, espaciado), los componentes, el rediseño pantalla por pantalla, las features que el estilo pide (anillos, tendencias, récords), el plan por fases con su estado, y una **bitácora** con lo que se subió, cómo se verificó y qué se arregló después de verlo en el teléfono. |
 
 ## Convenciones
