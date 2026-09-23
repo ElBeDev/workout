@@ -169,6 +169,7 @@ export default async function EntrenarPage({
       <PageHeader title={routine.name} backHref={`/rutinas/${routine.id}`} />
 
       <SessionHud
+        sessionId={sessionId}
         startedAtMs={session.startedAt.getTime()}
         completed={completedSets}
         total={totalSets}

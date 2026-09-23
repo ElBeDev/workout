@@ -16,7 +16,7 @@ al registro de cambios de [PLAN.md](./PLAN.md), como manda
 
 ## Orden de ataque
 
-1. [ ] Descanso: que sobreviva y que suene
+1. [x] Descanso: que sobreviva y que suene — **hecho**
 2. [ ] Instrucciones de ejercicio en español
 3. [ ] App bilingüe con selector de idioma
 4. [ ] Recordatorio de "hoy toca"
@@ -62,9 +62,20 @@ sales de la app, iOS suspende la página: no va a sonar. Para ese caso hace
 falta una notificación local del sistema, que es el punto 4. Aquí se cubre el
 caso real y más común: el teléfono desbloqueado con la app abierta.
 
-**Hecho cuando**: marcas una serie, sales a Progreso, vuelves y el descanso
-sigue corriendo con el tiempo correcto; y al llegar a cero suenan tres pitidos.
-Esfuerzo: ~1 hora.
+**Hecho** (2026-09-22). Comprobado en navegador, 7 de 7:
+
+- el descanso arranca al marcar la serie y queda guardado en `localStorage`;
+- sigue corriendo tras salir a Progreso y volver (02:59 → 02:53, o sea que
+  descuenta el tiempo que estuviste fuera en vez de reiniciarse);
+- sobrevive a recargar la página;
+- al llegar a cero se crean **exactamente 3 osciladores** (los tres pitidos),
+  el HUD vuelve a "Entrenando" y la clave de `localStorage` se limpia.
+
+Un hallazgo del camino: **al recargar se pierde el permiso de audio** y el
+descanso habría terminado en silencio. Se resolvió volviendo a desbloquearlo
+con cualquier toque en la pantalla — basta con que mires el teléfono. Lo que
+sigue sin poderse: con el teléfono bloqueado o la app cerrada iOS suspende la
+página y no suena. Eso es el punto 4.
 
 ---
 

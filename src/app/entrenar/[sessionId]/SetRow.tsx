@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { AlertCircle, Check, CloudOff, Loader2 } from "lucide-react";
 import { enqueueSet, findPendingSet } from "@/lib/offline-queue";
+import { desbloquearSonido } from "@/lib/rest-sound";
 import type { LoadUnit } from "@/lib/suggest";
 import { logSet } from "./actions";
 
@@ -84,6 +85,9 @@ export function SetRow({
   // and the RSC refresh after saving can swallow it. SessionHud always
   // counts down a fixed 3 minutes.
   function startRest() {
+    // iOS sólo deja sonar si hubo un gesto antes, y el fin del descanso no lo
+    // es: se desbloquea aquí, que es el toque que arranca la cuenta.
+    desbloquearSonido();
     try {
       navigator.vibrate?.(12);
     } catch {}

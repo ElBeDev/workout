@@ -16,6 +16,7 @@ import {
 } from "@/components/ui";
 import { BodyWeightChart } from "@/components/BodyWeightChart";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
+import { SoundToggle } from "@/components/SoundToggle";
 import { LogoutButton } from "@/components/LogoutButton";
 import { changePasswordAction, addBodyWeight, deleteBodyWeight, updateGoals } from "./actions";
 
@@ -76,8 +77,11 @@ export default async function PerfilPage({
       </Card>
 
       <section className="flex flex-col gap-3">
-        <SectionTitle>Apariencia</SectionTitle>
+        <SectionTitle>Apariencia y sonido</SectionTitle>
         <ThemeSwitch />
+        <GroupedList>
+          <SoundToggle />
+        </GroupedList>
       </section>
 
       <section className="flex flex-col gap-3">
