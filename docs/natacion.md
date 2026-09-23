@@ -1,7 +1,7 @@
 # Natación
 
-Estado: **Fase 1 (MVP) hecha (2026-09-22)**, pendiente de commit y de su fila
-en el changelog de [PLAN.md](./PLAN.md). Pedido original: la app ya tenía una
+Estado: **Fase 1 (MVP) hecha y subida (2026-09-22, `ac9a8c6`)**. Pedido
+original: la app ya tenía una
 noción de "natación" pero no había nada real detrás, y tocaba al día
 siguiente. Referencia de producto:
 [MySwimPro](https://apps.apple.com/us/app/myswimpro-1-swim-workout-app/id994386450) —

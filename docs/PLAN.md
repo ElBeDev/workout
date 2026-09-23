@@ -499,6 +499,7 @@ Arrancó todo en un solo día (2026-09-03) y sigue creciendo: el historial fino 
 | `01b6c0f` | El plan gratuito de Vercel sólo permite crons diarios (rechazó el deploy con uno por hora, en silencio); el cron pasa a una corrida diaria y se quita el selector de hora que no se podía cumplir |
 | `16b5b71` | Aviso de récord en el momento (insignia en la fila, sólo si ya había marca previa) y resumen post-entrenamiento con los récords de la sesión; de paso, dos fugas de "placas" en español en la app bilingüe |
 | `9aa2d7e` | Migraciones versionadas: se adopta el historial existente en `drizzle/` en vez de ejecutarlo contra una base que ya tiene las 9 tablas; de regalo, `manifest.ts` deja el lavanda |
+| `ac9a8c6` | Progreso: bug real de duración de sesión corregido (`isSameLocalDay` + `closeAbandonedSession`, más las 5 filas dañadas arregladas en Neon y un tope de 6 h como red de seguridad), 1RM estimado, tarjeta de cobertura muscular, tendencia de frecuencia y "Sesiones" respetando el rango. Natación de verdad: `routines.kind`, `swim_blocks`/`swim_block_logs`, editor de bloques, checklist al entrenar, tarjeta de distancia/ritmo — con la rutina real de `bener` migrada del hack de "reps" a bloques de verdad |
 
 ## 12. Tercera ronda (acordada 2026-09-03) — cerrada
 

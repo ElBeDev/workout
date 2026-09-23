@@ -1,7 +1,6 @@
 # Mejoras a Progreso (acordado 2026-09-23)
 
-Estado: **hecho (2026-09-22)**, pendiente de commit y de su fila en el
-changelog de [PLAN.md](./PLAN.md) — mismo formato que
+Estado: **hecho y subido (2026-09-22, `ac9a8c6`)** — mismo formato que
 [siguiente-ronda.md](./siguiente-ronda.md).
 
 Documento vivo: conforme se suba cada punto se marca aquí y se agrega su fila
