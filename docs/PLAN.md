@@ -18,13 +18,13 @@ En la base hoy: **3 usuarios**, 14 rutinas, 20 sesiones terminadas, 169 series r
 
 **Progreso** — totales del periodo (semana, mes o año): sesiones, series, carga y tiempo, más la tendencia contra el periodo anterior. Calendario de constancia de 14 semanas con un trío de anillos por día. Por ejercicio: récord personal, gráfica de peso / placas / reps / volumen por sesión, y su lista de sesiones. Detalle de sesión con métricas grandes, las series agrupadas por ejercicio (corregibles y borrables) y las notas. Todo el historial se exporta a CSV.
 
-**Perfil** — metas semanales de los tres anillos (carga, series, días), peso corporal con gráfica, cambiar contraseña y cerrar sesión (que además purga caches y colas locales).
+**Perfil** — **apariencia** (Sistema / Claro / Oscuro), metas semanales de los tres anillos (carga, series, días), peso corporal con gráfica, cambiar contraseña y cerrar sesión (que además purga caches y colas locales).
 
 **Administrador** (solo `is_admin`) — lista de usuarios con su número de rutinas; entrar a uno y armarle rutinas con el mismo editor de siempre, con un banner de aviso y sin el botón de entrenar (el admin arma, no entrena por nadie). Bloque de mantenimiento con el respaldo de gifs (⚠️ hoy no operativo, ver pendientes).
 
 **PWA y offline** — instalable, con ícono y tema propios. Service worker propio: el shell y las páginas ya visitadas abren sin señal, y las series marcadas sin conexión se encolan en `localStorage` y se sincronizan al reconectar, con un banner que lo avisa.
 
-**Diseño** — sistema estilo Apple Fitness en claro y oscuro: lienzo neutro, color reservado para el dato (carga rosa, series verde, días cian), anillos, navegación de vidrio. El detalle completo está en [diseno-apple-fitness.md](./diseno-apple-fitness.md).
+**Diseño** — sistema estilo Apple Fitness en claro y oscuro, con el tema forzable desde Perfil: lienzo neutro, color reservado para el dato (carga rosa, series verde, días cian), anillos, navegación de vidrio. El detalle completo está en [diseno-apple-fitness.md](./diseno-apple-fitness.md).
 
 ### Cómo se prueba
 
@@ -123,6 +123,7 @@ Notas de infra que ya no hay que repetir:
   - **Opción B**: quedarse con el store privado y servir los gifs por una ruta propia (`/api/gif/[id]`) que los lea con el token. Más código, más invocaciones de función y más latencia por imagen.
 
   Mientras tanto la app funciona: los gifs se sirven desde `static.exercisedb.dev` (`coalesce(gif_blob_url, gif_url)` cae al externo). El riesgo es quedarse sin imágenes si ese servidor se cae.
+- Tema: `data-theme="light"|"dark"` en `<html>` manda sobre `prefers-color-scheme`. Lo pone `src/lib/theme-script.ts`, inyectado en `<head>` para que corra **antes del primer pintado** (si no, parpadea). Por eso el bloque de tokens oscuros aparece dos veces en `globals.css` (media query guardada + atributo) y el variante `dark:` de Tailwind se redefine con `@custom-variant` para que siga al atributo. El `theme-color` también lo pone ese script: un meta por media query mentiría con el tema forzado.
 - Eventos del cronómetro: `workout:rest-start` se dispara desde el `onClick` del botón, no desde la acción del formulario (dentro de la acción React agrupa el setState del HUD en la transición y el refresh lo pierde).
 - Para probar en local se usa una cuenta QA desechable creada directo en la base (`insert into users ...` con hash scrypt), se recorre la app con Playwright (`npx playwright` + Chromium) y al final se borra el usuario — el `ON DELETE CASCADE` se lleva rutinas y sesiones. Nunca se toca la cuenta real.
 

@@ -15,6 +15,7 @@ import {
   SectionTitle,
 } from "@/components/ui";
 import { BodyWeightChart } from "@/components/BodyWeightChart";
+import { ThemeSwitch } from "@/components/ThemeSwitch";
 import { LogoutButton } from "@/components/LogoutButton";
 import { changePasswordAction, addBodyWeight, deleteBodyWeight, updateGoals } from "./actions";
 
@@ -73,6 +74,11 @@ export default async function PerfilPage({
           )}
         </div>
       </Card>
+
+      <section className="flex flex-col gap-3">
+        <SectionTitle>Apariencia</SectionTitle>
+        <ThemeSwitch />
+      </section>
 
       <section className="flex flex-col gap-3">
         <SectionTitle>Metas de la semana</SectionTitle>

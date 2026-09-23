@@ -4,7 +4,22 @@
  * Sistema visual estilo Apple Fitness (ver docs/diseno-apple-fitness.md):
  * lienzo neutro (negro puro en oscuro), tarjetas gris/blanco, y TODO el color
  * viene del dato — carga (rosa), series (verde), días (cian).
+ *
+ * El tema se puede forzar desde Perfil: `data-theme="light"|"dark"` en <html>
+ * manda sobre la preferencia del sistema. Cuando no hay atributo, se sigue al
+ * sistema. Por eso el bloque oscuro aparece dos veces: una para cada caso.
  */
+
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+}
 
 :root {
   /* Lienzo y superficies */
@@ -50,11 +65,11 @@
   --glass-border: rgba(0, 0, 0, 0.08);
   --shadow-hero: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 30px rgba(0, 0, 0, 0.08);
 
-  color-scheme: light dark;
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --background: #000000;
     --surface: #1c1c1e;
     --surface-2: #2c2c2e;
@@ -83,7 +98,43 @@
     --glass: rgba(28, 28, 30, 0.72);
     --glass-border: rgba(255, 255, 255, 0.12);
     --shadow-hero: none;
+
+    color-scheme: dark;
   }
+}
+
+/* …y se repite para el tema oscuro forzado desde Perfil. */
+:root[data-theme="dark"] {
+    --background: #000000;
+    --surface: #1c1c1e;
+    --surface-2: #2c2c2e;
+    --surface-3: #3a3a3c;
+
+    --foreground: #ffffff;
+    --muted: rgba(235, 235, 245, 0.6);
+    --faint: rgba(235, 235, 245, 0.3);
+    --border: rgba(235, 235, 245, 0.14);
+
+    --ring-load: #ff375f;
+    --ring-load-2: #ff6482;
+    --ring-sets: #92e82a;
+    --ring-sets-2: #c6ff5e;
+    --ring-days: #1eeaef;
+    --ring-days-2: #7bf6ff;
+
+    --accent: var(--ring-load);
+    --accent-foreground: #ffffff;
+    --accent-strong: var(--ring-load);
+    --primary: #ffffff;
+    --primary-foreground: #000000;
+    --danger: #ff453a;
+    --warning: #ffd60a;
+
+    --glass: rgba(28, 28, 30, 0.72);
+    --glass-border: rgba(255, 255, 255, 0.12);
+    --shadow-hero: none;
+
+    color-scheme: dark;
 }
 
 @theme inline {

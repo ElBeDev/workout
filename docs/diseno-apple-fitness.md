@@ -861,6 +861,23 @@ el rediseño: salió a la luz al tocar esa pantalla, y lo que lo mantuvo escondi
 19 días fue que `mirrorExerciseGif` se traga los errores. Por eso /admin ahora
 tiene un diagnóstico que prueba cada pieza por separado.
 
+### 2026-09-22 (tarde) — Presentación de los gifs y selector de tema
+
+- **Se probó 3D y se descartó** (`no llegó a commitearse`): el visor con three.js
+  funciona y gira, pero no existe contenido de gimnasio gratis — el pack más
+  grande del mercado son 134 animaciones, nadie vende 1,500 en glTF, y las
+  animadas a mano sin cinemática inversa se ven mal. Medido además: el "3D pesa
+  menos" era falso (los 19 kB eran post-brotli y Vercel no comprime `.glb`).
+- **Los gifs se presentan, no se maltratan** (`452bdf8`): la hoja los estiraba a
+  ancho completo (180 px → 390, o sea 6.5× en un iPhone). Ahora van en un
+  escenario acotado a 300 px, con hairline, esqueleto de carga y atenuado en
+  oscuro para que la lámina blanca no deslumbre. Nombres a dos líneas, filas más
+  compactas, tarjetas del explorador limpias.
+- **Selector de tema** (Sistema / Claro / Oscuro) en Perfil. El tema se aplica
+  antes del primer pintado desde `<head>`; verificado que sobrevive a navegar y
+  recargar, y que el `theme-color` de la barra de estado sigue al tema elegido y
+  no al del sistema.
+
 ### Decisiones que conviene no volver a discutir
 
 - **Inter, no SF Pro**: la licencia de SF Pro solo cubre plataformas Apple.
@@ -871,5 +888,8 @@ tiene un diagnóstico que prueba cada pieza por separado.
   kilos. Las libras sí se convierten a kg antes de sumar.
 - **Los anillos cuentan la sesión abierta**: tienen que moverse mientras
   entrenas, no al terminar.
+- **El tema es una preferencia del usuario, no solo del sistema**: vive en
+  `localStorage` y se aplica con `data-theme` antes de pintar. No se guarda en la
+  base porque es por dispositivo, no por cuenta.
 - **Las metas viven en `users`, no en una constante**: 5,000 kg / 60 series /
   4 días son solo el arranque, y cada quien las ajusta en Perfil.

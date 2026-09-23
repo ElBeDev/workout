@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { BottomNav } from "@/components/BottomNav";
 import { Connectivity } from "@/components/Connectivity";
+import { themeScript } from "@/lib/theme-script";
 import "./globals.css";
 
 // SF Pro está licenciada sólo para plataformas Apple; Inter es la sustituta
@@ -30,18 +31,19 @@ export const metadata: Metadata = {
   },
 };
 
+// El `theme-color` lo maneja `themeScript`: con tema forzado desde Perfil, un
+// meta por media query diría lo contrario a lo que se ve en pantalla.
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f2f2f7" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
-  ],
   width: "device-width",
   initialScale: 1,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="es" className={`${inter.variable} h-full antialiased`}>
+    <html lang="es" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="flex min-h-full flex-col bg-background text-foreground">
         <Connectivity />
         <main className="mx-auto w-full max-w-md flex-1 px-5 pb-32 pt-4">
