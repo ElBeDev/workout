@@ -20,6 +20,7 @@ import { suggestNext, normalizeLoadUnit, type LoadUnit } from "@/lib/suggest";
 import { DiscardSessionButton } from "@/components/DiscardSessionButton";
 import { SessionNotes } from "./SessionNotes";
 import { SetRow } from "./SetRow";
+import { LoadUnitPicker } from "./LoadUnitPicker";
 import { PendingSync } from "./PendingSync";
 import { finishSession, addExtraSet } from "./actions";
 
@@ -205,13 +206,18 @@ export default async function EntrenarPage({
                   <p className="line-clamp-2 text-[17px] font-semibold capitalize leading-snug">
                     {item.exerciseNameEs ?? item.exerciseName}
                   </p>
-                  <p className="mt-0.5 inline-flex items-center gap-1 text-[13px] text-muted">
-                    <Repeat className="h-3.5 w-3.5" />
-                    {item.targetSets} × {item.targetReps} reps
-                    {unit !== "kg" && (
-                      <span> · {unit === "plates" ? "placas" : "lb"}</span>
-                    )}
-                  </p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1 text-[13px] text-muted">
+                      <Repeat className="h-3.5 w-3.5" />
+                      {item.targetSets} × {item.targetReps} reps
+                    </span>
+                    <LoadUnitPicker
+                      sessionId={sessionId}
+                      exerciseId={item.exerciseId}
+                      nombre={item.exerciseNameEs ?? item.exerciseName}
+                      unidad={unit}
+                    />
+                  </div>
                 </div>
               </div>
 

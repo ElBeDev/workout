@@ -45,9 +45,10 @@ export function ExerciseTargetsEditor({
             ? ` · ${targetWeight} ${loadUnit === "plates" ? "placas" : loadUnit === "lbs" ? "lb" : "kg"}`
             : ""}
         </span>
-        {loadUnit === "plates" && !targetWeight && (
-          <span className="rounded-full bg-accent/50 px-2 py-0.5 text-[11px] font-medium text-accent-foreground">
-            placas
+        {/* La unidad siempre a la vista: si no se ve, nadie la cambia. */}
+        {!targetWeight && (
+          <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted">
+            {loadUnit === "plates" ? "placas" : loadUnit === "lbs" ? "lb" : "kg"}
           </span>
         )}
         <Pencil className="h-3 w-3 opacity-60" />

@@ -878,6 +878,16 @@ tiene un diagnóstico que prueba cada pieza por separado.
   recargar, y que el `theme-color` de la barra de estado sigue al tema elegido y
   no al del sistema.
 
+### 2026-09-22 (noche) — La unidad de carga se cambia entrenando
+
+Los datos lo dijeron: 73 de 73 ejercicios en `kg` y 171 de 171 series en `kg`.
+La opción de libras y placas existía desde la octava ronda, pero vivía detrás de
+tocar la línea de "N series · N reps" en la pantalla de la rutina. Nadie la
+encontró. Ahora cada ejercicio del entrenamiento trae un chip con su unidad que
+abre una hoja con las tres opciones y una línea que explica cuándo usar cada una.
+Lección general: **una opción que sólo se puede cambiar lejos de donde se
+necesita es una opción que no existe.**
+
 ### Decisiones que conviene no volver a discutir
 
 - **Inter, no SF Pro**: la licencia de SF Pro solo cubre plataformas Apple.

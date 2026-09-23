@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { setLogs, workoutSessions } from "@/db/schema";
+import { setLogs, workoutSessions, routineExercises } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
 import { and, eq, isNull, max } from "drizzle-orm";
 import { z } from "zod";
@@ -11,11 +11,36 @@ import { z } from "zod";
 async function requireOwnedSession(sessionId: string) {
   const userId = await requireUserId();
   const [session] = await db
-    .select({ id: workoutSessions.id })
+    .select({ id: workoutSessions.id, routineId: workoutSessions.routineId })
     .from(workoutSessions)
     .where(and(eq(workoutSessions.id, sessionId), eq(workoutSessions.userId, userId)));
   if (!session) redirect("/");
   return session;
+}
+
+/**
+ * Cambiar la unidad de carga sin salir del entrenamiento: la máquina en lb o la
+ * polea sin kilos marcados se descubren parado enfrente, no armando la rutina.
+ * Queda guardada en la rutina, así que la próxima vez ya pide lo correcto. Las
+ * series ya registradas conservan su propia `weight_unit` y no se reetiquetan.
+ */
+export async function setLoadUnit(sessionId: string, exerciseId: string, unit: string) {
+  const session = await requireOwnedSession(sessionId);
+  const parsed = z.enum(["kg", "lbs", "plates"]).safeParse(unit);
+  if (!parsed.success || !session.routineId) return;
+
+  await db
+    .update(routineExercises)
+    .set({ loadUnit: parsed.data })
+    .where(
+      and(
+        eq(routineExercises.routineId, session.routineId),
+        eq(routineExercises.exerciseId, exerciseId)
+      )
+    );
+
+  revalidatePath(`/entrenar/${sessionId}`);
+  revalidatePath(`/rutinas/${session.routineId}`);
 }
 
 export async function logSet(formData: FormData) {
