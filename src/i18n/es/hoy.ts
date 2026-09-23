@@ -3,6 +3,11 @@
 const DIAS = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
 export const hoy = {
+  /** Notificación del recordatorio diario (la manda el cron, ver
+   *  src/app/api/cron/recordatorios). */
+  recordatorioTitulo: "Hoy toca entrenar",
+  recordatorioCuerpo: (rutina: string) => `Hoy toca ${rutina}. Ve por ello.`,
+
   // Cabecera
   titulo: "Resumen",
   perfil: "Perfil",

@@ -5,6 +5,11 @@ import type { hoy as Es } from "../es/hoy";
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 export const hoy: typeof Es = {
+  /** Notificación del recordatorio diario (la manda el cron, ver
+   *  src/app/api/cron/recordatorios). */
+  recordatorioTitulo: "Time to train",
+  recordatorioCuerpo: (rutina: string) => `${rutina} is on for today. Go get it.`,
+
   // Cabecera
   titulo: "Summary",
   perfil: "Profile",

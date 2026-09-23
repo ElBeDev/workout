@@ -1,5 +1,18 @@
 /** Perfil: apariencia, sonido, idioma, metas, peso corporal, contraseña. */
 export const perfil = {
+  recordatorio: {
+    titulo: "Recordatorio de entrenamiento",
+    ayuda: "Un aviso los días que te toca rutina. En iPhone hay que tener la app instalada en la pantalla de inicio.",
+    hora: "A qué hora",
+    probar: "Probar",
+    listo: "Listo: te avisaremos los días que toque.",
+    fallo: "No se pudo activar. Inténtalo otra vez.",
+    permisoDenegado: "No diste permiso de notificaciones. Se activa desde los ajustes del teléfono.",
+    noSoportado: "Este navegador no soporta notificaciones. En iPhone, instala la app en la pantalla de inicio.",
+    pruebaEnviada: "Aviso de prueba enviado.",
+    pruebaFallo: "No se pudo enviar el aviso de prueba.",
+  },
+
   titulo: "Perfil",
   /** `fecha` ya viene formateada por `fmtDate` (mes y año). */
   miembroDesde: (fecha: string) => `Desde ${fecha}`,

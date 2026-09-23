@@ -19,6 +19,7 @@ import { BodyWeightChart } from "@/components/BodyWeightChart";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
 import { SoundToggle } from "@/components/SoundToggle";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
+import { ReminderToggle } from "@/components/ReminderToggle";
 import { LogoutButton } from "@/components/LogoutButton";
 import { changePasswordAction, addBodyWeight, deleteBodyWeight, updateGoals } from "./actions";
 
@@ -84,6 +85,13 @@ export default async function PerfilPage({
         <ThemeSwitch />
         <GroupedList>
           <SoundToggle />
+          {process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && (
+            <ReminderToggle
+              activo={user?.reminderEnabled ?? false}
+              hora={user?.reminderHour ?? 19}
+              publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY}
+            />
+          )}
         </GroupedList>
       </section>
 

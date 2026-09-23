@@ -6,6 +6,7 @@ import {
   numeric,
   boolean,
   timestamp,
+  date,
   uniqueIndex,
   index,
 } from "drizzle-orm/pg-core";
@@ -28,6 +29,12 @@ export const users = pgTable("users", {
   goalWeeklyVolumeKg: integer("goal_weekly_volume_kg").notNull().default(5000),
   goalWeeklySets: integer("goal_weekly_sets").notNull().default(60),
   goalWeeklyDays: integer("goal_weekly_days").notNull().default(4),
+  // Recordatorio de "hoy toca": el cron manda el aviso a esta hora (en
+  // America/Mexico_City) los días que la persona tenga rutina asignada.
+  reminderEnabled: boolean("reminder_enabled").notNull().default(false),
+  reminderHour: integer("reminder_hour").notNull().default(19),
+  // Fecha local del último aviso enviado, para no mandar dos el mismo día.
+  reminderLastSent: date("reminder_last_sent"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -148,4 +155,19 @@ export const setLogs = pgTable(
     ),
     index("set_logs_exercise_idx").on(table.exerciseId),
   ]
+);
+
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    // Un endpoint por navegador/dispositivo; único para que resuscribirse no
+    // duplique filas.
+    endpoint: text("endpoint").notNull().unique(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [index("push_subscriptions_user_idx").on(table.userId)]
 );

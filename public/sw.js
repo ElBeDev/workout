@@ -8,7 +8,7 @@
  * - Message { type: "purge-pages" } (sent on logout) drops the page cache.
  * Keep PAGES in sync with src/components/Connectivity.tsx.
  */
-const VERSION = "v3";
+const VERSION = "v4";
 const PAGES = `pages-${VERSION}`;
 const ASSETS = `assets-${VERSION}`;
 const OFFLINE_URL = "/offline";
@@ -114,4 +114,43 @@ self.addEventListener("fetch", (event) => {
       })
     );
   }
+});
+
+/**
+ * Recordatorio de "hoy toca". No hay forma de programar una notificación local
+ * en web, así que llega por push desde el cron del servidor.
+ */
+self.addEventListener("push", (event) => {
+  let datos = { titulo: "Workout", cuerpo: "Hoy toca entrenar.", url: "/" };
+  try {
+    if (event.data) datos = { ...datos, ...event.data.json() };
+  } catch {}
+  event.waitUntil(
+    self.registration.showNotification(datos.titulo, {
+      body: datos.cuerpo,
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      data: { url: datos.url },
+      // Un solo aviso a la vez: si llegan dos, el nuevo reemplaza al viejo.
+      tag: "recordatorio",
+      renotify: true,
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((lista) => {
+      // Si ya hay una ventana de la app abierta, se reutiliza en vez de abrir otra.
+      for (const c of lista) {
+        if (c.url.includes(self.registration.scope) && "focus" in c) {
+          c.navigate(url);
+          return c.focus();
+        }
+      }
+      return self.clients.openWindow(url);
+    })
+  );
 });

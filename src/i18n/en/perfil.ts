@@ -2,6 +2,19 @@ import type { perfil as Es } from "../es/perfil";
 
 /** Perfil: apariencia, sonido, idioma, metas, peso corporal, contraseña. */
 export const perfil: typeof Es = {
+  recordatorio: {
+    titulo: "Workout reminder",
+    ayuda: "A nudge on the days a routine is scheduled. On iPhone the app must be installed to the home screen.",
+    hora: "What time",
+    probar: "Test",
+    listo: "All set — we'll remind you on training days.",
+    fallo: "Couldn't turn it on. Try again.",
+    permisoDenegado: "Notifications are blocked. Turn them on in your phone's settings.",
+    noSoportado: "This browser doesn't support notifications. On iPhone, install the app to your home screen.",
+    pruebaEnviada: "Test notification sent.",
+    pruebaFallo: "Couldn't send the test notification.",
+  },
+
   titulo: "Profile",
   miembroDesde: (fecha: string) => `Since ${fecha}`,
 
