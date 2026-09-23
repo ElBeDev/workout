@@ -450,6 +450,7 @@ Arrancó todo en un solo día (2026-09-03) y sigue creciendo: el historial fino 
 | `28715f2` | Selector de tema en Perfil (Sistema / Claro / Oscuro): `data-theme` manda sobre `prefers-color-scheme`, aplicado antes del primer pintado |
 | `f6667b9` | La unidad de carga (kg / lb / placas) se cambia desde el entrenamiento con un chip por ejercicio; antes estaba enterrada en el editor de la rutina y los 73 ejercicios seguían en kg |
 | `a770f02` | Descanso persistente (se guarda el instante de fin, no los segundos) y tres pitidos al terminar con Web Audio; interruptor en Perfil |
+| `fefa5b9` | Instrucciones en español para los 39 ejercicios en uso: columna `instructions_es` y helper `coalesce` con el mismo patrón que los gifs |
 
 ## 12. Tercera ronda (acordada 2026-09-03) — cerrada
 
