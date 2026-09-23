@@ -10,7 +10,7 @@ En la base hoy: **3 usuarios**, 13 rutinas, 21 sesiones terminadas (1 abierta), 
 
 **Cuentas** — usuario y contraseña propios (scrypt, sin dependencias externas), sesión en cookie httpOnly respaldada por la tabla `sessions`, bloqueo tras 8 intentos fallidos. No se pide correo, así que **no hay recuperación de contraseña** y la app lo advierte al registrarse. Multiusuario real; `users.is_admin` abre el panel de administrador.
 
-**Catálogo de ejercicios** — 1,500 ejercicios con gif (ExerciseDB), con nombre en español generado por reglas (`name_es`), músculo, equipo e instrucciones paso a paso. La búsqueda acepta español o inglés, hay filtro por grupo muscular, y una hoja de "cómo se hace" con el gif grande. Cada usuario puede crear ejercicios propios con su foto.
+**Catálogo de ejercicios** — 1,500 ejercicios con gif (ExerciseDB), con nombre en español (`name_es`), músculo, equipo e **instrucciones paso a paso en los dos idiomas** (`instructions` en inglés, `instructions_es` en español; la app elige por idioma). La búsqueda acepta español o inglés, hay filtro por grupo muscular, y una hoja de "cómo se hace" con el gif grande. Cada usuario puede crear ejercicios propios con su foto.
 
 **Rutinas** — crear (desde el "+" de la cabecera), renombrar, duplicar y eliminar conservando el historial (las sesiones quedan como "Rutina eliminada"). Días de la semana asignados, que alimentan el "Hoy toca" de la portada. Los ejercicios se agregan desde una hoja con el explorador; series, reps y peso objetivo se editan tocando la línea; subir, bajar y quitar viven en el menú "⋮". Cada ejercicio declara su unidad de carga: **kilos, libras o placas**.
 
@@ -451,6 +451,7 @@ Arrancó todo en un solo día (2026-09-03) y sigue creciendo: el historial fino 
 | `f6667b9` | La unidad de carga (kg / lb / placas) se cambia desde el entrenamiento con un chip por ejercicio; antes estaba enterrada en el editor de la rutina y los 73 ejercicios seguían en kg |
 | `a770f02` | Descanso persistente (se guarda el instante de fin, no los segundos) y tres pitidos al terminar con Web Audio; interruptor en Perfil |
 | `fefa5b9` | Instrucciones en español para los 39 ejercicios en uso: columna `instructions_es` y helper `coalesce` con el mismo patrón que los gifs |
+| `d6365e5` | App bilingüe español/inglés: diccionarios por namespace con paridad forzada por TypeScript, idioma en cookie, selector en Perfil, fechas y números por locale (zona horaria fija) |
 
 ## 12. Tercera ronda (acordada 2026-09-03) — cerrada
 
