@@ -8,7 +8,7 @@ import { Dumbbell } from "lucide-react";
  * vez de pelearse con eso se les da un "escenario" propio: una tarjeta clara
  * con degradado y hairline, el dibujo contenido con aire, y un esqueleto
  * mientras carga en lugar del destello blanco. Nunca se amplía más allá de lo
- * que la fuente aguanta (ver docs/diseno-apple-fitness.md §7).
+ * que la fuente aguanta (ver docs/diseno-apple-fitness.md §5.1).
  */
 export function ExerciseThumb({
   src,

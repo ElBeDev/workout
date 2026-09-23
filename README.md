@@ -2,9 +2,10 @@
 
 App web mobile-first (PWA) para llevar rutinas de gym: armar rutinas con
 ejercicios del catálogo (1,500 con gif, nombres en español) o propios,
-entrenar registrando kg/reps por serie con sugerencia de peso y cronómetro
-de descanso (funciona sin señal), y ver el progreso por ejercicio, por
-sesión y por semana. Multiusuario con cuentas propias.
+entrenar registrando carga y reps por serie —en **kilos, libras o placas**, elegible
+desde el propio entrenamiento— con sugerencia de peso y cronómetro de descanso
+(funciona sin señal), y ver el progreso por ejercicio, por sesión y por semana.
+Multiusuario con cuentas propias.
 
 En línea: https://workout-eight-neon.vercel.app (deploy automático en cada
 push a `main`).
@@ -20,7 +21,7 @@ mapa del código, notas de infra y registro de cambios en
 - Drizzle ORM + Neon (Postgres serverless)
 - Auth propia: usuario + contraseña (scrypt), sesión en cookie httpOnly, bloqueo tras 8 fallos
 - Recharts para las gráficas
-- Vercel (deploy) + Vercel Blob (copia de gifs en uso y fotos de ejercicios propios)
+- Vercel (deploy) + Vercel Blob (previsto para la copia de gifs en uso y las fotos de ejercicios propios; ⚠️ hoy **no opera**: 0 copias de 1,500 — ver el pendiente #1 en [docs/PLAN.md](./docs/PLAN.md))
 - Service worker propio + cola offline de series en `localStorage`
 - Playwright para la suite de humo (`tests/smoke.mjs`)
 
@@ -38,16 +39,19 @@ Scripts útiles:
 npm run lint
 npm run build
 npm run db:push            # aplica src/db/schema.ts a la base (pide TTY si hay datos)
+npm run db:generate        # migraciones versionadas (existe en package.json, es el primer paso del pendiente de drizzle/)
 npm run db:studio          # UI de Drizzle para ver la base
 node --env-file=.env.local ./node_modules/.bin/tsx scripts/seed-exercises.ts        # recargar catálogo
 node --env-file=.env.local ./node_modules/.bin/tsx scripts/preview-translations.ts  # muestra de nombres en español
 node --env-file=.env.local ./node_modules/.bin/tsx scripts/translate-exercises.ts   # regenerar name_es
 ```
 
+La suite necesita Chromium una vez: `npx playwright install chromium`.
+
 ```bash
 npm run smoke                                   # suite de humo contra localhost:3000 (crea y borra su propia cuenta)
 BASE_URL=https://workout-eight-neon.vercel.app npm run smoke
-node --env-file=.env.local ./node_modules/.bin/tsx scripts/mirror-gifs.ts   # copia gifs en uso a Vercel Blob (necesita BLOB_READ_WRITE_TOKEN)
+node --env-file=.env.local ./node_modules/.bin/tsx scripts/mirror-gifs.ts   # copia gifs a Blob — hoy no sirve de nada: el store es privado y no entrega URLs públicas (pendiente #1 de docs/PLAN.md)
 ```
 
 Offline: `public/sw.js` cachea el shell y las páginas visitadas; las series

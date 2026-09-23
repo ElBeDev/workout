@@ -40,6 +40,12 @@ export async function createCustomExercise(
     } catch (err) {
       return { ok: false, error: err instanceof Error ? err.message : "No se pudo subir la foto." };
     }
+    // `uploadExercisePhoto` devuelve null (no lanza) cuando el almacenamiento
+    // no está configurado. Sin esto el ejercicio se crearía sin foto y con un
+    // ok: true, o sea mintiéndole al usuario.
+    if (!photoUrl) {
+      return { ok: false, error: "Ahora mismo no se pueden guardar fotos. Crea el ejercicio sin foto." };
+    }
   }
 
   const [created] = await db

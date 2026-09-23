@@ -1,14 +1,16 @@
 # Rediseño visual: Workout al estilo Apple Fitness
 
-> Estado: **fases 0 a 4 implementadas y en el repo** (2026-09-22). Lo que sigue
-> abierto está marcado con ⏳ en la sección 9. · Fecha: 2026-09-22
+> Estado (2026-09-22, noche): **fases 0 a 4 completas; 5 y 6 a medias** — lo que queda
+> está marcado con ⏳ en la sección 9. Después del rediseño entraron tres tandas que
+> recoge la bitácora: la presentación de los gifs, el selector de tema y el chip de
+> unidad de carga en el entrenamiento.
 > Alcance: sólo capa visual + 3 features nuevas de producto que el estilo pide
 > (anillos con metas, tendencias, resumen post-sesión). No toca la base de datos
 > salvo lo listado en la sección 8.
 
 ## Índice
 
-1. [Qué está mal con el diseño de hoy](#1-qué-está-mal-con-el-diseño-de-hoy)
+1. [Qué estaba mal con el diseño anterior](#1-qué-estaba-mal-con-el-diseño-anterior)
 2. [Cómo es Apple Fitness de verdad (investigación)](#2-cómo-es-apple-fitness-de-verdad-investigación)
 3. [Los 8 principios que sí vamos a copiar](#3-los-8-principios-que-sí-vamos-a-copiar)
 4. [Sistema de diseño nuevo (tokens)](#4-sistema-de-diseño-nuevo-tokens)
@@ -24,18 +26,22 @@
 
 ---
 
-## 1. Qué está mal con el diseño de hoy
+## 1. Qué estaba mal con el diseño anterior
 
-El diseño actual (lavanda `#ebe7fb`, tarjetas blancas, píldoras negras, fuente
-Outfit) viene de un shot de Dribbble y es correcto, pero tiene cuatro problemas
+Lo de abajo describe el sistema lavanda (`#ebe7fb`, tarjetas blancas, píldoras negras,
+fuente Outfit) que estuvo en producción hasta `1bf4729` (2026-09-22). Se deja escrito
+porque es el diagnóstico que justifica cada decisión de las secciones 3 y 4 — no es el
+estado de la app.
+
+El diseño venía de un shot de Dribbble y era correcto, pero tenía cuatro problemas
 concretos:
 
 | Problema | Dónde se ve | Por qué importa |
 |---|---|---|
-| **Todo pesa igual** | Home: la tarjeta de "en curso", los 2 stats y cada rutina usan la misma `Card` blanca con el mismo radio y la misma sombra | No hay jerarquía: el ojo no sabe dónde empezar. En Fitness siempre hay *un* héroe por pantalla. |
-| **El color no significa nada** | `--accent` lavanda se usa para el HUD, para los íconos de stats, para el ícono de sesión en Progreso y para la tarjeta de sesión en curso | El color debería codificar *datos* (carga, series, racha), no decorar. |
-| **Los números están escondidos** | `20px` para "2 esta semana", `13px` para series/reps, el HUD mezcla 3 relojes del mismo tamaño | Esta app es un tracker: el dato **es** el contenido y debería ser lo más grande de la pantalla. |
-| **Cero visualización de progreso en la portada** | El heatmap y las gráficas viven enterrados en `/progreso` | Fitness pone el progreso del día como primer pixel de la app. Es la razón por la que la abres. |
+| **Todo pesaba igual** | Home: la tarjeta de "en curso", los 2 stats y cada rutina usaban la misma `Card` blanca con el mismo radio y la misma sombra | No había jerarquía: el ojo no sabía dónde empezar. En Fitness siempre hay *un* héroe por pantalla. |
+| **El color no significaba nada** | `--accent` lavanda se usaba para el HUD, para los íconos de stats, para el ícono de sesión en Progreso y para la tarjeta de sesión en curso | El color debería codificar *datos* (carga, series, racha), no decorar. |
+| **Los números estaban escondidos** | `20px` para "2 esta semana", `13px` para series/reps, el HUD mezclaba 3 relojes del mismo tamaño | Esta app es un tracker: el dato **es** el contenido y debería ser lo más grande de la pantalla. |
+| **Cero visualización de progreso en la portada** | El heatmap y las gráficas vivían enterrados en `/progreso` | Fitness pone el progreso del día como primer pixel de la app. Es la razón por la que la abres. |
 
 Lo que sí funciona y se conserva: mobile-first con `max-w-md`, nav flotante,
 bottom sheets, radios grandes, modo oscuro real, `tabular-nums` en los relojes.
@@ -167,49 +173,75 @@ Detalles de ejecución que son los que hacen que se vean "Apple":
 
 ### 4.1 Paleta
 
-Reemplaza el bloque completo de `src/app/globals.css`. Modo oscuro primero
-(es el modo "nativo" de este estilo), claro como espejo.
+Este es el sistema que vive en `src/app/globals.css`. Modo oscuro primero (es el modo
+"nativo" de este estilo), claro como espejo. Tres cosas que no hay que "corregir" al
+volver aquí: los tokens de texto van más oscuros en claro que la propuesta original,
+los arcos tienen tokens propios, y el bloque oscuro está escrito **dos veces** a
+propósito.
 
 ```css
 @import "tailwindcss";
 
+/* El tema se puede forzar desde Perfil: `data-theme="light"|"dark"` en <html> manda
+   sobre la preferencia del sistema. Por eso el variante `dark:` de Tailwind se
+   redefine: el de fábrica sólo mira `prefers-color-scheme` y contradiría al selector. */
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) { @slot; }
+  }
+  &:where([data-theme="dark"], [data-theme="dark"] *) { @slot; }
+}
+
 :root {
   /* Lienzo y superficies — claro */
   --background: #f2f2f7;   /* gris sistema, NO blanco: deja respirar la tarjeta */
-  --surface: #ffffff;      /* tarjeta */
-  --surface-2: #e9e9ef;    /* input, track, chip inactivo */
-  --surface-3: #dedee6;    /* presionado */
+  --surface: #ffffff;
+  --surface-2: #e9e9ef;
+  --surface-3: #dcdce4;
 
-  /* Texto (rampa de opacidad de iOS) */
+  /* Texto: rampa de opacidad, no más grises distintos */
   --foreground: #000000;
-  --muted: rgba(60, 60, 67, 0.6);    /* secondaryLabel */
-  --faint: rgba(60, 60, 67, 0.3);    /* tertiaryLabel */
-  --separator: rgba(60, 60, 67, 0.18);
+  --muted: rgba(60, 60, 67, 0.6);
+  --faint: rgba(60, 60, 67, 0.32);
+  --border: rgba(60, 60, 67, 0.16);   /* el hairline; se usa como `border-border` */
 
-  /* Datos: los tres "anillos" de la app */
-  --ring-load: #fa114f;        /* carga levantada  */
-  --ring-load-2: #ff5e79;      /* fin del degradado */
-  --ring-sets: #6fc42a;        /* series completadas (bajado de #92E82A
-                                  para pasar contraste sobre blanco) */
+  /* Datos: los tres anillos, en su versión legible como TEXTO */
+  --ring-load: #e00d45;
+  --ring-load-2: #ff5e79;
+  --ring-sets: #5aa81f;
   --ring-sets-2: #92e82a;
-  --ring-days: #00b6c4;        /* días entrenados / constancia */
+  --ring-days: #0091a8;
   --ring-days-2: #1eeaef;
 
+  /* Arcos: siempre los colores vivos (son formas, no texto, y no tienen que pasar
+     contraste de lectura). No se redefinen en oscuro: son los mismos. */
+  --arc-load: #fa114f;
+  --arc-load-2: #ff7a8f;
+  --arc-sets: #7ad619;
+  --arc-sets-2: #c6ff5e;
+  --arc-days: #00c9d6;
+  --arc-days-2: #7bf6ff;
+
   /* Semánticos */
-  --accent: var(--ring-load);          /* links, activo, CTA secundario */
-  --primary: #000000;                  /* botón principal */
+  --accent: var(--ring-load);
+  --accent-foreground: #ffffff;
+  --accent-strong: var(--ring-load);
+  --primary: #000000;
   --primary-foreground: #ffffff;
-  --danger: #ff3b30;
-  --warning: #ff9f0a;
+  --danger: #d70015;
+  --warning: #b25000;
   --success: var(--ring-sets);
 
   /* Vidrio de la navegación */
   --glass: rgba(255, 255, 255, 0.72);
   --glass-border: rgba(0, 0, 0, 0.08);
+  --shadow-hero: 0 1px 2px rgba(0, 0, 0, 0.04), 0 10px 30px rgba(0, 0, 0, 0.08);
+
+  color-scheme: light;   /* scrollbars e inputs nativos del color correcto */
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --background: #000000;   /* negro puro, como Fitness */
     --surface: #1c1c1e;
     --surface-2: #2c2c2e;
@@ -218,15 +250,18 @@ Reemplaza el bloque completo de `src/app/globals.css`. Modo oscuro primero
     --foreground: #ffffff;
     --muted: rgba(235, 235, 245, 0.6);
     --faint: rgba(235, 235, 245, 0.3);
-    --separator: rgba(84, 84, 88, 0.55);
+    --border: rgba(235, 235, 245, 0.14);
 
-    --ring-load: #fa114f;
+    --ring-load: #ff375f;
     --ring-load-2: #ff6482;
-    --ring-sets: #92e82a;    /* en oscuro sí usamos el lima original */
+    --ring-sets: #92e82a;    /* en oscuro sí se usa el lima original */
     --ring-sets-2: #c6ff5e;
     --ring-days: #1eeaef;
     --ring-days-2: #7bf6ff;
 
+    --accent: var(--ring-load);
+    --accent-foreground: #ffffff;
+    --accent-strong: var(--ring-load);
     --primary: #ffffff;
     --primary-foreground: #000000;
     --danger: #ff453a;
@@ -234,8 +269,16 @@ Reemplaza el bloque completo de `src/app/globals.css`. Modo oscuro primero
 
     --glass: rgba(28, 28, 30, 0.72);
     --glass-border: rgba(255, 255, 255, 0.12);
+    --shadow-hero: none;
+
+    color-scheme: dark;
   }
 }
+
+/* …y se repite tal cual para el tema oscuro forzado desde Perfil. Duplicado a
+   propósito: es más barato repetir 25 líneas que hacer malabares con :is() y
+   perder especificidad. */
+:root[data-theme="dark"] { /* mismas variables que el bloque de arriba */ }
 
 @theme inline {
   --color-background: var(--background);
@@ -245,15 +288,18 @@ Reemplaza el bloque completo de `src/app/globals.css`. Modo oscuro primero
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-faint: var(--faint);
-  --color-separator: var(--separator);
-  --color-load: var(--ring-load);
-  --color-sets: var(--ring-sets);
-  --color-days: var(--ring-days);
+  --color-border: var(--border);
   --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-strong: var(--accent-strong);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-danger: var(--danger);
   --color-warning: var(--warning);
+  --color-success: var(--success);
+  --color-load: var(--ring-load);
+  --color-sets: var(--ring-sets);
+  --color-days: var(--ring-days);
 
   --font-sans: var(--font-inter);
   --radius-card: 1.25rem;   /* 20px */
@@ -266,15 +312,19 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI",
     Helvetica, Arial, sans-serif;
-  font-feature-settings: "tnum" 1, "cv11" 1;
+  /* Números de ancho fijo en toda la app: los datos no bailan al contar. */
+  font-feature-settings: "tnum" 1;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 ```
 
-> Nota de contraste: `#92E82A` sobre blanco da ~1.7:1, ilegible. Por eso en
-> claro el verde y el cian van oscurecidos (`--ring-sets: #6fc42a`,
-> `--ring-days: #00b6c4`) y en oscuro se usan los vivos. El *arco* del anillo
-> sí puede usar el color vivo en ambos modos: es una forma, no texto.
+> Nota de contraste: `#92E82A` sobre blanco da ~1.7:1, ilegible. Por eso en claro los
+> tres colores de dato van oscurecidos (`--ring-load: #e00d45`, `--ring-sets: #5aa81f`,
+> `--ring-days: #0091a8`) y en oscuro se usan los vivos. De ahí las dos familias:
+> `--ring-*` para texto y etiquetas, `--arc-*` para arcos, trazos de gráfica y rellenos
+> (vivos en los dos modos, porque son formas y no texto). Si estás pintando algo que se
+> lee, es `--ring-*`; si es una forma, es `--arc-*`.
 
 ### 4.2 Tipografía
 
@@ -297,7 +347,7 @@ Escala (px, todos con `tracking` negativo salvo las etiquetas):
 | Rol | Tamaño / peso | Uso |
 |---|---|---|
 | `display` | 44 / 700, `-0.03em`, tabular | El número del HUD, kg totales de una sesión |
-| `metric` | 32 / 700, `-0.02em`, tabular | Valor de un tile, "450/500" |
+| `metric` | 28 / 700, `-0.02em`, tabular | Valor de un tile, "450/500" |
 | `largeTitle` | 34 / 700, `-0.02em` | Título de pantalla ("Resumen", "Rutinas") |
 | `title` | 22 / 700 | Nombre de rutina en su detalle |
 | `headline` | 17 / 600 | Título de fila / tarjeta |
@@ -315,22 +365,24 @@ Escala (px, todos con `tracking` negativo salvo las etiquetas):
   píldora, botón circular 44.
 - Objetivo táctil mínimo **44×44**.
 - Elevación: en oscuro **sin sombra** (escalón de gris). En claro,
-  `0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06)` sólo en la tarjeta
-  héroe y en la nav; las demás llevan hairline `--separator`.
+  `0 1px 2px rgba(0,0,0,.04), 0 10px 30px rgba(0,0,0,.08)` sólo en la tarjeta
+  héroe y en la nav; las demás llevan hairline `border-border`.
 
 ### 4.4 Movimiento
 
-```css
---ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
---dur-fast: 180ms;
---dur: 280ms;
-```
+No hay tokens de movimiento: son tres animaciones contadas y viven donde se usan.
 
-- Anillos: `stroke-dashoffset` de 0 % al valor, `--dur` 600 ms, escalonado
-  80 ms entre anillos.
-- Check de serie: escala 0.9 → 1.06 → 1 con `--ease-spring`.
+- **Anillos** (`@keyframes ring-fill`): `stroke-dashoffset` desde la circunferencia
+  completa, 700 ms `cubic-bezier(.22, 1, .36, 1)` —una salida, no un rebote: un anillo
+  que se pasa y regresa se lee como dato equivocado— escalonados 90 ms entre anillos.
+- **Check de serie** (`.animate-pop`): 0.9 → 1.06 → 1 en 260 ms con
+  `cubic-bezier(.34, 1.56, .64, 1)`. Ahí sí rebote, porque celebra.
+- **Punto de "en curso"** (`.animate-dot`): opacidad 1 → .35 → 1, 1.6 s infinito.
 - Tap en tarjeta: `active:scale-[0.985]`.
-- Todo dentro de `@media (prefers-reduced-motion: reduce) { transition: none }`.
+
+Si algún día son más de tres, entonces sí tokens. `prefers-reduced-motion` no las apaga
+una por una: `globals.css` baja toda animación y transición a `0.01ms !important` sobre
+`*`, así el estado final se ve igual y nada se mueve.
 
 ---
 
@@ -341,27 +393,34 @@ Escala (px, todos con `tracking` negativo salvo las etiquetas):
 **`<Ring />` y `<RingTrio />`** — SVG, sin dependencias.
 
 ```tsx
-// Un anillo = dos círculos: track (color al 22%) + arco con degradado.
+// Un anillo = dos círculos: track (mismo color al 20 %) + arco con degradado.
+// El color sale de --arc-*, NO de --ring-*: el arco es forma, no texto.
 <svg viewBox="0 0 100 100">
   <defs>
-    <linearGradient id="g-load" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stopColor="var(--ring-load)" />
-      <stop offset="100%" stopColor="var(--ring-load-2)" />
+    <linearGradient id="ring-grad-load" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stopColor="var(--arc-load)" />
+      <stop offset="100%" stopColor="var(--arc-load-2)" />
     </linearGradient>
+    {/* sombra del sobregiro: marca el escalón de la segunda vuelta */}
+    <filter id="ring-shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="0" stdDeviation="1.6" floodOpacity="0.45" />
+    </filter>
   </defs>
-  <circle cx="50" cy="50" r="42" fill="none" strokeWidth="13"
-          stroke="var(--ring-load)" strokeOpacity="0.22" />
-  <circle cx="50" cy="50" r="42" fill="none" strokeWidth="13"
-          stroke="url(#g-load)" strokeLinecap="round"
-          strokeDasharray={2 * Math.PI * 42}
-          strokeDashoffset={(1 - Math.min(pct, 1)) * 2 * Math.PI * 42}
+  <circle cx="50" cy="50" r="43" fill="none" strokeWidth="11"
+          stroke="var(--arc-load)" strokeOpacity="0.2" />
+  <circle cx="50" cy="50" r="43" fill="none" strokeWidth="11"
+          stroke="url(#ring-grad-load)" strokeLinecap="round"
+          strokeDasharray={2 * Math.PI * 43}
+          strokeDashoffset={(1 - Math.min(pct, 1)) * 2 * Math.PI * 43}
           transform="rotate(-90 50 50)" />
 </svg>
 ```
 
-`RingTrio` = tres radios (42 / 30 / 18) con el mismo grosor proporcional y
-4 px de hueco. Tamaños: `lg` 160 px (héroe), `md` 88 px (tarjeta de sesión),
-`xs` 20 px (celda del calendario).
+`RingTrio` = tres radios (43 / 29.5 / 16) con grosor 11 y ~2.5 px de hueco, en un
+`viewBox` de 100×100 que se escala con la prop `size`: 160 por omisión, 148 en el héroe
+de Hoy, 132 en el resumen de sesión. El trío del calendario es otro componente,
+`MiniRings`, con geometría propia, porque a 16 px los radios del grande se funden en una
+mancha.
 
 **`<MetricTile />`** — etiqueta arriba en mayúsculas del color del dato, valor
 gigante tabular, unidad chica al lado.
@@ -374,25 +433,43 @@ gigante tabular, unidad chica al lado.
 └──────────────────┘
 ```
 
-**`<StatGrid />`** — grid de 2 columnas de `MetricTile` (4 columnas de métricas
-finas en el resumen de sesión).
+**`<StatGrid />`** — grid de 2 o 3 columnas de `MetricTile`. Hoy sólo lo usa Progreso:
+el resumen de sesión y el detalle de rutina tienen cada uno su `Stat` local.
 
 **`<GroupedList />` + `<Row />`** — una sola tarjeta con filas separadas por
 hairline a partir de los 16 px de padding izquierdo (como los settings de iOS).
 Sustituye a la lista de `Card` sueltas en Rutinas, Progreso y Perfil.
 
-**`<GlassNav />`** — la `BottomNav` actual pero:
-`bg-[var(--glass)] backdrop-blur-2xl backdrop-saturate-150 border border-[var(--glass-border)]`,
-ítem activo = ícono + label en `--accent` (sin píldora negra), ícono relleno
-cuando está activo. Se encoge (label oculta) al hacer scroll hacia abajo.
+**`<BottomNav />`** — la nav flotante. El vidrio no es una prop sino la clase `.glass`
+de `globals.css`, para que nav, hojas y HUD compartan la misma receta: ítem activo =
+ícono relleno + label en `--accent` (sin píldora negra), y se encoge (label oculta) al
+hacer scroll hacia abajo.
 
-**`<LargeTitleHeader />`** — fecha en mayúsculas `--accent` + título 34/700, que
-al hacer scroll colapsa a una barra de vidrio de 17/600 (con `IntersectionObserver`).
+**`<PageHeader />`** — `eyebrow` en acento + large title 34/700 (`title`, `backHref`,
+`right`, `subtitle`, `capitalize`). ⏳ El colapso a barra de vidrio al hacer scroll
+quedó fuera.
 
 **`<TrendPill />`** — "↑ 8 % vs. tus últimas 4 semanas".
 
-**`<RingCalendar />`** — el heatmap actual, pero cada día es un `RingTrio` de
-20 px en vez de un cuadrito.
+**`<ConsistencyCalendar />` + `<MiniRings />`** (se planeó como `RingCalendar`) — el
+heatmap pasa a una rejilla donde cada día es un trío de anillos en miniatura de 16 px.
+
+**`<ExerciseThumb />`** — el escenario de los gifs del catálogo. Son de 180×180 con el
+fondo blanco quemado: en vez de pelearse con eso se les da un recuadro blanco **plano**
+(cualquier degradado delata el recuadro, porque el gif trae el suyo) con hairline
+interior, la figura contenida con 4 % de aire y un esqueleto `animate-pulse` mientras
+carga, nada de destello. En oscuro el contenedor entero baja a `brightness(.87)` —
+atenuar sólo la imagen deja el relleno blanco y se ve un marco. Nunca se amplía más allá
+de lo que aguanta la fuente: la hoja de detalle lo topa en 300 px, porque a ancho
+completo en un iPhone eran 6.5×. Props: `aire` (margen interno) y `eager` (el héroe de
+la hoja).
+
+**`<LoadUnitPicker />`** — chip con la unidad del ejercicio (`KG ⌄`) que abre una hoja
+con Kilos / Libras / Placas, cada una con una línea de cuándo usarla. Guarda en la rutina
+(`setLoadUnit`), no en la sesión. Vive en el entrenamiento a propósito: la unidad se
+decide parado frente al aparato, no armando la rutina. Cambiarla nunca reetiqueta el
+historial —cada serie guarda su propia `weight_unit`— y el encabezado de la columna
+cambia en el acto.
 
 ### 5.2 Actualizados
 
@@ -406,11 +483,16 @@ al hacer scroll colapsa a una barra de vidrio de 17/600 (con `IntersectionObserv
 | `SessionHud` | ver 6.4 |
 | `SetRow` | ver 6.4 |
 | `ExerciseProgressChart` / `BodyWeightChart` | sin grid, sin ejes visibles salvo 3 etiquetas, línea 3 px con degradado del color del dato, área al 12 %, tooltip = tarjeta oscura con radio 12 |
-| `TrainingHeatmap` | pasa a `RingCalendar` |
+| `TrainingHeatmap` | borrado en `1bf4729`; lo sustituye `ConsistencyCalendar` |
 
 ---
 
 ## 6. Pantalla por pantalla
+
+Esta sección es la **especificación** tal como se escribió antes de implementar, con los
+bocetos en ASCII que guiaron el trabajo. Para saber cómo está hoy cada pantalla, la
+fuente es §8 de [PLAN.md](./PLAN.md) y el código; esto se conserva porque explica el
+porqué de cada decisión.
 
 ### 6.1 Home → "Resumen"
 
@@ -439,7 +521,7 @@ Resumen                      (👤)  ← 34/700 + avatar 36px a la derecha
 HOY TOCA
 ┌──────────────────────────────────────────┐
 │ ▓▓▓▓  Pierna                             │
-│ ▓▓▓▓  6 ejercicios · 18 series      [▶]  │   ▶ = botón circular rosa 48px
+│ ▓▓▓▓  6 ejercicios · 18 series      [▶]  │   ▶ = botón circular rosa 56px
 │       Última vez hace 4 días             │
 └──────────────────────────────────────────┘
 
@@ -452,8 +534,9 @@ TUS RUTINAS                        Ver todas ›
 ```
 
 Cambios de fondo: los dos stat-cards de "esta semana / racha" desaparecen —
-esa información ya está en los anillos, con meta y todo. La racha se queda como
-una línea bajo los anillos cuando es ≥ 2 semanas ("🔥 5 semanas seguidas").
+esa información ya está en los anillos, con meta y todo. El pie de la tarjeta héroe
+muestra **o** la racha ("🔥 5 semanas seguidas", cuando es ≥ 2 semanas) **o** el
+porcentaje de la semana, nunca los dos.
 
 ### 6.2 Rutinas
 
@@ -465,23 +548,27 @@ metadatos 13 en `--muted`, chevron `--faint`.
 ### 6.3 Detalle de rutina
 
 ```
-‹ Rutinas                              ⚙︎
+‹ Rutinas
 Pierna                                       ← title 34/700
-6 ejercicios · 18 series · 4 músculos        ← subhead --muted
 
-[ ▶  Empezar entrenamiento ]                 ← píldora rosa, 52px, sticky abajo
-                                               al hacer scroll
+┌──────────────────────────────────────────┐   TARJETA HÉROE de 3 stats,
+│   6         18         4                 │   cada número en el color de su
+│ EJERCICIOS  SERIES   MÚSCULOS            │   dato (días / series / carga)
+└──────────────────────────────────────────┘
+
+[ ▶  Empezar entrenamiento ]                 ← píldora rosa, 52px, en el flujo
 
 EJERCICIOS
 ┌──────────────────────────────────────────┐
 │ ▓▓  Sentadilla con barra                 │
 │ ▓▓  4 × 10 · kg                    ⋮     │  ← ⋮ abre menú (editar/mover/quitar)
-│ ─────────────────────────────────────────│     en vez de 3 botones visibles
+│ ─────────────────────────────────────────│
 │ ▓▓  Prensa                               │
 │ ▓▓  3 × 12 · placas                ⋮     │
 └──────────────────────────────────────────┘
 
-        [ + Agregar ejercicio ]              ← secundario, ya abre sheet
+        [ + Agregar ejercicio ]              ← secundario, abre hoja
+        Ajustes de la rutina (nombre, días, duplicar, eliminar) al pie
 ```
 
 ### 6.4 Entrenar (la pantalla más importante)
@@ -502,34 +589,40 @@ héroe negro/vidrio con **un** número dominante:
 └──────────────────────────────────────────┘
 ```
 
-- El anillo de la izquierda (48 px) es el de **series de la sesión**, verde, y
-  se cierra conforme marcas. Durante el descanso, el trazo cambia a cian y
-  cuenta hacia atrás — el temporizador *es* un anillo.
-- Al terminar el descanso: vibración (ya está) + el anillo "rebota".
+- El anillo de la izquierda (64 px) es el de **series de la sesión**, verde, con el
+  porcentaje dentro y la etiqueta "Entrenando". Durante el descanso el trazo cambia a
+  cian y cuenta hacia atrás —el temporizador *es* un anillo—, la etiqueta pasa a
+  "Descanso" y **sólo entonces** aparecen los controles −15s / Saltar / +15s.
+- Al terminar el descanso: vibración (`navigator.vibrate(200)`). ⏳ El rebote del anillo
+  no existe todavía: quedó en la fase 6.
 
 Fila de serie:
 
 ```
 ┌──────────────────────────────────────────┐
 │ ▓▓▓ Sentadilla con barra                 │
-│ ▓▓▓ 4 × 10 · kg                          │
+│ ▓▓▓ ⟳ 4 × 10 reps        [ KG ⌄ ]        │  ← chip: abre la hoja de unidad
 │                                          │
-│ ↑ Sube a 62.5 kg               [ Usar ]  │  ← píldora rosa translúcida
+│ ↑ Sube a 62.5 kg               [ Usar ]  │
 │                                          │
-│  1   [ 60  kg ] [ 10 reps ]        ✓     │  ← ✓ 44px; hecha = verde relleno
-│  2   [ 60  kg ] [ 10 reps ]        ✓     │     fila hecha = fondo verde 8%
-│  3   [ 62.5   ] [  8      ]        ○     │     + texto tachado no, sólo opacidad
-│  4   [ 60 kg  ] [ 10 reps ]        ○     │
+│         KILOS            REPS            │  ← encabezado en --faint, sigue al chip
+│  1   [ 60     ] [ 10     ]        ✓      │
+│  2   [ 60     ] [ 10     ]        ✓      │
+│  3   [ 62.5   ] [  8     ]        ○      │
 │                          + Agregar serie │
 └──────────────────────────────────────────┘
 ```
 
 - Los inputs pasan a `bg-surface-2`, radio 12, **texto 20/600 tabular
   centrado** (hoy son 15 px: se teclea con el pulgar, tienen que ser grandes).
-- El placeholder de "la vez pasada" queda en `--faint`, y arriba a la derecha
-  de la fila se pone un `label` chiquito "ANTES 60×10" cuando hay historial.
-- Serie completada: fondo `color-mix(in srgb, var(--ring-sets) 10%, transparent)`,
-  check relleno. Serie en cola offline: check ámbar `--warning` + `label` "EN COLA".
+- La vez pasada entra como **placeholder** de los campos, en `--faint` ("60 kg" /
+  "10 reps"): se lee como sugerencia y desaparece al teclear, sin robar una línea por
+  fila. ⏳ Pendiente: una etiqueta "ANTES 60×10" encima de la fila, para que el dato
+  siga visible mientras se escribe.
+- Serie completada: fondo `color-mix(in srgb, var(--ring-sets) 10%, transparent)`, check
+  relleno. Serie en cola offline: fila y check en `--warning` con ícono de nube tachada.
+  ⏳ Falta el texto "EN COLA": hoy el ámbar sólo se explica en el `aria-label` y en el
+  `title`, y el color solo no basta (§10).
 
 Al terminar: **pantalla de resumen** (ver 7.3) en vez de saltar directo a la
 lista de sesiones.
@@ -538,7 +631,7 @@ lista de sesiones.
 
 ```
 Progreso                                     ← large title
-[ Semana | Mes | Año ]                       ← segmented control de vidrio
+[ Semana | Mes | Año ]   ← segmented control opaco (bg-surface-2, píldora activa bg-surface + shadow-hero); el vidrio se reserva a nav, hojas y HUD (principio 7)
 
 ┌──────────────────────────────────────────┐
 │ TENDENCIA                                │
@@ -555,7 +648,7 @@ Progreso                                     ← large title
 DÍAS ENTRENADOS
 ┌──────────────────────────────────────────┐
 │  L  M  M  J  V  S  D                     │
-│  ◉  ◎  ◉  ·  ◉  ·  ·                     │  ← RingCalendar, 16 semanas
+│  ◉  ◎  ◉  ·  ◉  ·  ·                     │  ← ConsistencyCalendar, 14 semanas
 └──────────────────────────────────────────┘
 
 POR EJERCICIO                     Ver todos ›
@@ -568,6 +661,16 @@ POR EJERCICIO                     Ver todos ›
 SESIONES
 (GroupedList con fecha, rutina, y 3 métricas chicas por fila)
 ```
+
+La consulta trae 16 semanas de historia (`getDailyTraining(userId, 16 * 7)`) pero el
+calendario dibuja 14: es lo que cabe en un teléfono sin que el scroll horizontal se
+vuelva incómodo.
+
+**Cómo se lee el calendario**: la meta de cada día es la meta semanal **repartida entre
+los días que te propusiste entrenar** (5,000 kg / 4 días = 1,250 kg por día). Así un
+martes que cumplió su parte cierra sus anillos aunque la semana vaya a la mitad — que es
+justo lo que uno quiere ver en una cuadrícula de constancia. El tercer anillo (días) es
+binario: entrenaste o no. Los días futuros van al 15 % de opacidad.
 
 ### 6.6 Detalle de sesión
 
@@ -587,9 +690,15 @@ SERIES           EJERCICIOS
 
 ### 6.7 Perfil
 
-`GroupedList` de settings al estilo iOS (ícono cuadrado de color 28 px a la
-izquierda, título, chevron), con el peso corporal como tarjeta con gráfica
-arriba y las metas semanales como primer grupo.
+`GroupedList` de settings al estilo iOS. Orden: tarjeta de usuario, **Apariencia**
+(`ThemeSwitch`: Sistema / Claro / Oscuro, la misma píldora segmentada de Progreso),
+**Metas de la semana** (los tres anillos, cada etiqueta en el color de su dato),
+navegación, **Peso corporal** (tarjeta con gráfica arriba e historial abajo) y
+contraseña. El tema no se guarda en la base: es por dispositivo. Lo aplica
+`src/lib/theme-script.ts`, inyectado en `<head>` y ejecutado antes del primer pintado,
+que pone `data-theme` en `<html>` y escribe el `<meta name="theme-color">` — por eso
+`viewport.themeColor` ya no existe en `layout.tsx`: un meta por media query diría lo
+contrario de lo que se ve.
 
 ### 6.8 Login / Registro
 
@@ -650,10 +759,8 @@ app "se sienta" como Fitness.
 - Haptics (`navigator.vibrate`) al marcar serie, no sólo al acabar el descanso.
 - Pull-to-refresh nativo respetado (`overscroll-behavior-y: contain` sólo en
   sheets).
-- `theme-color` = `#000000` en oscuro para que la barra de estado se funda.
 - Splash screens de iOS (`apple-touch-startup-image`) para que al abrir desde
   la pantalla de inicio no destelle blanco.
-- Skeletons con el shimmer de iOS en vez de saltos de layout.
 
 ---
 
@@ -677,15 +784,18 @@ tendencias, PRs, premios y el resumen de sesión salen de `set_logs` y
 Consulta nueva en `src/db/queries.ts`:
 
 ```ts
-getWeeklyRings(userId) → {
+getWeeklyRings(userId, goals: { volumeKg; sets; days }) → {
   volumeKg: number; volumeGoal: number;
-  sets: number;      setsGoal: number;
-  days: number;      daysGoal: number;
-  streakWeeks: number;
+  sets: number;     setsGoal: number;
+  days: number;     daysGoal: number;
+  overall: number;  // promedio de los tres avances: el "vas al 76 %"
 }
 ```
 
-(el volumen convierte `lbs`→kg con el helper que ya vive en `src/lib/suggest.ts`).
+Las metas entran como argumento y no las lee la consulta: la página ya trajo el `user`,
+y así la misma función sirve para Progreso, que reparte esas metas entre días para el
+calendario. La racha no vive aquí: sigue en `getWeeklyStats`. El volumen convierte
+`lbs`→kg con `toKg` (`src/lib/suggest.ts`) y deja las placas fuera.
 
 ---
 
@@ -697,7 +807,9 @@ Orden pensado para que el cambio se note desde la primera.
 ### Fase 0 — Tokens y tipografía ✅
 - [x] Reescribir `globals.css` con la paleta de 4.1.
 - [x] Cambiar Outfit → Inter en `layout.tsx`; actualizar `--font-outfit` → `--font-inter`.
-- [x] `viewport.themeColor` → `#f2f2f7` / `#000000`.
+- [x] `theme-color` `#f2f2f7` / `#000000` — al principio en `viewport.themeColor`, hoy
+      lo escribe `themeScript` en el `<head>` para que siga al tema elegido y no al del
+      sistema (ver §6.7).
 - [x] Ajustar `ui.tsx`: `Card`, `PrimaryButton`, `SecondaryButton`, `Chip`, `Input`, `SectionTitle` a los valores de 4.3.
 - **Hecho cuando**: la app entera se ve negra/gris neutra sin tocar ni una pantalla, y `npm run build` pasa.
 
@@ -744,9 +856,17 @@ Orden pensado para que el cambio se note desde la primera.
 ### Fase 6 — Pulido 🟡 a medias
 - [x] Haptic al marcar serie; `prefers-reduced-motion` global en `globals.css`.
 - [x] `npm run smoke` verde y actualizado a los selectores nuevos (9/9).
-- [ ] ⏳ Skeletons y splash screens de iOS.
+- [ ] ⏳ Splash screens de iOS (`apple-touch-startup-image`). Los skeletons ya están,
+      pero sólo en las imágenes (`ExerciseThumb`): faltan en las listas que hoy saltan
+      al cargar.
 - [ ] ⏳ El resto del paso de accesibilidad de la sección 10 (focus visible en todo lo
       enfocable, `aria-labelledby` de las hojas).
+- [ ] ⏳ CTA "Empezar entrenamiento" sticky al pie en rutinas largas, con
+      `env(safe-area-inset-bottom)`: hoy hay que hacer scroll de vuelta hasta arriba.
+- [ ] ⏳ `getDailyTraining` pide 16 semanas y `ConsistencyCalendar` dibuja 14 (`WEEKS`):
+      dos semanas de datos que se traen y se tiran. Una sola constante.
+- [ ] ⏳ Al cerrar el descanso, el anillo rebota (`.animate-pop`): hoy sólo vibra, y con
+      el teléfono en el suelo eso no se ve.
 
 > Al cerrar cada fase: fila nueva en la tabla de cambios de
 > [PLAN.md](./PLAN.md) con el hash del commit, como se viene haciendo.
@@ -764,13 +884,15 @@ Orden pensado para que el cambio se note desde la primera.
 - **`prefers-reduced-motion`**: los anillos aparecen en su valor final, sin
   barrido; nada de `scale` en taps.
 - **Zoom**: seguir sin `maximumScale` (ya se arregló, no reintroducirlo).
-- **Labels**: los inputs de kg/reps siguen sin `<label>` (pendiente abierto en
-  PLAN.md) — el rediseño de `SetRow` es el momento de ponerles `aria-label`
-  ("Peso, serie 3 de Sentadilla").
+- **Labels**: hecho en `SetRow` — cada campo lleva `aria-label` con el número de serie y
+  la unidad ("Peso serie 3 (kg)", "Placas serie 3", "Repeticiones serie 3"), y el botón
+  de marcar cambia de etiqueta según el estado. Lo que sigue abierto es el focus trap y
+  el `aria-labelledby` de las hojas: `ExerciseInfoSheet` tiene `role="dialog"` y
+  `aria-modal` pero su nombre accesible está en el botón que la abre, no en la hoja.
+  Faltan también los campos de `SetRowEditor` y `ExerciseTargetsEditor`.
 - **Focus visible**: anillo `--accent` de 2 px en todo lo enfocable, que hoy
   sólo tienen los `Input`.
-- **Safe areas**: `env(safe-area-inset-bottom)` ya está en la nav; agregarlo
-  también al CTA sticky de la rutina y al HUD.
+- **Safe areas**: `env(safe-area-inset-bottom)` ya está en la nav y en las hojas.
 
 ---
 
@@ -822,6 +944,9 @@ la tabla de cambios de [PLAN.md](./PLAN.md); aquí queda el porqué.
 | `acbac55` | Etiquetar "series" en el porcentaje chico de la tarjeta de tendencia |
 | `16419ee` | Descartar entrenamiento pasa a hoja de acción |
 | `acec7ac` | El copiado de gifs sale de Perfil y se va a /admin → "Mantenimiento" |
+| `bd2c571` → `5894264` | Diagnóstico del respaldo de gifs: de "no funciona" a "el token llega vacío al runtime y el store es privado" |
+| `eb485d0` | Las dos opciones para cerrarlo, escritas en PLAN.md |
+| `3197c61` | PLAN.md: el estado actual pasa de pila de rondas a inventario de lo que hay hoy |
 
 **Cómo se verificó** (no solo `npm run build`):
 
@@ -873,12 +998,12 @@ tiene un diagnóstico que prueba cada pieza por separado.
   escenario acotado a 300 px, con hairline, esqueleto de carga y atenuado en
   oscuro para que la lámina blanca no deslumbre. Nombres a dos líneas, filas más
   compactas, tarjetas del explorador limpias.
-- **Selector de tema** (Sistema / Claro / Oscuro) en Perfil. El tema se aplica
+- **Selector de tema** (`28715f2`) (Sistema / Claro / Oscuro) en Perfil. El tema se aplica
   antes del primer pintado desde `<head>`; verificado que sobrevive a navegar y
   recargar, y que el `theme-color` de la barra de estado sigue al tema elegido y
   no al del sistema.
 
-### 2026-09-22 (noche) — La unidad de carga se cambia entrenando
+### 2026-09-22 (noche) — La unidad de carga se cambia entrenando (`f6667b9`)
 
 Los datos lo dijeron: 73 de 73 ejercicios en `kg` y 171 de 171 series en `kg`.
 La opción de libras y placas existía desde la octava ronda, pero vivía detrás de
@@ -898,8 +1023,11 @@ necesita es una opción que no existe.**
   kilos. Las libras sí se convierten a kg antes de sumar.
 - **Los anillos cuentan la sesión abierta**: tienen que moverse mientras
   entrenas, no al terminar.
-- **El tema es una preferencia del usuario, no solo del sistema**: vive en
-  `localStorage` y se aplica con `data-theme` antes de pintar. No se guarda en la
-  base porque es por dispositivo, no por cuenta.
+- **El tema es una preferencia del usuario, no solo del sistema**: vive en `localStorage`
+  (`workout:tema`) y se aplica con `data-theme` antes de pintar. No se guarda en la base
+  porque es por dispositivo, no por cuenta — con la consecuencia de que **cerrar sesión
+  lo borra**, porque `LogoutButton` barre todas las claves `workout:*`. En un teléfono
+  compartido está bien; si algún día molesta, el arreglo es sacar el tema de ese prefijo,
+  no dejar de purgar.
 - **Las metas viven en `users`, no en una constante**: 5,000 kg / 60 series /
   4 días son solo el arranque, y cada quien las ajusta en Perfil.

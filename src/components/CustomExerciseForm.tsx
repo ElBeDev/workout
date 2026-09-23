@@ -87,7 +87,7 @@ export function CustomExerciseForm({
           <input name="photo" type="file" accept="image/*" capture="environment" className="sr-only" />
         </label>
       ) : (
-        <p className="text-[12px] text-muted">La foto se activa cuando Vercel Blob esté configurado.</p>
+        <p className="text-[13px] text-muted">Por ahora no se pueden adjuntar fotos.</p>
       )}
 
       <button

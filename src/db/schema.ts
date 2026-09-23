@@ -55,6 +55,9 @@ export const exercises = pgTable(
     // prefers this over gif_url so we don't depend on static.exercisedb.dev.
     gifBlobUrl: text("gif_blob_url"),
     instructions: text("instructions"),
+    // Traducción al español de los pasos, con el mismo formato "Step:N" para
+    // que la hoja de "cómo se hace" los parta igual.
+    instructionsEs: text("instructions_es"),
     externalId: text("external_id"),
     // Custom exercises belong to a user; catalog rows have user_id = null.
     userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),

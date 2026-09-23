@@ -1,10 +1,10 @@
-# Plan: App Web de Ejercicio (mobile-first) — estilo TrainWise
+# Plan: App Web de Ejercicio (mobile-first) — estilo Apple Fitness
 
 ## 0. Estado actual (2026-09-22)
 
 🟢 **En línea**: https://workout-eight-neon.vercel.app — repo en [github.com/ElBeDev/workout](https://github.com/ElBeDev/workout), deploy automático a Vercel en cada push a `main`.
 
-En la base hoy: **3 usuarios**, 14 rutinas, 20 sesiones terminadas, 169 series registradas, 1,500 ejercicios de catálogo + 1 propio.
+En la base hoy: **3 usuarios**, 13 rutinas, 21 sesiones terminadas (1 abierta), 171 series registradas, 1,500 ejercicios de catálogo + 1 propio — y **0 gifs con copia propia** (ver el pendiente #1). Los 73 ejercicios de rutina siguen en `kg` y no hay una sola serie registrada en lb ni en placas. Para refrescar las cifras: `select count(*)` sobre `users`, `routines`, `workout_sessions where finished_at is not null` y `set_logs`.
 
 ### Qué tiene la app hoy
 
@@ -14,11 +14,11 @@ En la base hoy: **3 usuarios**, 14 rutinas, 20 sesiones terminadas, 169 series r
 
 **Rutinas** — crear (desde el "+" de la cabecera), renombrar, duplicar y eliminar conservando el historial (las sesiones quedan como "Rutina eliminada"). Días de la semana asignados, que alimentan el "Hoy toca" de la portada. Los ejercicios se agregan desde una hoja con el explorador; series, reps y peso objetivo se editan tocando la línea; subir, bajar y quitar viven en el menú "⋮". Cada ejercicio declara su unidad de carga: **kilos, libras o placas**.
 
-**Entrenamiento** — el **descanso sobrevive** a salir de la pantalla y a recargar (se guarda el instante de fin en `localStorage`) y avisa con **tres pitidos** al terminar, apagables desde Perfil. La **unidad de carga se cambia desde aquí** (chip kg / lb / placas junto a cada ejercicio, que abre una hoja y lo guarda en la rutina): la máquina en libras o la polea sin kilos marcados se descubren parado enfrente, no armando la rutina. Empezar o reanudar (nunca hay dos sesiones abiertas de la misma rutina: lo garantiza un índice único parcial). HUD pegajoso con el tiempo transcurrido, un anillo de series y el descanso automático de 3 minutos al marcar una serie (±15 s, saltar, vibración al terminar). Por serie se teclea carga y reps en la unidad que toque, con lo de la vez pasada como referencia y una sugerencia de progresión (+2.5 kg, +5 lb, +1 placa o +1 rep) que se aplica con un botón. Se pueden agregar series sobre la marcha, dejar notas de la sesión y descartarla. Al terminar se cae en el resumen de la sesión con los anillos de la semana ya actualizados.
+**Entrenamiento** — el **descanso sobrevive** a salir de la pantalla y a recargar (se guarda el instante de fin en `localStorage`) y avisa con **tres pitidos** al terminar, apagables desde Perfil. La **unidad de carga se cambia desde aquí** (chip kg / lb / placas junto a cada ejercicio, que abre una hoja y lo guarda en la rutina): la máquina en libras o la polea sin kilos marcados se descubren parado enfrente, no armando la rutina. El selector del editor de la rutina sigue existiendo y escribe la misma columna — el del entrenamiento no lo reemplaza, lo pone donde te das cuenta. Empezar o reanudar (nunca hay dos sesiones abiertas de la misma rutina: lo garantiza un índice único parcial). HUD pegajoso con el tiempo transcurrido, un anillo de series y el descanso automático de 3 minutos al marcar una serie (±15 s, saltar, vibración al terminar). Por serie se teclea carga y reps en la unidad que toque, con lo de la vez pasada como referencia y una sugerencia de progresión (+2.5 kg, +5 lb, +1 placa o +1 rep) que se aplica con un botón. Se pueden agregar series sobre la marcha, dejar notas de la sesión y descartarla. Al terminar se cae en el resumen de la sesión con los anillos de la semana ya actualizados.
 
 **Progreso** — totales del periodo (semana, mes o año): sesiones, series, carga y tiempo, más la tendencia contra el periodo anterior. Calendario de constancia de 14 semanas con un trío de anillos por día. Por ejercicio: récord personal, gráfica de peso / placas / reps / volumen por sesión, y su lista de sesiones. Detalle de sesión con métricas grandes, las series agrupadas por ejercicio (corregibles y borrables) y las notas. Todo el historial se exporta a CSV.
 
-**Perfil** — **apariencia** (Sistema / Claro / Oscuro), metas semanales de los tres anillos (carga, series, días), peso corporal con gráfica, cambiar contraseña y cerrar sesión (que además purga caches y colas locales).
+**Perfil** — **apariencia** (Sistema / Claro / Oscuro), metas semanales de los tres anillos (carga, series, días), peso corporal con gráfica, cambiar contraseña y cerrar sesión (que además purga caches de páginas y colas locales). ⚠️ Ese purgado borra **todas** las claves `workout:*`, incluida `workout:tema`, así que hoy cerrar sesión devuelve la apariencia a "Sistema". Lo correcto es excluir esa clave en `LogoutButton`, no dejar de purgar.
 
 **Administrador** (solo `is_admin`) — lista de usuarios con su número de rutinas; entrar a uno y armarle rutinas con el mismo editor de siempre, con un banner de aviso y sin el botón de entrenar (el admin arma, no entrena por nadie). Bloque de mantenimiento con el respaldo de gifs (⚠️ hoy no operativo, ver pendientes).
 
@@ -114,10 +114,11 @@ Notas de infra que ya no hay que repetir:
 - Toda la documentación vive en `docs/` (`PLAN.md` se movió ahí con `git mv`).
 - Cuarta ronda de migraciones a mano: índices (`set_logs(exercise_id)`, `workout_sessions(user_id, finished_at)`, `sessions(expires_at)`, `exercises(user_id)`, `routine_exercises(routine_id)`) y el índice único parcial `workout_sessions(user_id, routine_id) WHERE finished_at IS NULL` (una sola sesión abierta por rutina). Todos declarados también en `schema.ts`.
 - Al cerrar sesión, `LogoutButton` borra los caches `pages-*` y las colas `workout:*` de `localStorage`, y avisa al SW (`purge-pages`). El SW (v3) no cachea respuestas redirigidas ni `/login`.
-- Vercel Blob: `BLOB_READ_WRITE_TOKEN` es un secreto de solo escritura en Vercel (no se puede revelar ni bajar con `vercel env pull`), así que el barrido de gifs se hace desde la app: **/admin → "Mantenimiento"** → botón que copia en tandas de 6 los gifs de los ejercicios que usa la cuenta admin. Estaba en Perfil y se movió al panel de admin (2026-09-22): es plomería interna y los usuarios no se tienen que enterar de dónde viven los gifs. El bloque ni siquiera se renderiza si `blobConfigured()` es falso (en local, por ejemplo). Cada gif nuevo debería copiarse solo al agregarlo a una rutina. `scripts/mirror-gifs.ts` sigue ahí por si algún día se tiene el token local.
+- Vercel Blob: `BLOB_READ_WRITE_TOKEN` es un secreto de solo escritura en Vercel (no se puede revelar ni bajar con `vercel env pull`), así que el barrido de gifs se hace desde la app: **/admin → "Mantenimiento"** → botón que copia en tandas de 6 los gifs de los ejercicios que usa la cuenta admin. Estaba en Perfil y se movió al panel de admin (2026-09-22): es plomería interna y los usuarios no se tienen que enterar de dónde viven los gifs. El bloque se renderiza **siempre**, con o sin token: sin él sale un aviso en ámbar («Sin BLOB_READ_WRITE_TOKEN en este entorno: el respaldo no corre») en vez de desaparecer, porque esconderlo fue justo lo que mantuvo el problema invisible 19 días. Al lado vive «Diagnosticar» (`diagnoseBlob` + `BlobDiagnostics`), que prueba las tres piezas por separado —token, descarga del gif externo y subida— y dice cuál falla. Cada gif nuevo debería copiarse solo al agregarlo a una rutina. `scripts/mirror-gifs.ts` sigue ahí por si algún día se tiene el token local.
 - ⚠️ **El espejado de gifs nunca ha corrido, y hay dos causas** (diagnosticado el 2026-09-22 con /admin → Mantenimiento → "Diagnosticar", que prueba cada pieza por separado):
   1. **`BLOB_READ_WRITE_TOKEN` llega vacío al runtime.** La clave sí existe en `process.env` (junto a `BLOB_STORE_ID` y `BLOB_WEBHOOK_PUBLIC_KEY`), pero su valor mide **0 caracteres**, tanto en acceso estático como dinámico — o sea que no es que Next la fije en el build, es que está vacía en Vercel. Como `blobConfigured()` es falso, la subida ni se intenta. La descarga del gif externo sí funciona (probada: 107 kB), así que ExerciseDB no es el problema.
   2. **El store `workout-blob` es privado** (`vercel blob get-store store_12HfvvHadJ85rCxU` → `Access: Private`, 0 archivos, conectado al proyecto desde hace 19 días). Un store privado [no sirve archivos por URL pública](https://vercel.com/docs/vercel-blob/private-storage): hay que pasarlos por una función con autenticación o por URLs firmadas. El código actual sube con `access: "public"` y guarda `blob.url` para meterla directo en un `<img>`, así que aunque el token se arregle, los gifs espejados no se verían.
+  3. **No es sólo el espejado: las fotos de ejercicios propios caen igual, y en silencio.** `uploadExercisePhoto` arranca con el mismo `blobConfigured()`, así que devuelve `null`; `createCustomExercise` no distingue eso de «no mandaste foto», guarda el ejercicio sin imagen y responde `ok: true`. El usuario no ve ningún error. Hoy hay 1 ejercicio propio en la base y su `gif_blob_url` está en null. La opción A cierra las dos cosas de un golpe; hasta entonces, el formulario promete una foto que no se guarda.
 
   **Qué falta decidir** (necesita el panel de Vercel, no se puede desde el CLI: el token no se puede leer y crear un store nuevo es un recurso facturable):
   - **Opción A (recomendada)**: crear un store de Blob **público**, conectarlo al proyecto (eso rellena el token bien) y pulsar "Copiar gifs" en /admin. Los gifs de ejercicios no son datos privados, y el código ya asume URLs públicas: cero cambios de código.
@@ -139,6 +140,8 @@ Web app optimizada para celular (PWA) para llevar el gym de forma digital:
 - Ver **progreso histórico** por ejercicio (gráficas de peso/reps en el tiempo).
 
 ## 2. Referencias investigadas
+
+Esta tabla es la investigación original **de producto** (qué hace bien cada app de gym) y por eso se conserva. El estilo visual ya no sale de aquí: desde la novena ronda es Apple Fitness — ver [diseno-apple-fitness.md](./diseno-apple-fitness.md).
 
 | App | Qué hace bien | Qué tomar de ejemplo |
 |---|---|---|
@@ -165,7 +168,7 @@ Conclusión: el patrón ganador es **"planner + tracker"**: armas la rutina una 
    - Puede haber varias rutinas y organizarlas por día de la semana o por "programa" (ej. rutina de 4 días). ✅ (varias rutinas sí; agrupar por "programa" queda para después)
 4. **Modo entrenamiento (ejecutar rutina)** ✅
    - Entras a la rutina del día, ves el primer ejercicio con su gif.
-   - Por cada serie: input rápido de **peso** (kg o nº de placas, según el ejercicio) y **reps**, botón "listo" para marcar la serie — dispara el descanso automático de 3 min. ✅
+   - Por cada serie: input rápido de **carga** (kg, lb o nº de placas, según el ejercicio) y **reps**, botón "listo" para marcar la serie — dispara el descanso automático de 3 min. ✅
    - Se muestra automáticamente lo que hiciste la última vez en ese mismo ejercicio/serie (referencia para progressive overload). ✅
    - Rest timer entre series (opcional pero muy usado). ✅
    - Al terminar, la rutina queda guardada como "sesión completada" con fecha. ✅
@@ -177,7 +180,7 @@ Conclusión: el patrón ganador es **"planner + tracker"**: armas la rutina una 
 
 - ~~Sugerencia automática de peso/reps para la próxima sesión~~ ✅ (`src/lib/suggest.ts`, píldora "Sube a / Repite" con botón Usar)
 - ~~Notas por sesión~~ ✅
-- ~~Body weight tracking~~ ✅ (fotos de progreso ⏳ — Vercel Blob ya está listo para ello)
+- ~~Body weight tracking~~ ✅ (fotos de progreso ⏳ — requieren Vercel Blob, que hoy **no funciona**: ver el pendiente #1)
 - Compartir rutina con un link. ⏳
 - ~~Modo offline (PWA) para gimnasios sin señal~~ ✅ lectura y escritura (cola de series sincronizada al reconectar)
 - Recordatorios / notificaciones ("hoy toca pierna"). ⏳ (ya existe "Hoy toca" dentro de la app; faltarían push notifications)
@@ -196,7 +199,10 @@ No hace falta grabar ni animar nada a mano, hay APIs/bases de datos gratis:
 
 ```
 User
- └─ id, username, password_hash, is_admin, failed_logins, locked_until, created_at
+ └─ id, username, password_hash, is_admin, failed_logins, locked_until,
+    goal_weekly_volume_kg (5000), goal_weekly_sets (60), goal_weekly_days (4)
+    — las metas de los tres anillos del Resumen, editables en Perfil —,
+    email, name (heredadas, sin uso en el código), created_at
 
 Session (auth, no confundir con WorkoutSession)
  └─ token, user_id, expires_at
@@ -237,9 +243,9 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 - **Diseño**: sistema propio estilo **Apple Fitness** — ver [diseno-apple-fitness.md](./diseno-apple-fitness.md). Tokens en `src/app/globals.css` (lienzo `#000` / `#f2f2f7`, superficies neutras, y los tres colores del dato: `--ring-load` rosa, `--ring-sets` verde, `--ring-days` cian, con valores distintos por modo para pasar contraste). Primitivas en `src/components/ui.tsx` (`Card`, `MetricTile`, `StatGrid`, `GroupedList`, `TrendPill`, `Label`, botones, `Chip`, `Input`, `PageHeader` con large title) y anillos en `src/components/Rings.tsx`. Fuente Inter vía `next/font` (SF Pro no se puede usar fuera de plataformas Apple). Iconos `lucide-react`. *(Antes: sistema lavanda inspirado en [este shot de Dribbble](https://dribbble.com/shots/26265316-Ai-Powered-Smarter-Home-Workout-App-Design), con fuente Outfit.)*
 - **Backend/DB**: Neon (Postgres serverless) + Drizzle ORM. Ajustamos el plan original de Supabase por Neon porque el deploy es en Vercel y Neon se integra nativo ahí (Storage tab del proyecto).
 - **Auth**: usuario + contraseña propios (scrypt vía `node:crypto`, sin dependencias extra), sesión en cookie httpOnly respaldada por tabla `sessions` (`src/lib/session.ts`, `src/lib/password.ts`).
-- **Gráficas**: Recharts — por ejercicio (peso máx / reps máx / volumen por sesión) y peso corporal; heatmap propio en SVG/CSS.
+- **Gráficas**: Recharts — por ejercicio (peso máx / reps máx / volumen por sesión) y peso corporal; anillos y calendario de constancia propios en SVG (`Rings.tsx`, `ConsistencyCalendar.tsx`: 14 semanas de tríos de anillos).
 - **Catálogo de ejercicios**: ExerciseDB (1,500 con gif) copiado a nuestra tabla `exercises` (`scripts/seed-exercises.ts`), con nombre en español generado por reglas (`scripts/translate-exercises.ts`) y ejercicios propios por usuario.
-- **Storage de archivos**: Vercel Blob — copia de los gifs en uso (`gif_blob_url`, se llena al agregar un ejercicio a una rutina) y fotos de ejercicios propios. En producción el token ya está; en local es opcional (todo es no-op sin él).
+- **Storage de archivos**: Vercel Blob — copia de los gifs en uso (`gif_blob_url`, se llena al agregar un ejercicio a una rutina) y fotos de ejercicios propios. ⚠️ **Hoy no funciona en producción**: `BLOB_READ_WRITE_TOKEN` llega vacío al runtime y el store es privado, así que `blobConfigured()` es falso y producción se comporta igual que local — 0 copias de 1,500, todos los gifs se sirven de `static.exercisedb.dev`, y las fotos de ejercicios propios pasan por el mismo token, así que tampoco suben. El diagnóstico y las dos opciones para cerrarlo están en las notas de infra y en el pendiente #1 de la sección 9. En local, sin token, todo es no-op a propósito.
 - **Offline**: service worker propio (`public/sw.js`) + cola de series en `localStorage`.
 - **Pruebas**: Playwright (`tests/smoke.mjs`, `npm run smoke`) con cuenta desechable.
 - **Deploy**: Vercel, deploy automático en cada push a `main`.
@@ -250,12 +256,12 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 2. **Home ("Resumen")** — fecha + large title, tarjeta héroe con los **tres anillos de la semana** (carga / series / días) y su leyenda, racha, tarjeta de "Entrenamiento en curso" (continuar / descartar), "Hoy toca" según días asignados con el ▶ grande, y el resto de las rutinas en lista agrupada. ✅
 3. **Mis rutinas** — lista + crear. ✅
 4. **Detalle de rutina** — stats (ejercicios / series / músculos), CTA, lista de ejercicios (tocar gif = cómo se hace; editar series/reps/peso inline; subir/bajar; quitar); botón compacto "Agregar ejercicio" que abre el explorador (grid con gif, chips por músculo, búsqueda es/en, "i" de info, crear ejercicio propio) como hoja deslizante en vez de ocupar la pantalla siempre; ajustes (nombre, días de la semana, duplicar, eliminar). ✅
-5. **Modo entrenamiento** — casilla de carga en kg, lb o placas según el ejercicio; HUD de vidrio pegajoso (un número grande + anillo de series, que se vuelve cian y cuenta regresivo en el descanso automático de 3 min al marcar una serie, con −15s / Saltar / +15s), aviso de series en cola sin señal, por ejercicio: sugerencia de peso con "Usar", filas por serie (kg + reps, placeholder de la vez pasada, ✓ con spinner / ámbar si quedó en cola), "Agregar serie", notas de la sesión, terminar / descartar. ✅
+5. **Modo entrenamiento** — un chip por ejercicio con su unidad (`KG ⌄`, junto a "2 × 10 reps") que abre la hoja "¿En qué viene la carga?" (Kilos / Libras / Placas, cada una con una línea de cuándo usarla) y la guarda en la rutina: la máquina en libras se descubre parado enfrente, no armando la rutina; el encabezado de la columna cambia en el acto y el historial ya registrado no se reetiqueta. HUD de vidrio pegajoso (un número grande + anillo de series, que se vuelve cian y cuenta regresivo en el descanso automático de 3 min al marcar una serie, con −15s / Saltar / +15s), aviso de series en cola sin señal, por ejercicio: sugerencia de peso con "Usar", filas por serie (carga + reps, placeholder de la vez pasada, ✓ con spinner / ámbar si quedó en cola), "Agregar serie", notas de la sesión, terminar / descartar. ✅
 6. **Progreso** — selector semana/mes/año, tarjeta de tendencia de carga contra el periodo anterior, totales (sesiones / series / carga / tiempo), calendario de constancia de 14 semanas con un trío de anillos por día, por ejercicio (mejor marca, última sesión, gráfica peso/reps/volumen, lista de sesiones), sesiones completadas → detalle con series editables, duración, volumen y notas. ✅
-7. **Perfil** — usuario, **metas semanales de los anillos**, link a "Panel de administrador" (si `isAdmin`), peso corporal (registro + gráfica), cambiar contraseña, exportar CSV, cerrar sesión. ✅
+7. **Perfil** — usuario, **apariencia** (Sistema / Claro / Oscuro), **metas semanales de los anillos**, link a "Panel de administrador" (si `isAdmin`), peso corporal (registro + gráfica), cambiar contraseña, exportar CSV, cerrar sesión. ✅
 8. **Cómo se hace** (bottom sheet) — gif grande, músculo, equipo, pasos (en inglés). ✅
 9. **Offline** — banner sin conexión, páginas visitadas abren desde cache, `/offline` para las no visitadas. ✅
-10. **Admin** (solo `isAdmin`) — lista de usuarios con su conteo de rutinas → entra a uno → ve sus rutinas y crea una nueva → la arma con el mismo editor de siempre (banner "Editando como admin la rutina de <usuario>"). ✅
+10. **Admin** (solo `isAdmin`) — lista de usuarios con su conteo de rutinas → entra a uno → ve sus rutinas y crea una nueva → la arma con el mismo editor de siempre (banner "Editando como admin la rutina de <usuario>"); más el bloque "Mantenimiento": respaldo de gifs a Blob y su diagnóstico. ✅
 
 ## 9. Roadmap
 
@@ -275,18 +281,25 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 - ~~Novena: rediseño visual completo al estilo Apple Fitness (anillos semanales con metas, tendencias, récords, calendario de constancia, resumen post-entrenamiento)~~ ✅
 
 **Queda abierto (sin prisa), en este orden sugerido:**
+
+El plan de ataque de lo próximo, con lo que ya se decidió, vive en [siguiente-ronda.md](./siguiente-ronda.md); esta lista es el inventario largo.
+
 1. **Arreglar el espejado de gifs**: diagnosticado (token vacío + store privado, ver notas de infra), falta decidir entre store público u servirlos por una ruta propia. Después, pulsar "Copiar gifs" en /admin → Mantenimiento.
 2. Migraciones versionadas (`drizzle-kit generate` + carpeta `drizzle/`) para que el repo pruebe que producción coincide con `schema.ts`.
 3. Throttle de login por IP (hoy el bloqueo es por cuenta).
 4. Accesibilidad de la hoja "cómo se hace" (focus trap, `aria-labelledby`) y consolidar helpers duplicados (`requireOwnedSession`).
 5. Diseño, lo que quedó marcado con ⏳ en [diseno-apple-fitness.md](./diseno-apple-fitness.md): aviso de récord *durante* la sesión, carrusel de premios, compartir la sesión como imagen, skeletons y splash screens de iOS, y el colapso del título a barra de vidrio al hacer scroll.
 6. Producto: plantillas de rutina (Push/Pull/Legs) para que el admin las asigne rápido, compartir rutina por link, push notifications, fotos de progreso, traducir las instrucciones paso a paso (hoy en inglés).
+7. **El manifest sigue en lavanda.** `src/app/manifest.ts` conserva `background_color` y `theme_color` en `#ebe7fb`, el color del sistema de Dribbble que se retiró en el rediseño: la PWA instalada destella lavanda antes de pintar el lienzo. Debería ser `#f2f2f7` (o `#000000`), que es lo que ya escribe `themeScript` en el meta.
+8. Higiene de sesión: cambiar contraseña no cierra las demás sesiones abiertas, y `/login` no redirige si ya hay una (vienen de la sección 13).
+9. Esquema: `timestamp` sin `withTimezone` y `users.username` / `password_hash` todavía nullable, aunque ya no haga falta (idem).
 
 ## 10. Mapa del código
 
 ```
 src/app/
-  layout.tsx            Fuente Inter, viewport/theme-color, Connectivity, BottomNav
+  layout.tsx            Fuente Inter, themeScript en <head> (data-theme y theme-color
+                        antes del primer pintado), viewport, Connectivity, BottomNav
   globals.css           Tokens de diseño (light/dark) y @theme de Tailwind
   manifest.ts, icon.png PWA manifest + favicon
   error.tsx             Error global con "Reintentar"
@@ -304,19 +317,25 @@ src/app/
                         banner "Editando como admin" si no es tu rutina
   entrenar/actions.ts   startSession (reanuda si hay abierta), discardSession
   entrenar/[sessionId]/ page, actions (logSet upsert, syncSets, addExtraSet, saveNotes,
-                        finishSession — con requireOwnedSession), SetRow (guardado online /
-                        cola offline), PendingSync, SessionNotes, error.tsx
-  progreso/             Lista de sesiones, heatmap y ejercicios; [exerciseId] = gráfica;
+                        setLoadUnit, finishSession — todas con requireOwnedSession),
+                        SetRow (guardado online / cola offline), LoadUnitPicker (el chip
+                        kg/lb/placas y su hoja: reescribe routine_exercises.load_unit,
+                        nunca el historial), PendingSync, SessionNotes, error.tsx
+  progreso/             Lista de sesiones, calendario de constancia y ejercicios;
+                        [exerciseId] = gráfica;
                         sesion/[id] = detalle (SetRowEditor para corregir/borrar series)
-  perfil/               Usuario, metas semanales de los anillos (updateGoals), link a /admin
-                        (si isAdmin), peso corporal, contraseña, CSV, logout
+  perfil/               Usuario, apariencia (ThemeSwitch), metas semanales de los anillos
+                        (updateGoals), link a /admin (si isAdmin), peso corporal,
+                        contraseña, CSV, logout; ojo: mirrorMyGifs sigue definida aquí
+                        aunque su botón viva en /admin
   ejercicios/actions.ts createCustomExercise
   api/exercises/search  Búsqueda/browse (q en es/en, bodyPart, offset); catálogo + propios del usuario
   api/export            CSV del historial del usuario
-  admin/                page (lista de usuarios + bloque de mantenimiento con el copiado
-                        de gifs a Blob), usuarios/[userId]/page.tsx (rutinas de
-                        ese usuario + crear una), actions.ts (createRoutineForUser) —
-                        todo detrás de requireAdmin()
+  admin/                page (lista de usuarios + bloque "Mantenimiento": respaldo de gifs
+                        y su diagnóstico, visible con o sin token),
+                        usuarios/[userId]/page.tsx (rutinas de ese usuario + crear una),
+                        actions.ts (createRoutineForUser, diagnoseBlob) — todo detrás de
+                        requireAdmin()
 src/components/
   ui.tsx                Primitivas del sistema de diseño (Card, MetricTile, StatGrid,
                         GroupedList, TrendPill, PageHeader con large title, botones)
@@ -327,15 +346,28 @@ src/components/
   Connectivity.tsx      Registra sw.js, calienta el cache de la ruta actual, banner offline
   ExercisePicker.tsx    Grid de ejercicios con chips por músculo, "i" de info y "Cargar más"
   ExerciseInfoSheet.tsx Bottom sheet con gif grande + pasos
-  ExerciseThumb.tsx     <img> con fallback a ícono si el gif falla
+  ExerciseThumb.tsx     Escenario del gif: recuadro blanco plano con hairline interior,
+                        esqueleto mientras carga, atenuado en oscuro (en el contenedor,
+                        no en la <img>: si no, queda marco blanco) y fallback a ícono si
+                        falla. `aire` = margen interno; `eager` = el héroe de la hoja
   SessionHud.tsx        HUD de vidrio del entrenamiento: anillo de series (verde) que se
                         vuelve cian y cuenta regresivo durante el descanso
   PendingButton.tsx     Botón de submit con spinner genérico
-  DiscardSessionButton.tsx  Descartar sesión con confirmación inline
+  DiscardSessionButton.tsx  Descartar sesión en hoja de acción de iOS (inline se
+                        desbordaba de la tarjeta de "En curso"); `compact` para Home
   ExerciseProgressChart.tsx AreaChart con toggle peso/reps/volumen
   BodyWeightChart.tsx   AreaChart del peso corporal
   SuggestionPill.tsx    "Sube a X kg" / "Repite" con botón Usar
   CustomExerciseForm.tsx  Alta de ejercicio propio dentro del explorador
+  ThemeSwitch.tsx       Sistema / Claro / Oscuro. Lee la preferencia como store externo
+                        (useSyncExternalStore sobre window.__tema) y le pide al script
+                        que la aplique, sin recargar
+  LogoutButton.tsx      Cierra sesión y antes purga los caches pages-* y todas las claves
+                        workout:* de localStorage (incluida la del tema)
+  MirrorGifsButton.tsx  Copia los gifs pendientes en tandas de 6 (llama a mirrorMyGifs,
+                        que sigue en perfil/actions.ts aunque el botón esté en /admin)
+  BlobDiagnostics.tsx   Botón "Diagnosticar": prueba token, descarga y subida por
+                        separado y dice cuál de las tres falla
 src/db/
   schema.ts             Fuente de verdad del modelo (Drizzle)
   index.ts              Cliente Neon lazy
@@ -349,13 +381,18 @@ src/lib/
   session.ts            createSession (purga expiradas) / destroySession / getCurrentUserId / requireUserId
   password.ts           scrypt hash + verify
   body-parts.ts         Etiquetas en español de los grupos musculares
-  dates.ts              Zona horaria MX, día de la semana, clave de semana, "hace N días"
+  dates.ts              Zona horaria MX, día de la semana, clave de semana, fmtDate (el
+                        helper que cerró lo de las fechas en UTC), weekRangeLabel
+                        ("Semana del 21 al 27") y "hace N días"
   translate-exercise.ts Traductor por reglas de nombres de ejercicio
-  format.ts             fmtKg / fmtNumber / fmtMinutes / fmtClock para las métricas
+  format.ts             fmtNumber / fmtKg (pasa a toneladas arriba de 100 t) / fmtMinutes /
+                        fmtMinutesShort (para los tiles) / fmtClock
   suggest.ts            Unidades (kg/lb/placas), regla de progresión (+2.5 kg
                         o +5 lb / +1 rep / repetir), conversión lb→kg para volúmenes
   offline-queue.ts      Cola de series en localStorage
   blob.ts               mirrorExerciseGif, pendingGifIds, uploadExercisePhoto (no-op sin token)
+  theme-script.ts       Script inline del tema: pone data-theme y el meta theme-color
+                        antes del primer pintado y deja window.__tema para el selector
 public/sw.js            Service worker (app shell + páginas visitadas + gifs; VERSION v3)
 scripts/
   seed-exercises.ts     Carga el catálogo desde ExerciseDB (con backoff por rate limit)
@@ -364,9 +401,9 @@ scripts/
 tests/smoke.mjs         Suite de humo (`npm run smoke`)
 ```
 
-## 11. Registro de cambios (2026-09-03)
+## 11. Registro de cambios
 
-Todo el trabajo fue en un solo día; el historial fino está en `git log`. Resumen por commit:
+Arrancó todo en un solo día (2026-09-03) y sigue creciendo: el historial fino está en `git log`; esto es el resumen por commit, en orden.
 
 | Commit | Qué |
 |---|---|
@@ -405,13 +442,16 @@ Todo el trabajo fue en un solo día; el historial fino está en `git log`. Resum
 | `f4257e7` | PLAN.md: fila del changelog del rediseño |
 | `acbac55` | Progreso: etiquetar "series" en el porcentaje chico de la tarjeta de tendencia (salían dos porcentajes juntos sin decir cuál era cuál) |
 | `16419ee` | Descartar entrenamiento confirma en hoja de acción: inline se desbordaba de la tarjeta de "En curso" y el botón quedaba cortado por el borde |
-| `acec7ac` | Copiado de gifs a Blob sale de Perfil y se va a /admin → "Mantenimiento"; sin `BLOB_READ_WRITE_TOKEN` el bloque ni se renderiza |
+| `acec7ac` | Copiado de gifs a Blob sale de Perfil y se va a /admin → "Mantenimiento"; sin `BLOB_READ_WRITE_TOKEN` el bloque ni se renderiza (revertido en `bd2c571`: esconderlo era lo que ocultaba el fallo) |
+| `bd2c571` | Diagnóstico del respaldo de gifs en /admin (`diagnoseBlob` + `BlobDiagnostics`: prueba token, descarga y subida por separado) y el bloque deja de esconderse sin token — esconderlo era lo que mantenía el fallo invisible |
+| `6203eef` → `5894264` | Afinar el diagnóstico: qué claves `BLOB*` ve el runtime (sólo nombres) y si el acceso estático y el dinámico al token dan lo mismo. Los dos dan 0 caracteres: la variable está vacía en Vercel |
+| `eb485d0` | docs: diagnóstico completo del respaldo de gifs y las dos opciones para cerrarlo |
 | `452bdf8` | Presentación de los gifs: escenario propio con hairline y esqueleto, atenuado en oscuro, la hoja deja de estirarlos a ancho completo (tope 300 px), nombres a dos líneas, explorador limpio |
 | `28715f2` | Selector de tema en Perfil (Sistema / Claro / Oscuro): `data-theme` manda sobre `prefers-color-scheme`, aplicado antes del primer pintado |
 | `f6667b9` | La unidad de carga (kg / lb / placas) se cambia desde el entrenamiento con un chip por ejercicio; antes estaba enterrada en el editor de la rutina y los 73 ejercicios seguían en kg |
 | `a770f02` | Descanso persistente (se guarda el instante de fin, no los segundos) y tres pitidos al terminar con Web Audio; interruptor en Perfil |
 
-## 12. Siguiente ronda (acordada 2026-09-03)
+## 12. Tercera ronda (acordada 2026-09-03) — cerrada
 
 Por orden de prioridad; se va tachando conforme se sube.
 
@@ -419,19 +459,19 @@ Por orden de prioridad; se va tachando conforme se sube.
 1. [x] Corregir / borrar series de una sesión pasada desde el detalle de sesión.
 2. [x] Sugerencia de peso: si la sesión anterior cumplió todas las series con las reps objetivo, proponer +2.5 kg (o +1 rep en ejercicios sin peso); si no, proponer repetir. Botón "Usar" que rellena las series. (`src/lib/suggest.ts`)
 3. [x] Ejercicios propios (nombre, músculo, equipo, notas, foto opcional en Vercel Blob). Solo los ve su dueño; salen primero en el explorador con la etiqueta "Propio".
-4. [x] Gifs a Vercel Blob: `exercises.gif_blob_url`; se copia solo al agregar un ejercicio a una rutina (`mirrorExerciseGif`, no-op sin token) y `scripts/mirror-gifs.ts` copia en bloque los que ya están en uso (`--all` para todo el catálogo). La app siempre prefiere la copia propia. Pendiente: correr el script una vez con `BLOB_READ_WRITE_TOKEN` en `.env.local`.
+4. [~] Gifs a Vercel Blob: `exercises.gif_blob_url`; se copia solo al agregar un ejercicio a una rutina (`mirrorExerciseGif`, no-op sin token) y `scripts/mirror-gifs.ts` copia en bloque los que ya están en uso (`--all` para todo el catálogo). La app siempre prefiere la copia propia. **Código listo, efecto cero**: 0 copias de 1,500 al 2026-09-22. `mirrorExerciseGif` es best-effort y se traga los errores, así que estuvo fallando en silencio 19 días. Las dos causas (token vacío en el runtime, store privado) están en las notas de infra y cerrarlo es el pendiente #1 de la sección 9.
 5. [x] Cola offline: cada serie se intenta guardar; sin señal (o si el servidor falla) se encola en `localStorage` (`src/lib/offline-queue.ts`), la fila se marca en ámbar, y `PendingSync` la reenvía al reconectar (evento `online` + reintento cada 15 s) con `syncSets`. Sobrevive a recargar la página.
 
 **Chicas**
-6. [x] Descanso configurable: por defecto en Perfil (`users.rest_seconds`) y por ejercicio en el editor inline de la rutina (`routine_exercises.rest_seconds`). El ✓ de cada serie manda los segundos al HUD.
-7. [x] Heatmap de 16 semanas en Progreso (`TrainingHeatmap`, zona horaria MX).
-8. [x] Exportar CSV desde Perfil (`/api/export`: fecha, rutina, ejercicio es/en, serie, kg, reps, notas).
+6. [~] Descanso configurable: **revertido en `250eeff`**. El descanso es fijo de 3 min y las columnas `users.rest_seconds` / `routine_exercises.rest_seconds` se borraron; si las ves en commits viejos, ya no existen.
+7. [x] Mapa de constancia en Progreso (zona horaria MX). El `TrainingHeatmap` original se fue en el rediseño (`1bf4729`); hoy es `ConsistencyCalendar`, 14 semanas de tríos de anillos.
+8. [x] Exportar CSV desde Perfil (`/api/export`: fecha, rutina, ejercicio, ejercicio_en, serie, peso, unidad, placas, reps, notas — `placas` y `unidad` se sumaron en la quinta y la octava ronda).
 9. [x] Sesiones expiradas se borran al crear una nueva; 8 contraseñas fallidas bloquean la cuenta 15 min (`users.failed_logins`, `locked_until`).
 10. [x] `npm run smoke` (`tests/smoke.mjs`): crea una cuenta desechable en la base, recorre login → rutina → ejercicio → entrenar → terminar → borrar, y elimina la cuenta. `BASE_URL=https://… npm run smoke` para probar producción.
 
-**Todo lo acordado en esta ronda está hecho.**
+**Todo lo acordado en esta ronda está hecho, salvo dos cosas que cambiaron después: el descanso configurable se revirtió a propósito, y el respaldo de gifs sigue sin correr.**
 
-## 13. Revisión de código (2026-09-03) — hallazgos pendientes
+## 13. Revisión de código (2026-09-03) — acta; lo que sigue con [ ] está también en la sección 9
 
 Auditoría completa de `src/`, `public/sw.js`, `scripts/` y `tests/` con lint y `tsc` limpios. Los cuatro altos, los medios de sesiones / cola offline / SW y varios bajos se arreglaron el mismo día (ver registro de cambios); lo que sigue con `[ ]` queda abierto.
 
@@ -454,12 +494,13 @@ Auditoría completa de `src/`, `public/sw.js`, `scripts/` y `tests/` con lint y 
 - [x] Notas / agregar serie / terminar sin señal mandan a la pantalla de error y se pierde lo escrito.
 
 **Bajos**
-- [~] Duplicados: dos `requireOwnedSession`, `fieldClass` en 5 archivos, `REST_SECONDS` en 3 lugares; `users.email/name` sin uso. Hecho: código muerto del "legacy owner" eliminado; `scrollbar-none` reemplazado.
+- [~] Duplicados que siguen: dos `requireOwnedSession`, `fieldClass` en 5 archivos, `users.email/name` sin uso. Cerrados: código muerto del "legacy owner", `scrollbar-none`, y `REST_SECONDS`, que hoy vive en un solo lugar (`SessionHud`).
 - [x] `SessionHud` inicializa `now` con `Date.now()` → hydration mismatch en cada carga del entrenamiento.
-- [ ] `ExerciseInfoSheet` sin focus trap ni `aria-labelledby`; inputs de kg/reps sin label; heatmap depende de `title`.
+- [ ] `ExerciseInfoSheet` sin focus trap ni `aria-labelledby` (tiene `role="dialog"` y `aria-modal`; el `aria-label` está en el botón que la abre, no en la hoja); `ConsistencyCalendar` sigue dependiendo de `title` para decir qué pasó cada día. Los inputs de carga y reps ya tienen `aria-label` ("Peso serie 3 (kg)", "Placas serie 2", "Repeticiones serie 3") desde el rediseño de `SetRow`.
 - [x] Búsqueda: `offset` sin validar; `ORDER BY` sin desempate por `id` (paginación puede duplicar/saltar); `%`/`_` actúan como comodines.
 - [x] CSV sin protección contra fórmulas (`=`, `+`, `-`, `@` al inicio).
-- [x] Foto de ejercicio propio no valida MIME en servidor. `mirrorExerciseGif` corre inline en la acción (mover a `after()`).
+- [x] Foto de ejercicio propio no valida MIME en servidor (`uploadExercisePhoto` filtra jpeg/png/webp/gif/heic/heif y corta a 4.5 MB).
+- [ ] `mirrorExerciseGif` sigue corriendo **inline** en `addExerciseToRoutine`: un `await` con descarga de hasta 8 s antes de responderle al usuario que agregó el ejercicio. Mover a `after()` (hoy no hay ni un uso de `after` en `src/`).
 - [ ] Cambiar contraseña no cierra las demás sesiones; `/login` no redirige si ya hay sesión.
 - [x] `getLastTimeSets` incluye sets de sesiones abandonadas (filtra `completed`, no `finished_at`).
 

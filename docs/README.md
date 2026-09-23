@@ -3,11 +3,17 @@
 Todo lo escrito sobre la app vive aquí. El `README.md` de la raíz es sólo el
 arranque rápido (instalar, correr, scripts).
 
+Si llegas nuevo: `../README.md` para arrancar, §0 de PLAN.md para saber qué hay hoy, §10
+de PLAN.md para saber dónde está cada cosa, `siguiente-ronda.md` para lo que sigue, y
+diseno-apple-fitness.md sólo si vas a tocar la capa visual.
+
 | Documento | Qué contiene |
 |---|---|
 | [PLAN.md](./PLAN.md) | El plan maestro: estado actual, visión, modelo de datos, stack, pantallas, roadmap, mapa del código, notas de infra, registro de cambios por commit y la auditoría. **Es el documento vivo del proyecto**: cada ronda de trabajo agrega su fila a la tabla de cambios. |
 | [siguiente-ronda.md](./siguiente-ronda.md) | Lo que se está por hacer: descanso que sobrevive y suena, instrucciones en español, app bilingüe con selector, recordatorios, aviso de récord, migraciones versionadas. Con las decisiones ya tomadas y lo que queda bloqueado. Se vacía conforme se sube. |
-| [diseno-apple-fitness.md](./diseno-apple-fitness.md) | El sistema visual estilo Apple Fitness: la investigación, los tokens (color, tipografía, espaciado), los componentes, el rediseño pantalla por pantalla, las features que el estilo pide (anillos, tendencias, récords), el plan por fases con su estado, y una **bitácora** con lo que se subió, cómo se verificó y qué se arregló después de verlo en el teléfono. |
+| [diseno-apple-fitness.md](./diseno-apple-fitness.md) | El sistema visual estilo Apple Fitness: la investigación, los tokens (color, tipografía, espaciado), los componentes, el rediseño pantalla por pantalla, las features que el estilo pide (anillos, tendencias, récords), el plan por fases con su estado, y una **bitácora** con lo que se subió, cómo se verificó y qué se arregló después de verlo en el teléfono — más las tandas posteriores al rediseño (gifs, tema, unidad de carga) y una lista de **decisiones que conviene no volver a discutir** (Inter y no SF Pro, el verde cambia de valor entre modos, el volumen no cuenta placas, el tema es por dispositivo y no por cuenta). |
+| [../README.md](../README.md) | Arranque rápido: instalar, correr, scripts, base de datos. |
+| [../AGENTS.md](../AGENTS.md) | Reglas para agentes. La importante: **esta versión de Next.js no es la que conoces** — antes de escribir código hay que leer la guía que toque en `node_modules/next/dist/docs/`. Lo escribe `next dev`, no se borra. |
 
 ## Convenciones
 
