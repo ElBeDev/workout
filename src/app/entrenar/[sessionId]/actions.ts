@@ -7,6 +7,7 @@ import { setLogs, workoutSessions, routineExercises } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
 import { and, eq, isNull, max } from "drizzle-orm";
 import { z } from "zod";
+import { getPersonalRecords, recordScore } from "@/db/queries";
 
 async function requireOwnedSession(sessionId: string) {
   const userId = await requireUserId();
@@ -15,7 +16,7 @@ async function requireOwnedSession(sessionId: string) {
     .from(workoutSessions)
     .where(and(eq(workoutSessions.id, sessionId), eq(workoutSessions.userId, userId)));
   if (!session) redirect("/");
-  return session;
+  return { ...session, userId };
 }
 
 /**
@@ -43,7 +44,16 @@ export async function setLoadUnit(sessionId: string, exerciseId: string, unit: s
   revalidatePath(`/rutinas/${session.routineId}`);
 }
 
-export async function logSet(formData: FormData) {
+export type LogSetResult = { isRecord: boolean };
+
+/**
+ * Guarda la serie y dice si acaba de romper el récord del ejercicio, para que
+ * la fila lo celebre en el momento — que es el único instante en que importa
+ * (ver docs/siguiente-ronda.md §5). Sólo cuenta como récord si YA había una
+ * marca previa que superar: la primera vez que haces un ejercicio no es "un
+ * récord roto", es sólo el primer dato.
+ */
+export async function logSet(formData: FormData): Promise<LogSetResult> {
   const sessionId = String(formData.get("sessionId"));
   const exerciseId = String(formData.get("exerciseId"));
   const setNumber = Number(formData.get("setNumber"));
@@ -55,7 +65,14 @@ export async function logSet(formData: FormData) {
   const plates = platesRaw !== "" && Number.isFinite(Number(platesRaw)) ? Math.round(Number(platesRaw)) : null;
   const reps = repsRaw !== "" && Number.isFinite(Number(repsRaw)) ? Number(repsRaw) : null;
 
-  await requireOwnedSession(sessionId);
+  const session = await requireOwnedSession(sessionId);
+
+  // Lo que ya existía justo ANTES de esta escritura. Comparar contra "el
+  // estado previo a este cambio" en vez de excluir esta fila a mano también
+  // resuelve las ediciones: si subes una serie ya guardada, el punto de
+  // comparación es lo que había antes de tocarla, sea o no la misma fila.
+  const before = await getPersonalRecords(session.userId);
+  const previo = before.get(exerciseId);
 
   await db
     .insert(setLogs)
@@ -66,6 +83,18 @@ export async function logSet(formData: FormData) {
     });
 
   revalidatePath(`/entrenar/${sessionId}`);
+
+  let isRecord = false;
+  if (previo && reps !== null) {
+    const nuevoScore = plates !== null || weight !== null
+      ? recordScore({ weight: weight !== null ? Number(weight) : null, weightUnit, plates })
+      : null;
+    if (nuevoScore !== null) {
+      const previoScore = recordScore(previo);
+      isRecord = nuevoScore > previoScore || (nuevoScore === previoScore && reps > previo.reps);
+    }
+  }
+  return { isRecord };
 }
 
 const syncEntrySchema = z.object({

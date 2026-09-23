@@ -277,7 +277,24 @@ export type PersonalRecord = {
   weightUnit: WeightUnit;
   plates: number | null;
   reps: number;
+  /** Qué sesión tiene la marca — así el resumen de "recién terminada" sabe
+   *  qué récords son suyos, sin guardar una bandera aparte que pudiera
+   *  quedarse desactualizada si luego editas o borras esa serie. */
+  sessionId: string;
 };
+
+/**
+ * Puntaje comparable de una carga: placas si las hay (no se convierten, no
+ * hay forma honesta de pasar "3 placas" a kilos), si no el peso en kg. Es el
+ * mismo criterio en los dos lugares que deciden "¿esto es un récord?": el
+ * cálculo por ejercicio de abajo y el aviso en el momento de marcar la serie
+ * (`logSet`), para que nunca digan cosas distintas.
+ */
+export function recordScore(rec: { weight: number | string | null; weightUnit: WeightUnit; plates: number | null }): number {
+  if (rec.plates !== null) return rec.plates;
+  const weight = rec.weight !== null ? Number(rec.weight) : null;
+  return weight !== null ? toKg(weight, rec.weightUnit) : 0;
+}
 
 /**
  * Mejor marca por ejercicio: la carga más alta registrada (por unidad) y, para
@@ -287,6 +304,7 @@ export async function getPersonalRecords(userId: string): Promise<Map<string, Pe
   const rows = await db
     .select({
       exerciseId: setLogs.exerciseId,
+      sessionId: setLogs.sessionId,
       weight: setLogs.weight,
       weightUnit: setLogs.weightUnit,
       plates: setLogs.plates,
@@ -300,14 +318,13 @@ export async function getPersonalRecords(userId: string): Promise<Map<string, Pe
   for (const r of rows) {
     const unit: WeightUnit = r.weightUnit === "lbs" ? "lbs" : "kg";
     const weight = r.weight ? Number(r.weight) : null;
-    const score = r.plates ?? (weight !== null ? toKg(weight, unit) : 0);
+    const score = recordScore({ weight, weightUnit: unit, plates: r.plates });
     const prev = best.get(r.exerciseId);
-    const prevScore = prev
-      ? (prev.plates ?? (prev.weight !== null ? toKg(prev.weight, prev.weightUnit) : 0))
-      : -1;
+    const prevScore = prev ? recordScore(prev) : -1;
     if (score > prevScore || (score === prevScore && (r.reps ?? 0) > (prev?.reps ?? 0))) {
       best.set(r.exerciseId, {
         exerciseId: r.exerciseId,
+        sessionId: r.sessionId,
         weight,
         weightUnit: unit,
         plates: r.plates,

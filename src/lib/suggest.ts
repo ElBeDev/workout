@@ -14,11 +14,9 @@ export type Suggestion = {
   unit: WeightUnit;
   /** "up" = subir carga/reps, "repeat" = repetir lo mismo */
   kind: "up" | "repeat";
-  reason: string;
 };
 
 const WEIGHT_STEP: Record<WeightUnit, number> = { kg: 2.5, lbs: 5 };
-const UNIT_LABEL: Record<WeightUnit, string> = { kg: "kg", lbs: "lb" };
 const LB_TO_KG = 0.45359237;
 
 /** Converts a raw entered weight to kg, for aggregates that must add across units (e.g. session volume). */
@@ -30,16 +28,6 @@ export function normalizeLoadUnit(value: string | null | undefined): LoadUnit {
   if (value === "plates") return "plates";
   if (value === "lbs") return "lbs";
   return "kg";
-}
-
-export function loadLabel(
-  weight: number | string | null,
-  plates: number | null,
-  unit: WeightUnit = "kg"
-): string | null {
-  if (plates !== null && plates > 0) return `${plates} ${plates === 1 ? "placa" : "placas"}`;
-  if (weight !== null && Number(weight) > 0) return `${weight} ${UNIT_LABEL[unit]}`;
-  return null;
 }
 
 /**
@@ -80,7 +68,6 @@ export function suggestNext(
         reps: targetReps,
         unit: weightUnit,
         kind: "up",
-        reason: `Completaste ${targetSets} × ${targetReps} con ${maxWeight} ${UNIT_LABEL[weightUnit]}`,
       };
     }
     if (hasPlates && maxPlates !== null) {
@@ -90,7 +77,6 @@ export function suggestNext(
         reps: targetReps,
         unit: weightUnit,
         kind: "up",
-        reason: `Completaste ${targetSets} × ${targetReps} con ${loadLabel(null, maxPlates)}`,
       };
     }
     return {
@@ -99,7 +85,6 @@ export function suggestNext(
       reps: maxReps + 1,
       unit: weightUnit,
       kind: "up",
-      reason: `Completaste ${targetSets} × ${targetReps}`,
     };
   }
 
@@ -109,6 +94,5 @@ export function suggestNext(
     reps: targetReps,
     unit: weightUnit,
     kind: "repeat",
-    reason: "No salieron todas las reps la vez pasada",
   };
 }

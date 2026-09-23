@@ -38,6 +38,7 @@ export const entrenar = {
     ariaPeso: (serie: number, unidad: "kg" | "lbs") =>
       `Peso serie ${serie} (${unidad === "lbs" ? "lb" : "kg"})`,
     ariaReps: (serie: number) => `Repeticiones serie ${serie}`,
+    nuevoRecord: "Nuevo récord personal",
   },
 
   /** Píldora con la carga sugerida a partir de la vez pasada. */

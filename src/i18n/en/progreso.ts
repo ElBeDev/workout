@@ -56,6 +56,7 @@ export const progreso: typeof Es = {
   entrenamientoTerminado: "Workout complete",
   semanaConEsteEntrenamiento: "Here's how your week looks with this workout in it.",
   listo: "Done",
+  recordsSesion: "This session's records",
   anilloCarga: (unidad) => `Load (${unidad})`,
   anilloSeries: "Sets",
   anilloDias: "Days",

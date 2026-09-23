@@ -8,7 +8,7 @@ import { and } from "drizzle-orm";
 import { requireUserId } from "@/lib/session";
 import { fmtDate } from "@/lib/dates";
 import { fmtKg, fmtMinutes, fmtMinutesShort, fmtNumber } from "@/lib/format";
-import { loadLabel } from "@/lib/suggest";
+import { loadLabel } from "@/lib/load-label";
 import { bodyPartLabel } from "@/lib/body-parts";
 import {
   getPeriodStats,
@@ -149,7 +149,7 @@ export default async function ProgresoPage({
             {trainedExercises.map((ex) => {
               const pr = records.get(ex.id);
               const prLabel = pr
-                ? (loadLabel(pr.weight, pr.plates, pr.weightUnit) ?? t.progreso.reps(pr.reps))
+                ? (loadLabel(t, pr.weight, pr.plates, pr.weightUnit) ?? t.progreso.reps(pr.reps))
                 : null;
               return (
                 <Link
@@ -176,7 +176,7 @@ export default async function ProgresoPage({
                           <span className="text-faint">·</span>
                         </>
                       ) : null}
-                      {bodyPartLabel(ex.bodyPart)}
+                      {bodyPartLabel(ex.bodyPart, t)}
                     </p>
                   </div>
                   <ChevronRight className="h-5 w-5 shrink-0 text-faint" />

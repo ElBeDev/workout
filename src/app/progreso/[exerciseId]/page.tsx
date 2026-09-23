@@ -127,7 +127,7 @@ export default async function ExerciseProgressPage({
       <PageHeader
         title={exercise.nameEs ?? exercise.name}
         backHref="/progreso"
-        subtitle={[bodyPartLabel(exercise.bodyPart), exercise.nameEs ? exercise.name : null]
+        subtitle={[bodyPartLabel(exercise.bodyPart, t), exercise.nameEs ? exercise.name : null]
           .filter(Boolean)
           .join(" · ")}
         capitalize

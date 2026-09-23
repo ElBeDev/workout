@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { AlertCircle, Check, CloudOff, Loader2 } from "lucide-react";
+import { AlertCircle, Check, CloudOff, Loader2, Trophy } from "lucide-react";
 import { enqueueSet, findPendingSet } from "@/lib/offline-queue";
 import { desbloquearSonido } from "@/lib/rest-sound";
 import { useT } from "@/i18n/client";
@@ -48,6 +48,7 @@ export function SetRow({
   repsPlaceholder: string;
 }) {
   const [status, setStatus] = useState<Status>(completed ? "done" : "idle");
+  const [isRecord, setIsRecord] = useState(false);
   const [, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
   const t = useT();
@@ -121,15 +122,28 @@ export function SetRow({
     if (!navigator.onLine) {
       enqueueSet(userId, entry);
       setStatus("queued");
+      // No se sabe si esto será récord hasta que llegue al servidor: no dejar
+      // pegada una insignia de una escritura anterior con otro valor.
+      setIsRecord(false);
       restore();
       return;
     }
 
     setStatus("saving");
+    setIsRecord(false);
     startTransition(async () => {
       try {
-        await logSet(formData);
+        const result = await logSet(formData);
         setStatus("done");
+        // No se sabe si es récord hasta que el servidor lo confirma: se
+        // resetea en cada guardado en vez de quedarse "pegado" en true si
+        // luego editas la serie a un valor que ya no lo es.
+        setIsRecord(result.isRecord);
+        if (result.isRecord) {
+          try {
+            navigator.vibrate?.([20, 30, 20, 30, 40]);
+          } catch {}
+        }
       } catch (err) {
         if (isNetworkError(err)) {
           enqueueSet(userId, entry);
@@ -208,26 +222,38 @@ export function SetRow({
         className={fieldClass}
       />
 
-      <button
-        type="submit"
-        onClick={startRest}
-        disabled={status === "saving"}
-        aria-label={label}
-        title={status === "queued" ? t.entrenar.serie.seGuardaAlReconectar : undefined}
-        className={`ml-auto flex h-12 w-12 shrink-0 items-center justify-center rounded-full transition active:scale-95 disabled:opacity-70 ${buttonClass} ${
-          status === "done" ? "animate-pop" : ""
-        }`}
-      >
-        {status === "saving" ? (
-          <Loader2 className="h-5 w-5 animate-spin" />
-        ) : status === "queued" ? (
-          <CloudOff className="h-5 w-5" />
-        ) : status === "error" ? (
-          <AlertCircle className="h-5 w-5" />
-        ) : (
-          <Check className="h-5 w-5" strokeWidth={3} />
+      <div className="relative ml-auto shrink-0">
+        <button
+          type="submit"
+          onClick={startRest}
+          disabled={status === "saving"}
+          aria-label={label}
+          title={status === "queued" ? t.entrenar.serie.seGuardaAlReconectar : undefined}
+          className={`flex h-12 w-12 items-center justify-center rounded-full transition active:scale-95 disabled:opacity-70 ${buttonClass} ${
+            status === "done" ? "animate-pop" : ""
+          }`}
+        >
+          {status === "saving" ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : status === "queued" ? (
+            <CloudOff className="h-5 w-5" />
+          ) : status === "error" ? (
+            <AlertCircle className="h-5 w-5" />
+          ) : (
+            <Check className="h-5 w-5" strokeWidth={3} />
+          )}
+        </button>
+        {isRecord && done && (
+          <span
+            role="img"
+            aria-label={t.entrenar.serie.nuevoRecord}
+            title={t.entrenar.serie.nuevoRecord}
+            className="animate-pop absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-load text-white ring-2 ring-background"
+          >
+            <Trophy className="h-3 w-3" />
+          </span>
         )}
-      </button>
+      </div>
     </form>
   );
 }

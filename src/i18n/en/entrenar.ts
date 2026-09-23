@@ -35,6 +35,7 @@ export const entrenar: typeof Es = {
     ariaPeso: (serie, unidad) =>
       `Weight, set ${serie} (${unidad === "lbs" ? "lb" : "kg"})`,
     ariaReps: (serie) => `Reps, set ${serie}`,
+    nuevoRecord: "New personal record",
   },
 
   sugerencia: {

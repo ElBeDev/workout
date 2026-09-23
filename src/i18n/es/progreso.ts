@@ -55,6 +55,8 @@ export const progreso = {
   entrenamientoTerminado: "Entrenamiento terminado",
   semanaConEsteEntrenamiento: "Así va tu semana con este entrenamiento dentro.",
   listo: "Listo",
+  recordsSesion: "Récords de esta sesión",
+
   anilloCarga: (unidad: string) => `Carga (${unidad})`,
   anilloSeries: "Series",
   anilloDias: "Días",

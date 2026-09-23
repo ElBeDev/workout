@@ -10,10 +10,12 @@ import { bodyPartLabel } from "@/lib/body-parts";
 import { fmtDate } from "@/lib/dates";
 import { fmtKg } from "@/lib/format";
 import { getDict, type Dict } from "@/i18n";
-import { getWeeklyRings } from "@/db/queries";
+import { getWeeklyRings, getPersonalRecords } from "@/db/queries";
 import { RingTrio } from "@/components/Rings";
 import { toKg, type WeightUnit } from "@/lib/suggest";
 import { Card, PageHeader, SectionTitle } from "@/components/ui";
+import { loadLabel } from "@/lib/load-label";
+import { Trophy } from "lucide-react";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { SetRowEditor } from "./SetRowEditor";
 
@@ -116,7 +118,21 @@ export default async function SessionDetailPage({
   // dentro, que es la recompensa de haber entrenado.
   const finishedNow = done === "1";
   let rings = null;
+  let recordsThisSession: { exerciseId: string; name: string; label: string }[] = [];
   if (finishedNow) {
+    // Un ejercicio "tiene" el récord de esta sesión si, de TODO su historial,
+    // la marca más alta salió de una serie de aquí — no una bandera guardada
+    // al vuelo, que se desactualizaría si luego editas o borras esa serie.
+    const allRecords = await getPersonalRecords(userId);
+    recordsThisSession = groups
+      .map((g) => {
+        const r = allRecords.get(g.exerciseId);
+        if (!r || r.sessionId !== id) return null;
+        const label = loadLabel(t, r.weight, r.plates, r.weightUnit) ?? t.progreso.reps(r.reps);
+        return { exerciseId: g.exerciseId, name: g.nameEs ?? g.name, label };
+      })
+      .filter((x): x is { exerciseId: string; name: string; label: string } => x !== null);
+
     const [me] = await db.select().from(users).where(eq(users.id, userId));
     const weekly = await getWeeklyRings(userId, {
       volumeKg: me?.goalWeeklyVolumeKg ?? 5000,
@@ -190,6 +206,22 @@ export default async function SessionDetailPage({
         </Card>
       )}
 
+      {recordsThisSession.length > 0 && (
+        <Card className="flex flex-col gap-3 p-4">
+          <p className="label flex items-center gap-2 text-load">
+            <Trophy className="h-4 w-4" /> {t.progreso.recordsSesion}
+          </p>
+          <ul className="flex flex-col gap-2">
+            {recordsThisSession.map((r) => (
+              <li key={r.exerciseId} className="flex items-center justify-between gap-3 text-[15px]">
+                <span className="min-w-0 flex-1 truncate capitalize">{r.name}</span>
+                <span className="shrink-0 font-semibold text-load">{r.label}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
       <Card hero className="grid grid-cols-2 gap-x-4 gap-y-5 p-5">
         <Stat
           label={t.progreso.duracion}
@@ -219,7 +251,7 @@ export default async function SessionDetailPage({
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[15px] font-semibold capitalize">{g.nameEs ?? g.name}</p>
-                  <p className="text-[12px] text-muted">{bodyPartLabel(g.bodyPart)}</p>
+                  <p className="text-[12px] text-muted">{bodyPartLabel(g.bodyPart, t)}</p>
                 </div>
               </Link>
               <ul className="mt-3 flex flex-col gap-1.5">

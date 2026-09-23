@@ -4,7 +4,8 @@ import { useState } from "react";
 import { Check, Pencil, Trash2, X } from "lucide-react";
 import { PendingButton } from "@/components/PendingButton";
 import { useT } from "@/i18n/client";
-import { loadLabel, type WeightUnit } from "@/lib/suggest";
+import type { WeightUnit } from "@/lib/suggest";
+import { loadLabel } from "@/lib/load-label";
 import { updateSet, deleteSet } from "./actions";
 
 const fieldClass =
@@ -48,7 +49,7 @@ export function SetRowEditor({
           className="flex flex-1 items-center gap-3 text-left"
           aria-label={t.progreso.editarSerie(setNumber)}
         >
-          <span className="font-semibold tabular-nums">{loadLabel(weight, plates, weightUnit) ?? "—"}</span>
+          <span className="font-semibold tabular-nums">{loadLabel(t, weight, plates, weightUnit) ?? "—"}</span>
           <span className="text-muted">×</span>
           <span className="tabular-nums">{t.progreso.reps(reps)}</span>
           <Pencil className="ml-1 h-3 w-3 text-muted opacity-60" />
