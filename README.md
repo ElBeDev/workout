@@ -39,7 +39,8 @@ Scripts útiles:
 npm run lint
 npm run build
 npm run db:push            # aplica src/db/schema.ts a la base (pide TTY si hay datos)
-npm run db:generate        # migraciones versionadas (existe en package.json, es el primer paso del pendiente de drizzle/)
+npm run db:generate        # genera una migración en drizzle/ a partir del diff contra la última
+npm run db:migrate         # aplica las migraciones pendientes de drizzle/ contra DATABASE_URL
 npm run db:studio          # UI de Drizzle para ver la base
 node --env-file=.env.local ./node_modules/.bin/tsx scripts/seed-exercises.ts        # recargar catálogo
 node --env-file=.env.local ./node_modules/.bin/tsx scripts/preview-translations.ts  # muestra de nombres en español
@@ -60,11 +61,14 @@ reconectar. Si cambias la estrategia del SW, sube `VERSION` dentro del archivo.
 
 ### Base de datos
 
-`src/db/schema.ts` es la fuente de verdad. Cuando `db:push` pide
+`src/db/schema.ts` es la fuente de verdad, y desde el 2026-09-22 los cambios
+quedan en `drizzle/` (migraciones versionadas, migración 0000 = la base ya
+adoptada — ver la nota de infra en `docs/PLAN.md`). Cuando `db:push` pide
 confirmación interactiva (tablas con datos) y no hay terminal, aplicar el
-cambio con SQL directo y luego volver a correr `db:push` para confirmar que
-no queda diferencia. Ver las notas de infra en `docs/PLAN.md` para los casos que
-ya pasaron.
+cambio con SQL directo, correr `npm run db:generate` para que quede su
+migración en el repo, y luego `db:push` de nuevo para confirmar que no queda
+diferencia. Ver las notas de infra en `docs/PLAN.md` para los casos que ya
+pasaron.
 
 ### Probar sin tocar la cuenta real
 
