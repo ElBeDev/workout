@@ -1,6 +1,7 @@
 # Siguiente ronda (acordada 2026-09-22)
 
-Estado: **plan acordado, sin empezar**. El orden de abajo es el de ataque.
+Estado: **6 de 7 hechos**; sólo queda el respaldo de gifs, bloqueado en una
+decisión de Vercel. El orden de abajo es el de ataque.
 Cada punto tiene lo que hay hoy, qué se va a hacer y cómo se sabrá que quedó.
 
 Documento vivo: conforme se suba cada punto se marca aquí y se agrega su fila
@@ -20,8 +21,8 @@ al registro de cambios de [PLAN.md](./PLAN.md), como manda
 2. [x] Instrucciones de ejercicio en español — **hecho: los 1,500**
 3. [x] App bilingüe con selector de idioma — **hecho**
 4. [x] Recordatorio de "hoy toca" — **hecho**
-5. [ ] Aviso de récord en el momento
-6. [ ] Migraciones versionadas
+5. [x] Aviso de récord en el momento — **hecho**
+6. [x] Migraciones versionadas — **hecho**
 7. [ ] Respaldo de gifs *(bloqueado: necesita una decisión tuya en Vercel)*
 
 ---
@@ -186,6 +187,17 @@ Tres cosas que salieron al hacerlo y que vale la pena tener escritas:
    daba "21 – September 27".
 3. **`daysAgoLabel` se eliminó**: devolvía "Nunca / Hoy / Ayer / Hace N días" en
    español duro y ya nadie lo llamaba.
+4. **Dos fugas de verdad, encontradas después** (al construir el punto 5, no en
+   la verificación original): `loadLabel()` (la etiqueta "3 placas" de un
+   récord) y tres llamadas a `bodyPartLabel()` en Progreso seguían fijas en
+   español porque esas dos funciones son de `src/lib/`, fuera de las carpetas
+   que se le repartieron a los agentes de la conversión. La verificación
+   original no las cachó porque su cuenta de prueba no tenía ningún récord en
+   placas. Se movió `loadLabel` a `src/lib/load-label.ts` (recibe el
+   diccionario, ya no lo adivina) y se les pasó `t` a los `bodyPartLabel` que
+   les faltaba. **Lección**: verificar un idioma nuevo con una cuenta que
+   ejercite TODAS las variantes de datos (placas, no sólo kg), no sólo las
+   pantallas.
 
 Lo que **no** cambia de idioma, a propósito: los nombres de rutina (los
 escribes tú) y los de ejercicio (vienen del catálogo, que ya tiene columna en
@@ -228,25 +240,76 @@ quedaba muerto y sin explicación.
 
 ## 5. Aviso de récord en el momento
 
-**Lo que hay hoy.** El récord por ejercicio ya se calcula
-(`getPersonalRecords`) y se ve en Progreso. Cuando lo rompes —el único momento
-en que importa— la app no dice nada.
+**Hecho** (2026-09-22). Sin pantallas nuevas, como se planeó.
 
-**Lo que se va a hacer.** Al marcar una serie que supera tu mejor marca de ese
-ejercicio, la fila lo celebra en el momento y el resumen al terminar lista los
-récords de la sesión. Sin pantallas nuevas.
+- Al marcar una serie, `logSet` consulta el récord del ejercicio **antes** de
+  guardar (así compara contra "lo que había justo antes de este cambio", lo
+  cual también resuelve editar una serie ya guardada sin lógica aparte) y
+  devuelve si la serie que se acaba de guardar lo supera. **Sólo cuenta si ya
+  había una marca previa que superar**: la primera vez que haces un ejercicio
+  no es "un récord roto", es el primer dato — no se celebra.
+- La fila lo celebra con una insignia de trofeo sobre el botón de ✓ (color
+  `load`, el mismo que usa Progreso para los récords) y una vibración distinta
+  a la del ✓ normal. La insignia se limpia sola si luego editas esa serie a un
+  valor que ya no es récord.
+- El resumen post-entrenamiento (`?done=1`) agrega una tarjeta "Récords de
+  esta sesión" que lista, por ejercicio, si la marca histórica que tiene
+  ahora mismo salió de una serie **de esta sesión** — no una bandera guardada
+  al vuelo que se desactualizaría si editas o borras esa serie después.
+- El cálculo del "¿es récord?" se factorizó a una sola función
+  (`recordScore` en `src/db/queries.ts`), usada tanto por `getPersonalRecords`
+  como por `logSet`: antes había dos copias de la lógica de puntaje y hubiera
+  sido fácil que un día dijeran cosas distintas.
+
+**Encontrado al hacerlo, y arreglado**: construir esto obligó a mostrarle al
+usuario la etiqueta de un récord en placas ("7 placas"), y ahí apareció una
+fuga real de la app bilingüe — ver el punto 4 de la lista de arriba en la
+sección 3. No estaba en el plan original de este punto; salió de probar con
+un ejercicio de placas, que la verificación de la app bilingüe no había
+cubierto.
+
+Probado en navegador: la primera serie de un ejercicio nuevo no se celebra;
+subir el peso sobre la marca anterior sí; bajarlo no; lo mismo funciona con
+placas; el resumen final lista los dos récords rotos en la sesión con su
+carga correcta.
 
 ---
 
 ## 6. Migraciones versionadas
 
-**Lo que hay hoy.** Las nueve migraciones se han aplicado con SQL a mano contra
-Neon. `schema.ts` es la fuente de verdad, pero **nada en el repo prueba que
-producción coincide con él**; el día que dejen de coincidir te enteras en
-producción.
+**Hecho** (2026-09-22).
 
-**Lo que se va a hacer.** `drizzle-kit generate` una vez, commitear la carpeta
-`drizzle/`, y de ahí en adelante toda migración pasa por ahí.
+El problema no era generar la primera migración — es que la base **ya tenía**
+las 9 tablas, aplicadas a mano durante nueve rondas. Correr esa migración de
+verdad habría intentado crearlas de nuevo y tronado contra la primera línea.
+El procedimiento fue **adoptar** el historial, no ejecutarlo:
+
+1. `npx drizzle-kit generate` sobre el `schema.ts` de hoy → una sola migración
+   (`drizzle/0000_clever_nocturne.sql`) que reconstruye las 9 tablas completas.
+2. Antes de nada, se verificaron las 9 tablas contra `information_schema.tables`
+   — si hubiera faltado una, no se podía asumir que ya estaba aplicada.
+3. Se creó a mano `drizzle.__drizzle_migrations` (el esquema y la tabla que usa
+   el migrador de Drizzle) y se insertó la fila que esa migración habría
+   dejado si hubiera corrido de verdad: mismo `hash` (sha256 del `.sql`
+   completo, tal como lo calcula `drizzle-orm`) y mismo `created_at` (el
+   `when` de `drizzle/meta/_journal.json`).
+4. Verificado con las dos formas de aplicar migraciones que existen en el
+   proyecto — `drizzle-kit migrate` (CLI) y `migrate()` de
+   `drizzle-orm/neon-http` (programático) — y las dos terminan sin error y
+   sin tocar ninguna tabla: reconocen la 0000 como ya aplicada. `db:push` se
+   corrió después y confirmó, una vez más, cero diferencias.
+
+**De aquí en adelante**, un cambio de esquema es: editar `schema.ts` →
+`npm run db:generate` (queda la migración en `drizzle/`) → `npm run db:migrate`
+(se aplica) → commit. El caso de "tabla con datos, sin TTY" (donde `db:push`
+pide confirmación interactiva y truena en un agente) sigue existiendo — ahí el
+orden es SQL a mano → `db:generate` para que quede registrada → adoptarla con
+el mismo procedimiento de arriba, en vez de dejarla fuera del historial.
+
+**De regalo, en el mismo repaso de la documentación**: `src/app/manifest.ts`
+seguía con el lavanda del diseño anterior (`#ebe7fb`) en vez del negro del
+rediseño — la PWA instalada destellaba lavanda un instante antes de pintar el
+lienzo real. Ya dice `#000000`.
 
 ---
 
