@@ -3,7 +3,7 @@ export const perfil = {
   recordatorio: {
     titulo: "Recordatorio de entrenamiento",
     ayuda: "Un aviso los días que te toca rutina. En iPhone hay que tener la app instalada en la pantalla de inicio.",
-    hora: "A qué hora",
+    cuando: "Te avisamos a las 7 de la noche.",
     probar: "Probar",
     listo: "Listo: te avisaremos los días que toque.",
     fallo: "No se pudo activar. Inténtalo otra vez.",

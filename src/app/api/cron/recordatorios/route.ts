@@ -10,12 +10,16 @@ export const dynamic = "force-dynamic";
 
 /**
  * Recordatorio diario de "hoy toca". Lo dispara el cron de Vercel (ver
- * vercel.json).
+ * vercel.json), **una sola vez al día**: el plan gratuito no permite más, y
+ * rechaza el deploy entero si se pide un cron más frecuente.
  *
- * Manda el aviso cuando ya pasó la hora que eligió la persona y todavía no se
- * le ha mandado nada hoy — no exactamente a esa hora. Así funciona igual si el
- * cron corre cada hora o una sola vez al día, que es lo que permite el plan
- * gratuito de Vercel. `reminder_last_sent` garantiza un aviso por día.
+ * El cron está en `0 1 * * *` (UTC), que son las **19:00 en Ciudad de México**
+ * — sin horario de verano desde 2022 —, una hora antes de la hora habitual de
+ * entrenamiento. Por eso el aviso sale a esa hora y no a
+ * una hora elegida por cada usuario. La columna `reminder_hour` se conserva
+ * para el día que el plan permita un cron por hora; hoy no se usa para decidir.
+ * `reminder_last_sent` garantiza un solo aviso por día aunque el cron se
+ * reintente.
  */
 export async function GET(request: Request) {
   const esperado = process.env.CRON_SECRET;
@@ -47,7 +51,6 @@ export async function GET(request: Request) {
 
   for (const u of candidatos) {
     if (u.ultimo === hoyISO) continue;
-    if (horaActual < u.hora) continue;
 
     const [rutina] = await db
       .select({ nombre: routines.name })

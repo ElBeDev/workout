@@ -5,7 +5,7 @@ export const perfil: typeof Es = {
   recordatorio: {
     titulo: "Workout reminder",
     ayuda: "A nudge on the days a routine is scheduled. On iPhone the app must be installed to the home screen.",
-    hora: "What time",
+    cuando: "We'll nudge you at 7 pm.",
     probar: "Test",
     listo: "All set — we'll remind you on training days.",
     fallo: "Couldn't turn it on. Try again.",

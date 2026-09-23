@@ -19,7 +19,7 @@ al registro de cambios de [PLAN.md](./PLAN.md), como manda
 1. [x] Descanso: que sobreviva y que suene — **hecho**
 2. [x] Instrucciones de ejercicio en español — **hecho: los 1,500**
 3. [x] App bilingüe con selector de idioma — **hecho**
-4. [ ] Recordatorio de "hoy toca"
+4. [x] Recordatorio de "hoy toca" — **hecho**
 5. [ ] Aviso de récord en el momento
 6. [ ] Migraciones versionadas
 7. [ ] Respaldo de gifs *(bloqueado: necesita una decisión tuya en Vercel)*
@@ -199,13 +199,30 @@ cada idioma).
 noche**. Hoy "Hoy toca" solo existe si abres la app, o sea que sirve cuando ya
 te acordaste.
 
-**Lo que se va a hacer.** Notificación local ("hoy toca Pierna") a una hora que
-tú elijas, los días que la rutina tenga asignados. Requiere permiso del sistema
-y que la app esté **instalada como PWA** — en iPhone las notificaciones web
-solo funcionan si la agregaste a la pantalla de inicio (iOS 16.4 en adelante).
-Se pide el permiso desde Perfil, nunca al entrar.
+**Hecho** (2026-09-22). No existe forma de programar una notificación local en
+web —Notification Triggers nunca salió de experimental—, así que el aviso lo
+manda el servidor: suscripción push por dispositivo (tabla
+`push_subscriptions`) más un cron en Vercel que corre a las **19:00 de Ciudad
+de México** y avisa a quien tenga rutina ese día.
 
-**Hecho cuando**: llega el aviso a la hora configurada un día que toca rutina.
+**El plan gratuito de Vercel sólo permite crons diarios**, y lo descubrí de la
+peor forma: puse uno cada hora y Vercel **rechazó el deploy entero**, en
+silencio — el push a `main` no generó ninguna corrida y la app se quedó como
+estaba. Por eso la hora del aviso es fija y no se puede elegir; la columna
+`reminder_hour` se conserva para el día que el plan permita un cron por hora.
+
+Verificado contra producción, 8 de 8: el interruptor guarda la suscripción, el
+cron selecciona a quien tiene rutina hoy, no repite el aviso el mismo día,
+rechaza peticiones sin `CRON_SECRET`, y no borra la suscripción cuando el fallo
+del servicio de push es pasajero (sólo cuando la declara expirada).
+
+**Lo que no se puede verificar de forma automática**: el handshake real con el
+servicio de push de Chrome. Playwright corre en contextos de incógnito y Chrome
+no soporta la Push API ahí. La prueba sustituye `pushManager.subscribe` por uno
+falso, así que comprueba **nuestro** código de punta a punta, no el del
+navegador. Eso hay que probarlo a mano en el teléfono. De paso, ese intento
+destapó un fallo real y ya arreglado: si `subscribe` falla, el interruptor se
+quedaba muerto y sin explicación.
 
 ---
 

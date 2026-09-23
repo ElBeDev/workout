@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Bell, BellOff, Loader2 } from "lucide-react";
 import { useT } from "@/i18n/client";
-import { borrarSuscripcion, guardarSuscripcion, probarAviso, setHoraRecordatorio } from "@/app/perfil/push-actions";
+import { borrarSuscripcion, guardarSuscripcion, probarAviso } from "@/app/perfil/push-actions";
 
 function base64ToUint8Array(base64: string) {
   const padded = (base64 + "=".repeat((4 - (base64.length % 4)) % 4)).replace(/-/g, "+").replace(/_/g, "/");
@@ -18,16 +18,13 @@ function base64ToUint8Array(base64: string) {
  */
 export function ReminderToggle({
   activo: activoInicial,
-  hora: horaInicial,
   publicKey,
 }: {
   activo: boolean;
-  hora: number;
   publicKey: string;
 }) {
   const t = useT().perfil;
   const [activo, setActivo] = useState(activoInicial);
-  const [hora, setHora] = useState(horaInicial);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [pendiente, startTransition] = useTransition();
 
@@ -43,10 +40,20 @@ export function ReminderToggle({
       return;
     }
     const reg = await navigator.serviceWorker.ready;
-    const sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: base64ToUint8Array(publicKey),
-    });
+    // `subscribe` puede fallar aunque el permiso esté dado: pasa en ventanas de
+    // incógnito (Chrome no soporta la Push API ahí) y cuando el navegador no
+    // logra hablar con su servicio de push. Sin este catch el interruptor se
+    // queda muerto y sin explicación.
+    let sub: PushSubscription;
+    try {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: base64ToUint8Array(publicKey),
+      });
+    } catch {
+      setMensaje(t.recordatorio.noSoportado);
+      return;
+    }
     const json = sub.toJSON() as { endpoint?: string; keys?: { p256dh?: string; auth?: string } };
     startTransition(async () => {
       const r = await guardarSuscripcion({
@@ -78,10 +85,7 @@ export function ReminderToggle({
     }
   }
 
-  function cambiarHora(h: number) {
-    setHora(h);
-    startTransition(() => setHoraRecordatorio(h));
-  }
+
 
   return (
     <div className="flex flex-col gap-3 p-4">
@@ -113,22 +117,8 @@ export function ReminderToggle({
       </div>
 
       {activo && (
-        <div className="flex items-center gap-3">
-          <label className="label flex-1 text-muted" htmlFor="hora-recordatorio">
-            {t.recordatorio.hora}
-          </label>
-          <select
-            id="hora-recordatorio"
-            value={hora}
-            onChange={(e) => cambiarHora(Number(e.target.value))}
-            className="rounded-xl bg-surface-2 px-3 py-2 text-[15px] font-semibold text-foreground"
-          >
-            {Array.from({ length: 24 }, (_, h) => (
-              <option key={h} value={h}>
-                {String(h).padStart(2, "0")}:00
-              </option>
-            ))}
-          </select>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[13px] text-muted">{t.recordatorio.cuando}</span>
           <button
             type="button"
             disabled={pendiente}
@@ -138,7 +128,7 @@ export function ReminderToggle({
                 setMensaje(r.enviados > 0 ? t.recordatorio.pruebaEnviada : t.recordatorio.pruebaFallo);
               })
             }
-            className="flex h-10 items-center gap-1.5 rounded-full bg-surface-2 px-4 text-[14px] font-semibold"
+            className="flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-surface-2 px-4 text-[14px] font-semibold"
           >
             {pendiente ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {t.recordatorio.probar}

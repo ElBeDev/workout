@@ -88,7 +88,6 @@ export default async function PerfilPage({
           {process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && (
             <ReminderToggle
               activo={user?.reminderEnabled ?? false}
-              hora={user?.reminderHour ?? 19}
               publicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY}
             />
           )}
