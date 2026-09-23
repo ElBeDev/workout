@@ -4,13 +4,14 @@ import { exerciseGif } from "@/db/exercise-gif";
 import { and, asc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { NotebookPen } from "lucide-react";
+import { NotebookPen, Waves } from "lucide-react";
 import { requireUserId } from "@/lib/session";
 import { bodyPartLabel } from "@/lib/body-parts";
 import { fmtDate } from "@/lib/dates";
-import { fmtKg } from "@/lib/format";
+import { fmtKg, fmtMeters, fmtPace100 } from "@/lib/format";
 import { getDict, type Dict } from "@/i18n";
 import { getWeeklyRings, getPersonalRecords } from "@/db/queries";
+import { getSwimSessionBlocks } from "@/db/swim";
 import { RingTrio } from "@/components/Rings";
 import { toKg, type WeightUnit } from "@/lib/suggest";
 import { Card, PageHeader, SectionTitle } from "@/components/ui";
@@ -48,11 +49,16 @@ export default async function SessionDetailPage({
       finishedAt: workoutSessions.finishedAt,
       notes: workoutSessions.notes,
       routineName: routines.name,
+      routineKind: routines.kind,
     })
     .from(workoutSessions)
     .leftJoin(routines, eq(workoutSessions.routineId, routines.id))
     .where(and(eq(workoutSessions.id, id), eq(workoutSessions.userId, userId)));
   if (!session) notFound();
+
+  if (session.routineKind === "natacion") {
+    return <SwimSessionDetail session={session} t={t} />;
+  }
 
   const sets = await db
     .select({
@@ -270,6 +276,96 @@ export default async function SessionDetailPage({
               </ul>
             </Card>
           ))}
+        </section>
+      )}
+
+      {session.notes && (
+        <Card className="flex flex-col gap-2 p-4">
+          <SectionTitle className="flex items-center gap-2">
+            <NotebookPen className="h-4 w-4 text-muted" /> {t.progreso.notas}
+          </SectionTitle>
+          <p className="whitespace-pre-wrap text-[15px]">{session.notes}</p>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+/** Detalle de una sesión de natación: distancia y ritmo en vez de carga y
+ *  series, bloques marcados en vez de series por ejercicio. */
+async function SwimSessionDetail({
+  session,
+  t,
+}: {
+  session: {
+    id: string;
+    startedAt: Date;
+    finishedAt: Date | null;
+    notes: string | null;
+    routineName: string | null;
+  };
+  t: Dict;
+}) {
+  const blocks = await getSwimSessionBlocks(session.id);
+  const distanceMeters = blocks.reduce((sum, b) => sum + (b.actualDistanceMeters ?? 0), 0);
+  const minutes = session.finishedAt
+    ? Math.max(1, Math.round((session.finishedAt.getTime() - session.startedAt.getTime()) / 60000))
+    : 0;
+  const pace = minutes > 0 ? fmtPace100(distanceMeters, minutes * 60) : null;
+  const dist = fmtMeters(distanceMeters, t.comun.intl);
+
+  return (
+    <div className="flex flex-col gap-5">
+      <PageHeader
+        title={session.routineName ?? t.progreso.rutinaEliminada}
+        backHref="/progreso"
+        subtitle={fmtDate(session.startedAt, { dateStyle: "full", timeStyle: "short" }, t.comun.intl)}
+      />
+
+      <Card hero className="grid grid-cols-2 gap-x-4 gap-y-5 p-5">
+        <Stat
+          label={t.progreso.duracion}
+          value={formatDuration(session.startedAt, session.finishedAt, t)}
+          tone="text-days"
+        />
+        <Stat label={t.natacion.sesion.distanciaTotal} value={dist.value} unit={dist.unit} tone="text-load" />
+        <Stat label={t.natacion.sesion.ritmo} value={pace ?? t.natacion.progresoCard.sinRitmo} tone="text-sets" />
+        <Stat label={t.natacion.sesion.bloques} value={String(blocks.length)} tone="text-muted" />
+      </Card>
+
+      {blocks.length === 0 ? (
+        <Card className="p-6 text-center text-sm text-muted">{t.progreso.sesionSinSeries}</Card>
+      ) : (
+        <section className="flex flex-col gap-3">
+          <SectionTitle>{t.natacion.rutina.bloques}</SectionTitle>
+          <Card className="flex flex-col divide-y divide-border p-1">
+            {blocks.map((b) => (
+              <div key={b.logId} className="flex items-center gap-3 p-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-muted">
+                  <Waves className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[15px] font-semibold leading-snug">
+                    {b.label
+                      ? (t.natacion.bloque.etiquetas[b.label] ?? b.label)
+                      : t.natacion.sesion.bloqueEliminado}
+                    {b.stroke && (
+                      <span className="font-normal text-muted">
+                        {" "}
+                        · {t.natacion.bloque.estilos[b.stroke] ?? b.stroke}
+                      </span>
+                    )}
+                  </p>
+                  {b.reps !== null && b.distanceMeters !== null && (
+                    <p className="text-[13px] text-muted">{t.natacion.bloque.resumen(b.reps, b.distanceMeters)}</p>
+                  )}
+                </div>
+                <span className="shrink-0 text-[14px] font-semibold tabular-nums text-load">
+                  {fmtMeters(b.actualDistanceMeters ?? 0, t.comun.intl).value} m
+                </span>
+              </div>
+            ))}
+          </Card>
         </section>
       )}
 

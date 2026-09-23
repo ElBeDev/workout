@@ -47,11 +47,14 @@ export function SessionHud({
   startedAtMs,
   completed,
   total,
+  progressLabel,
 }: {
   sessionId: string;
   startedAtMs: number;
   completed: number;
   total: number;
+  /** Qué cuenta el segundo número del pie (por defecto "Series"; natación pasa "Bloques"). */
+  progressLabel?: string;
 }) {
   // Start from the session's own timestamp so server and client render the
   // same text (no hydration mismatch); the clock catches up on mount.
@@ -177,7 +180,7 @@ export function SessionHud({
           <p className="text-[17px] font-semibold tabular-nums">{fmtClock(elapsed)}</p>
         </div>
         <div className="text-right">
-          <p className="label text-muted">{t.entrenar.hud.series}</p>
+          <p className="label text-muted">{progressLabel ?? t.entrenar.hud.series}</p>
           <p className="text-[17px] font-semibold tabular-nums">
             {completed}
             <span className="text-muted">/{total}</span>

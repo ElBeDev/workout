@@ -43,6 +43,17 @@ export const WEEKDAYS = [
   { value: 0, short: "D", long: "Domingo" },
 ] as const;
 
+/** True si ambas fechas caen en el mismo día calendario en APP_TIME_ZONE. */
+export function isSameLocalDay(a: Date, b: Date): boolean {
+  const da = localDate(a);
+  const db = localDate(b);
+  return (
+    da.getUTCFullYear() === db.getUTCFullYear() &&
+    da.getUTCMonth() === db.getUTCMonth() &&
+    da.getUTCDate() === db.getUTCDate()
+  );
+}
+
 export function daysAgo(date: Date, now = new Date()): number {
   const a = localDate(date);
   const b = localDate(now);

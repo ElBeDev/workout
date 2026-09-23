@@ -18,6 +18,21 @@ En la base hoy: **3 usuarios**, 13 rutinas, 21 sesiones terminadas (1 abierta), 
 
 **Progreso** — totales del periodo (semana, mes o año): sesiones, series, carga y tiempo, más la tendencia contra el periodo anterior. Calendario de constancia de 14 semanas con un trío de anillos por día. Por ejercicio: récord personal (etiqueta en el idioma de la app: "7 placas" / "7 plates"), gráfica de peso / placas / reps / volumen por sesión, y su lista de sesiones. Detalle de sesión con métricas grandes, las series agrupadas por ejercicio (corregibles y borrables) y las notas. Todo el historial se exporta a CSV.
 
+**Natación** — una rutina puede ser de **fuerza** o de **natación**
+(`routines.kind`, se elige al crearla y no cambia después). Una rutina de
+natación no tiene ejercicios: tiene **bloques** (calentamiento, serie
+principal, patada, drill, enfriamiento), cada uno con estilo, repeticiones,
+distancia y descanso (`swim_blocks`), armados con el mismo editor de
+subir/bajar/quitar que los ejercicios de pesas. El modo entrenamiento es un
+checklist — se marca "Hecho" por bloque al salir de la alberca, con la
+distancia real editable si se nadó distinto a lo planeado (`swim_block_logs`,
+`SwimBlockRow`): el teléfono no entra al agua, así que no hay logueo en vivo
+serie por serie como en pesas (ver [natacion.md §0](./natacion.md#0-lo-que-hay-hoy-por-qué-no-sirve)).
+Progreso tiene su propia tarjeta de natación (distancia total y ritmo del
+periodo) y el detalle de una sesión de natación muestra sus bloques en vez de
+series por ejercicio. Ver [natacion.md](./natacion.md) para el detalle
+completo y lo que sigue abierto (logueo por repetición, plantillas, SWOLF).
+
 **Perfil** — **apariencia** (Sistema / Claro / Oscuro), **sonido** del fin de descanso, **idioma** (Español / English), **recordatorio de "hoy toca"** por notificación push (una vez al día, a las 19:00 de Ciudad de México — el plan gratuito de Vercel no permite un cron más frecuente), metas semanales de los tres anillos (carga, series, días), peso corporal con gráfica, cambiar contraseña y cerrar sesión (que además purga caches de páginas y colas locales). ⚠️ Ese purgado borra **todas** las claves `workout:*`, incluida `workout:tema`, así que hoy cerrar sesión devuelve la apariencia a "Sistema". Lo correcto es excluir esa clave en `LogoutButton`, no dejar de purgar.
 
 **Administrador** (solo `is_admin`) — lista de usuarios con su número de rutinas; entrar a uno y armarle rutinas con el mismo editor de siempre, con un banner de aviso y sin el botón de entrenar (el admin arma, no entrena por nadie). Bloque de mantenimiento con el respaldo de gifs (⚠️ hoy no operativo, ver pendientes).
@@ -114,6 +129,7 @@ Notas de infra que ya no hay que repetir:
 - Toda la documentación vive en `docs/` (`PLAN.md` se movió ahí con `git mv`).
 - **Migraciones versionadas** (2026-09-22): `npx drizzle-kit generate` sobre el `schema.ts` de ese día produjo `drizzle/0000_clever_nocturne.sql` — una única migración que reconstruye las 9 tablas completas, porque nunca había habido una carpeta `drizzle/` (todo se aplicó a mano hasta ahora). Para no re-ejecutarla contra una base que YA tiene esas tablas, se **adoptó** el historial en vez de correrla: se verificaron primero las 9 tablas contra `information_schema.tables`, y sólo entonces se creó `drizzle.__drizzle_migrations` (schema y tabla que usa el migrador de Drizzle) y se insertó a mano la fila que esa migración habría dejado si hubiera corrido de verdad — mismo `hash` (sha256 del `.sql` completo) y mismo `created_at` (el `when` de `drizzle/meta/_journal.json`). Verificado con `drizzle-kit migrate` y con el `migrate()` de `drizzle-orm/neon-http` directamente: los dos terminan sin error y sin tocar ninguna tabla, o sea que reconocen la migración 0000 como ya aplicada. `db:push` se corrió después y siguió sin reportar diferencia. **De aquí en adelante**: un cambio de esquema es `schema.ts` → `npm run db:generate` (crea la migración nueva) → `npm run db:migrate` (la aplica) → commit de `drizzle/`. Sigue habiendo un caso en el que hay que aplicar a mano primero (tabla con datos y sin TTY, igual que con `db:push`): ahí el orden es SQL a mano → `db:generate` (para que quede registrada) → adoptarla con el mismo procedimiento de arriba en vez de dejarla pendiente.
 - Cuarta ronda de migraciones a mano: índices (`set_logs(exercise_id)`, `workout_sessions(user_id, finished_at)`, `sessions(expires_at)`, `exercises(user_id)`, `routine_exercises(routine_id)`) y el índice único parcial `workout_sessions(user_id, routine_id) WHERE finished_at IS NULL` (una sola sesión abierta por rutina). Todos declarados también en `schema.ts`.
+- Migración versionada `drizzle/0001_faulty_franklin_storm.sql` (2026-09-22): `routines.kind` (default `'fuerza'`) y las tablas `swim_blocks` / `swim_block_logs` para natación (ver [natacion.md](./natacion.md)). Generada con `db:generate` y aplicada con el `migrate()` de `drizzle-orm/neon-http` directamente (aditiva, sin necesidad de adoptar nada a mano); `db:push` confirmó cero diferencias después.
 - Al cerrar sesión, `LogoutButton` borra los caches `pages-*` y las colas `workout:*` de `localStorage`, y avisa al SW (`purge-pages`). El SW (v3) no cachea respuestas redirigidas ni `/login`.
 - Vercel Blob: `BLOB_READ_WRITE_TOKEN` es un secreto de solo escritura en Vercel (no se puede revelar ni bajar con `vercel env pull`), así que el barrido de gifs se hace desde la app: **/admin → "Mantenimiento"** → botón que copia en tandas de 6 los gifs de los ejercicios que usa la cuenta admin. Estaba en Perfil y se movió al panel de admin (2026-09-22): es plomería interna y los usuarios no se tienen que enterar de dónde viven los gifs. El bloque se renderiza **siempre**, con o sin token: sin él sale un aviso en ámbar («Sin BLOB_READ_WRITE_TOKEN en este entorno: el respaldo no corre») en vez de desaparecer, porque esconderlo fue justo lo que mantuvo el problema invisible 19 días. Al lado vive «Diagnosticar» (`diagnoseBlob` + `BlobDiagnostics`), que prueba las tres piezas por separado —token, descarga del gif externo y subida— y dice cuál falla. Cada gif nuevo debería copiarse solo al agregarlo a una rutina. `scripts/mirror-gifs.ts` sigue ahí por si algún día se tiene el token local.
 - ⚠️ **El espejado de gifs nunca ha corrido, y hay dos causas** (diagnosticado el 2026-09-22 con /admin → Mantenimiento → "Diagnosticar", que prueba cada pieza por separado):
@@ -214,11 +230,24 @@ Exercise (catálogo + propios)
     external_id, user_id (null = catálogo), is_custom
 
 Routine
- └─ id, user_id, name, sort_order, days int[] (0=dom … 6=sáb)
+ └─ id, user_id, name, sort_order, days int[] (0=dom … 6=sáb),
+    kind ('fuerza' | 'natacion' — decide si el contenido vive en
+    RoutineExercise o en SwimBlock; no cambia después de creada)
 
-RoutineExercise (ejercicio dentro de una rutina)
+RoutineExercise (ejercicio dentro de una rutina de fuerza)
  └─ id, routine_id, exercise_id, sort_order, target_sets, target_reps,
     target_weight (opcional), load_unit ('kg' | 'lbs' | 'plates')
+
+SwimBlock (bloque planeado dentro de una rutina de natación)
+ └─ id, routine_id, sort_order, label ('calentamiento' | 'principal' |
+    'patada' | 'drill' | 'enfriamiento' | 'libre'), stroke ('libre' | 'dorso'
+    | 'pecho' | 'mariposa' | 'combinado' | 'patada' | 'drill'), reps,
+    distance_meters (por repetición), rest_seconds (opcional), notes
+
+SwimBlockLog (lo que de verdad se nadó de un bloque, por sesión)
+ └─ id, session_id, swim_block_id (nullable, SET NULL si se borra el bloque
+    planeado), completed, actual_reps, actual_distance_meters,
+    actual_seconds, logged_at — único por (session_id, swim_block_id)
 
 WorkoutSession (una ejecución real de la rutina)
  └─ id, user_id, routine_id (nullable, SET NULL al borrar la rutina),
@@ -309,19 +338,28 @@ src/app/
   login/, registro/     Auth (page + actions)
   rutinas/page.tsx      Lista agrupada + NewRoutineSheet (el "+" de la cabecera abre la
                         hoja de crear; actions.ts: createRoutine)
-  rutinas/[id]/         Detalle: page, actions (add/remove/move/update ejercicio,
-                        rename/delete/duplicate rutina, setRoutineDays — todas con
+  rutinas/[id]/         Detalle: page (rama fuerza/natación según routines.kind),
+                        actions (add/remove/move/update ejercicio, rename/delete/
+                        duplicate rutina, setRoutineDays — todas con
                         requireOwnedRoutine, que ahora deja pasar también a un admin),
                         AddExerciseSheet (botón compacto + hoja con el explorador),
                         ExerciseTargetsEditor, ExerciseRowMenu (el "⋮" con subir / bajar /
                         quitar), RoutineSettings (nombre, días, duplicar, eliminar);
-                        banner "Editando como admin" si no es tu rutina
-  entrenar/actions.ts   startSession (reanuda si hay abierta), discardSession
-  entrenar/[sessionId]/ page, actions (logSet upsert, syncSets, addExtraSet, saveNotes,
-                        setLoadUnit, finishSession — todas con requireOwnedSession),
-                        SetRow (guardado online / cola offline), LoadUnitPicker (el chip
-                        kg/lb/placas y su hoja: reescribe routine_exercises.load_unit,
-                        nunca el historial), PendingSync, SessionNotes, error.tsx
+                        swim-actions.ts (addSwimBlock/updateSwimBlock/removeSwimBlock/
+                        moveSwimBlock), SwimBlockSheet (agregar/editar bloque),
+                        SwimBlockRowMenu (subir/bajar/quitar, mismo patrón que
+                        ExerciseRowMenu); banner "Editando como admin" si no es tu rutina
+  entrenar/actions.ts   startSession (reanuda si hay abierta Y de hoy — si es de un día
+                        anterior se cierra sola y se crea una nueva, ver
+                        mejoras-progreso.md §1), discardSession
+  entrenar/[sessionId]/ page (rama fuerza/natación según routines.kind), actions (logSet
+                        upsert, syncSets, addExtraSet, saveNotes, setLoadUnit,
+                        logSwimBlock, finishSession — todas con requireOwnedSession),
+                        SetRow (guardado online / cola offline), SwimBlockRow (checklist
+                        de bloques con distancia real editable, sin logueo en vivo),
+                        LoadUnitPicker (el chip kg/lb/placas y su hoja: reescribe
+                        routine_exercises.load_unit, nunca el historial), PendingSync,
+                        SessionNotes, error.tsx
   progreso/             Lista de sesiones, calendario de constancia y ejercicios;
                         [exerciseId] = gráfica;
                         sesion/[id] = detalle (SetRowEditor para corregir/borrar series)
@@ -376,7 +414,11 @@ src/db/
   queries.ts            getRoutineSummaries, getOpenSession, getWeeklyStats,
                         getWeeklyRings (los tres anillos de la semana), getPeriodStats
                         (totales + tendencia contra el periodo anterior), getDailyTraining,
-                        getPersonalRecords, getSessionSummaries
+                        getPersonalRecords, getSessionSummaries (respeta el rango elegido;
+                        incluye distanceMeters/routineKind para las de natación),
+                        getMuscleCoverage, getFrequencyTrend, closeAbandonedSession
+  swim.ts               getSwimBlocks, getSwimBlockLogs, getSwimSessionBlocks,
+                        getSwimStats (distancia total + ritmo del periodo), plannedDistance
 src/lib/
   admin.ts               isAdminUser, requireAdmin (redirige a Home si no es admin)
   session.ts            createSession (purga expiradas) / destroySession / getCurrentUserId / requireUserId

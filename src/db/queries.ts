@@ -1,9 +1,44 @@
 import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, max } from "drizzle-orm";
 import { db } from "@/db";
-import { routines, routineExercises, exercises, workoutSessions, setLogs } from "@/db/schema";
+import { routines, routineExercises, exercises, workoutSessions, setLogs, swimBlockLogs } from "@/db/schema";
 import { exerciseGif } from "@/db/exercise-gif";
-import { localDate, weekKey } from "@/lib/dates";
+import { localDate, weekKey, daysAgo } from "@/lib/dates";
 import { toKg, type WeightUnit } from "@/lib/suggest";
+import { BODY_PARTS, type BodyPart } from "@/lib/body-parts";
+
+/**
+ * Tope de duración de una sesión al sumarla en agregados (Progreso). Cierra
+ * hacia adelante ya evita que una sesión quede abierta días de más, pero esto
+ * es la red de seguridad: si una se cuela por cualquier otra vía, nunca
+ * desbalancea un total o un promedio ella sola.
+ */
+export const MAX_SESSION_MINUTES = 6 * 60;
+
+/**
+ * Cierra una sesión que quedó abierta sin que el usuario la haya terminado de
+ * verdad (rutina borrada mientras estaba abierta, o una sesión de un día
+ * anterior que se reabrió sin querer). Sella `finishedAt` con la última
+ * actividad real — la última serie registrada, o el inicio si no tiene ni
+ * una — nunca con `new Date()`, que reflejaría la hora de quien la encontró
+ * y no cuánto duró de verdad.
+ */
+export async function closeAbandonedSession(sessionId: string): Promise<void> {
+  const [session] = await db
+    .select({ startedAt: workoutSessions.startedAt })
+    .from(workoutSessions)
+    .where(eq(workoutSessions.id, sessionId));
+  if (!session) return;
+
+  const [row] = await db
+    .select({ last: max(setLogs.loggedAt) })
+    .from(setLogs)
+    .where(eq(setLogs.sessionId, sessionId));
+
+  await db
+    .update(workoutSessions)
+    .set({ finishedAt: row?.last ?? session.startedAt })
+    .where(and(eq(workoutSessions.id, sessionId), isNull(workoutSessions.finishedAt)));
+}
 
 export type OpenSession = {
   id: string;
@@ -256,7 +291,11 @@ export async function getPeriodStats(userId: string, days: number): Promise<Peri
 
   const minutes = currentSessions.reduce(
     (sum, s) =>
-      sum + Math.max(0, Math.round((s.finishedAt!.getTime() - s.startedAt.getTime()) / 60000)),
+      sum +
+      Math.min(
+        MAX_SESSION_MINUTES,
+        Math.max(0, Math.round((s.finishedAt!.getTime() - s.startedAt.getTime()) / 60000))
+      ),
     0
   );
 
@@ -268,6 +307,59 @@ export async function getPeriodStats(userId: string, days: number): Promise<Peri
     minutes,
     volumeTrendPct: trend(vol(current), vol(previous)),
     setsTrendPct: trend(current.length, previous.length),
+  };
+}
+
+export type FrequencyTrend = {
+  thisWeekSessions: number;
+  /** Promedio de sesiones/semana de las 4 semanas anteriores (sin contar la actual). */
+  avgLast4Weeks: number;
+  /** null si esas 4 semanas no tienen ninguna sesión (nada con qué comparar). */
+  trendPct: number | null;
+};
+
+/**
+ * Sesiones de esta semana contra el promedio de las 4 semanas anteriores.
+ * Es semana-a-semana siempre (no depende del selector de rango de Progreso):
+ * alguien que entrena una vez a la semana con la misma carga de siempre puede
+ * ver "0 %" en la tendencia de carga sin que se note que la frecuencia real
+ * se está cayendo — esto lo dice donde la carga no puede.
+ */
+export async function getFrequencyTrend(userId: string): Promise<FrequencyTrend> {
+  const since = new Date();
+  since.setDate(since.getDate() - 7 * 6); // margen: 4 semanas previas + desfase de zona horaria
+  const rows = await db
+    .select({ startedAt: workoutSessions.startedAt })
+    .from(workoutSessions)
+    .where(
+      and(
+        eq(workoutSessions.userId, userId),
+        isNotNull(workoutSessions.finishedAt),
+        gte(workoutSessions.startedAt, since)
+      )
+    );
+
+  const byWeek = new Map<string, number>();
+  for (const r of rows) {
+    const wk = weekKey(localDate(r.startedAt));
+    byWeek.set(wk, (byWeek.get(wk) ?? 0) + 1);
+  }
+
+  const now = localDate(new Date());
+  const thisWeekSessions = byWeek.get(weekKey(now)) ?? 0;
+
+  let sum = 0;
+  const cursor = new Date(now);
+  for (let i = 0; i < 4; i++) {
+    cursor.setUTCDate(cursor.getUTCDate() - 7);
+    sum += byWeek.get(weekKey(cursor)) ?? 0;
+  }
+  const avgLast4Weeks = sum / 4;
+
+  return {
+    thisWeekSessions,
+    avgLast4Weeks,
+    trendPct: avgLast4Weeks > 0 ? ((thisWeekSessions - avgLast4Weeks) / avgLast4Weeks) * 100 : null,
   };
 }
 
@@ -335,6 +427,42 @@ export async function getPersonalRecords(userId: string): Promise<Map<string, Pe
   return best;
 }
 
+export type MuscleCoverage = {
+  bodyPart: BodyPart;
+  lastTrainedAt: Date | null;
+  /** null = nunca se ha entrenado. */
+  daysAgo: number | null;
+};
+
+/**
+ * Hace cuántos días se entrenó cada grupo muscular del catálogo por última
+ * vez, del más olvidado al más reciente. Los grupos sin ninguna serie nunca
+ * van primero (son los más olvidados de todos). Sale de `exercises.body_part`
+ * + `set_logs`, sin columnas nuevas.
+ */
+export async function getMuscleCoverage(userId: string): Promise<MuscleCoverage[]> {
+  const rows = await db
+    .select({ bodyPart: exercises.bodyPart, last: max(setLogs.loggedAt) })
+    .from(setLogs)
+    .innerJoin(workoutSessions, eq(setLogs.sessionId, workoutSessions.id))
+    .innerJoin(exercises, eq(setLogs.exerciseId, exercises.id))
+    .where(and(eq(workoutSessions.userId, userId), eq(setLogs.completed, true)))
+    .groupBy(exercises.bodyPart);
+
+  const lastByPart = new Map(rows.map((r) => [r.bodyPart, r.last]));
+  const now = new Date();
+
+  return BODY_PARTS.map(({ value }) => {
+    const last = lastByPart.get(value) ?? null;
+    return { bodyPart: value, lastTrainedAt: last, daysAgo: last ? daysAgo(last, now) : null };
+  }).sort((a, b) => {
+    if (a.daysAgo === null && b.daysAgo === null) return 0;
+    if (a.daysAgo === null) return -1;
+    if (b.daysAgo === null) return 1;
+    return b.daysAgo - a.daysAgo;
+  });
+}
+
 export type TrainingDay = {
   /** Fecha local (hora de México) en formato YYYY-MM-DD. */
   date: string;
@@ -367,50 +495,65 @@ export type SessionSummary = {
   startedAt: Date;
   finishedAt: Date | null;
   routineName: string | null;
+  routineKind: string | null;
   sets: number;
   volumeKg: number;
+  distanceMeters: number;
   minutes: number;
 };
 
-/** Sesiones terminadas con sus totales, para la lista de Progreso. */
+/**
+ * Sesiones terminadas con sus totales, para la lista de Progreso — respeta el
+ * rango elegido arriba (`since`), con un tope de filas como red de seguridad
+ * para el rango "Año". (Decisión B de docs/mejoras-progreso.md §5: "Por
+ * ejercicio" sigue siendo de toda la vida siempre, porque un récord filtrado
+ * por rango deja de ser un récord — sólo la lista de sesiones se acorta.)
+ */
 export async function getSessionSummaries(
   userId: string,
-  limit = 30
+  { days, limit = 200 }: { days?: number; limit?: number } = {}
 ): Promise<SessionSummary[]> {
+  const since = days !== undefined ? new Date(Date.now() - days * 86400000) : undefined;
   const rows = await db
     .select({
       id: workoutSessions.id,
       startedAt: workoutSessions.startedAt,
       finishedAt: workoutSessions.finishedAt,
       routineName: routines.name,
+      routineKind: routines.kind,
     })
     .from(workoutSessions)
     .leftJoin(routines, eq(workoutSessions.routineId, routines.id))
-    .where(and(eq(workoutSessions.userId, userId), isNotNull(workoutSessions.finishedAt)))
+    .where(
+      and(
+        eq(workoutSessions.userId, userId),
+        isNotNull(workoutSessions.finishedAt),
+        since ? gte(workoutSessions.startedAt, since) : undefined
+      )
+    )
     .orderBy(desc(workoutSessions.startedAt))
     .limit(limit);
 
   if (rows.length === 0) return [];
 
-  const logs = await db
-    .select({
-      sessionId: setLogs.sessionId,
-      weight: setLogs.weight,
-      weightUnit: setLogs.weightUnit,
-      plates: setLogs.plates,
-      reps: setLogs.reps,
-      loggedAt: setLogs.loggedAt,
-    })
-    .from(setLogs)
-    .where(
-      and(
-        eq(setLogs.completed, true),
-        inArray(
-          setLogs.sessionId,
-          rows.map((r) => r.id)
-        )
-      )
-    );
+  const sessionIds = rows.map((r) => r.id);
+  const [logs, swimLogs] = await Promise.all([
+    db
+      .select({
+        sessionId: setLogs.sessionId,
+        weight: setLogs.weight,
+        weightUnit: setLogs.weightUnit,
+        plates: setLogs.plates,
+        reps: setLogs.reps,
+        loggedAt: setLogs.loggedAt,
+      })
+      .from(setLogs)
+      .where(and(eq(setLogs.completed, true), inArray(setLogs.sessionId, sessionIds))),
+    db
+      .select({ sessionId: swimBlockLogs.sessionId, actualDistanceMeters: swimBlockLogs.actualDistanceMeters })
+      .from(swimBlockLogs)
+      .where(and(eq(swimBlockLogs.completed, true), inArray(swimBlockLogs.sessionId, sessionIds))),
+  ]);
 
   const totals = new Map<string, { sets: number; volumeKg: number }>();
   for (const log of logs) {
@@ -420,12 +563,24 @@ export async function getSessionSummaries(
     totals.set(log.sessionId, t);
   }
 
+  const distanceBySession = new Map<string, number>();
+  for (const l of swimLogs) {
+    distanceBySession.set(
+      l.sessionId,
+      (distanceBySession.get(l.sessionId) ?? 0) + (l.actualDistanceMeters ?? 0)
+    );
+  }
+
   return rows.map((r) => ({
     ...r,
     sets: totals.get(r.id)?.sets ?? 0,
     volumeKg: Math.round(totals.get(r.id)?.volumeKg ?? 0),
+    distanceMeters: Math.round(distanceBySession.get(r.id) ?? 0),
     minutes: r.finishedAt
-      ? Math.max(0, Math.round((r.finishedAt.getTime() - r.startedAt.getTime()) / 60000))
+      ? Math.min(
+          MAX_SESSION_MINUTES,
+          Math.max(0, Math.round((r.finishedAt.getTime() - r.startedAt.getTime()) / 60000))
+        )
       : 0,
   }));
 }

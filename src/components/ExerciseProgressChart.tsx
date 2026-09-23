@@ -17,9 +17,10 @@ export type ProgressPoint = {
   maxPlates: number | null;
   maxReps: number | null;
   volume: number | null;
+  est1RM: number | null;
 };
 
-export type Metric = "maxWeight" | "maxPlates" | "maxReps" | "volume";
+export type Metric = "maxWeight" | "maxPlates" | "maxReps" | "volume" | "est1RM";
 
 export function ExerciseProgressChart({
   data,
@@ -40,6 +41,7 @@ export function ExerciseProgressChart({
     // Volume is always summed in kg (see progreso/[exerciseId]/page.tsx) so
     // it stays a coherent number even for exercises tracked in lb.
     { key: "volume", label: t.progreso.metricaVolumen, unit: "kg" },
+    { key: "est1RM", label: t.progreso.metrica1RM, unit: weightUnitLabel },
   ];
   // Only offer the toggles that have data (plates vs kg are exclusive in practice).
   const METRICS = ALL_METRICS.filter(

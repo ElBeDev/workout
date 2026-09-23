@@ -6,10 +6,12 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { routines, workoutSessions } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
+import { closeAbandonedSession } from "@/db/queries";
+import { isSameLocalDay } from "@/lib/dates";
 
 async function findOpenSession(userId: string, routineId: string) {
   const [open] = await db
-    .select({ id: workoutSessions.id })
+    .select({ id: workoutSessions.id, startedAt: workoutSessions.startedAt })
     .from(workoutSessions)
     .where(
       and(
@@ -32,9 +34,15 @@ export async function startSession(routineId: string) {
     .where(and(eq(routines.id, routineId), eq(routines.userId, userId)));
   if (!routine) redirect("/rutinas");
 
-  // Resume an unfinished session of this routine instead of stacking a new one.
+  // Resume an unfinished session of this routine instead of stacking a new
+  // one — pero sólo si es de hoy. Una abierta desde un día anterior es una
+  // olvidada, no una en curso: se cierra sola con su última actividad real y
+  // se sigue de largo para crear una de verdad.
   const open = await findOpenSession(userId, routineId);
-  if (open) redirect(`/entrenar/${open.id}`);
+  if (open) {
+    if (isSameLocalDay(open.startedAt, new Date())) redirect(`/entrenar/${open.id}`);
+    await closeAbandonedSession(open.id);
+  }
 
   let sessionId: string;
   try {

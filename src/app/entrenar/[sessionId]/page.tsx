@@ -8,10 +8,13 @@ import {
 } from "@/db/schema";
 import { exerciseGif } from "@/db/exercise-gif";
 import { exerciseInstructions } from "@/db/exercise-instructions";
-import { and, eq, desc, ne, inArray, isNotNull, or, isNull } from "drizzle-orm";
+import { and, eq, desc, ne, inArray, isNotNull, or } from "drizzle-orm";
 import { notFound, redirect } from "next/navigation";
 import { Flag, Plus, Repeat } from "lucide-react";
 import { requireUserId } from "@/lib/session";
+import { closeAbandonedSession } from "@/db/queries";
+import { getSwimBlocks, getSwimBlockLogs, plannedDistance } from "@/db/swim";
+import { isSameLocalDay } from "@/lib/dates";
 import { Card, PageHeader, PrimaryButton } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { ExerciseInfoSheet } from "@/components/ExerciseInfoSheet";
@@ -28,6 +31,7 @@ import { getDict, type Dict } from "@/i18n";
 import { DiscardSessionButton } from "@/components/DiscardSessionButton";
 import { SessionNotes } from "./SessionNotes";
 import { SetRow } from "./SetRow";
+import { SwimBlockRow } from "./SwimBlockRow";
 import { LoadUnitPicker } from "./LoadUnitPicker";
 import { PendingSync } from "./PendingSync";
 import { finishSession, addExtraSet } from "./actions";
@@ -173,10 +177,17 @@ export default async function EntrenarPage({
   // Its routine was deleted while it was open: close it with what it has
   // instead of leaving it stuck (its sets are intact).
   if (!session.routineId) {
-    await db
-      .update(workoutSessions)
-      .set({ finishedAt: new Date() })
-      .where(and(eq(workoutSessions.id, sessionId), isNull(workoutSessions.finishedAt)));
+    await closeAbandonedSession(sessionId);
+    redirect(`/progreso/sesion/${sessionId}`);
+  }
+
+  // Abierta desde un día anterior: no es "en curso", es abandonada — se
+  // cierra sola con su última actividad real en vez de acumular días de
+  // "duración" cuando por fin se toque. Esto es lo que de verdad decide si
+  // una sesión sigue viva, sea que se llegue por "Empezar" o por el botón
+  // "Continuar" del Home (que apunta aquí directo).
+  if (!isSameLocalDay(session.startedAt, new Date())) {
+    await closeAbandonedSession(sessionId);
     redirect(`/progreso/sesion/${sessionId}`);
   }
 
@@ -185,6 +196,55 @@ export default async function EntrenarPage({
     .from(routines)
     .where(eq(routines.id, session.routineId));
   if (!routine) notFound();
+
+  if (routine.kind === "natacion") {
+    const [blocks, logs] = await Promise.all([getSwimBlocks(routine.id), getSwimBlockLogs(sessionId)]);
+    const completedCount = blocks.filter((b) => logs.get(b.id)?.completed).length;
+
+    return (
+      <div className="flex flex-col gap-5">
+        <PageHeader title={routine.name} backHref={`/rutinas/${routine.id}`} />
+
+        <SessionHud
+          sessionId={sessionId}
+          startedAtMs={session.startedAt.getTime()}
+          completed={completedCount}
+          total={blocks.length}
+          progressLabel={t.natacion.entrenar.hud}
+        />
+
+        {blocks.length === 0 ? (
+          <Card className="p-6 text-center text-sm text-muted">{t.natacion.rutina.sinBloques}</Card>
+        ) : (
+          <Card className="flex flex-col divide-y divide-border p-1">
+            {blocks.map((block) => {
+              const log = logs.get(block.id);
+              return (
+                <SwimBlockRow
+                  key={block.id}
+                  sessionId={sessionId}
+                  block={block}
+                  initialCompleted={log?.completed ?? false}
+                  initialDistance={log?.actualDistanceMeters ?? plannedDistance(block)}
+                />
+              );
+            })}
+          </Card>
+        )}
+
+        <SessionNotes sessionId={sessionId} notes={session.notes} />
+
+        <form action={finishSession.bind(null, sessionId)}>
+          <PrimaryButton type="submit">
+            <Flag className="h-4 w-4" />
+            {t.entrenar.terminarEntrenamiento}
+          </PrimaryButton>
+        </form>
+
+        <DiscardSessionButton sessionId={sessionId} />
+      </div>
+    );
+  }
 
   const items = await db
     .select({

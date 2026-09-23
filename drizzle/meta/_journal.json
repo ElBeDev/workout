@@ -8,6 +8,13 @@
       "when": 1790130162847,
       "tag": "0000_clever_nocturne",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790136364260,
+      "tag": "0001_faulty_franklin_storm",
+      "breakpoints": true
     }
   ]
 }

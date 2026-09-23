@@ -17,6 +17,21 @@ export function fmtKg(kg: number, locale = "es-MX"): { value: string; unit: stri
   return { value: nf(locale).format(Math.round(kg)), unit: "kg" };
 }
 
+/** 1,200 m · 3.4 km cuando el número deja de caber de forma legible. */
+export function fmtMeters(meters: number, locale = "es-MX"): { value: string; unit: string } {
+  if (meters >= 10000) return { value: nf(locale).format(Math.round(meters / 100) / 10), unit: "km" };
+  return { value: nf(locale).format(Math.round(meters)), unit: "m" };
+}
+
+/** Ritmo en minutos por cada 100 m, como "1:45". null si no hay con qué calcularlo. */
+export function fmtPace100(distanceMeters: number, seconds: number): string | null {
+  if (distanceMeters <= 0 || seconds <= 0) return null;
+  const secPer100 = Math.round((seconds / distanceMeters) * 100);
+  const mm = Math.floor(secPer100 / 60);
+  const ss = secPer100 % 60;
+  return `${mm}:${String(ss).padStart(2, "0")}`;
+}
+
 /** 74 → "1 h 14 min"; 42 → "42 min". */
 export function fmtMinutes(minutes: number): string {
   if (minutes < 60) return `${minutes} min`;

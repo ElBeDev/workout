@@ -83,6 +83,10 @@ export const routines = pgTable("routines", {
   sortOrder: integer("sort_order").default(0).notNull(),
   // Weekdays this routine is planned for: 0 = domingo … 6 = sábado.
   days: integer("days").array().notNull().default([]),
+  // "fuerza" o "natacion": decide si el contenido vive en routine_exercises
+  // o en swim_blocks, y qué pantalla de entrenamiento usar. No cambia
+  // después de creada (ver docs/natacion.md §1).
+  kind: text("kind").notNull().default("fuerza"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -108,6 +112,31 @@ export const routineExercises = pgTable(
     loadUnit: text("load_unit").notNull().default("kg"),
   },
   (table) => [index("routine_exercises_routine_idx").on(table.routineId)]
+);
+
+/**
+ * El plan de una rutina de natación: una secuencia de bloques (calentamiento,
+ * serie principal, patada, drill, enfriamiento), cada uno con su propio
+ * estilo, repeticiones, distancia y descanso — reemplaza a routine_exercises
+ * cuando routines.kind = 'natacion'. Ver docs/natacion.md §2 sobre por qué no
+ * se estiró el modelo de pesas en vez de esto.
+ */
+export const swimBlocks = pgTable(
+  "swim_blocks",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    routineId: uuid("routine_id").notNull().references(() => routines.id, { onDelete: "cascade" }),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    // 'calentamiento' | 'principal' | 'patada' | 'drill' | 'enfriamiento' | 'libre'
+    label: text("label").notNull(),
+    // 'libre' | 'dorso' | 'pecho' | 'mariposa' | 'combinado' | 'patada' | 'drill'
+    stroke: text("stroke").notNull(),
+    reps: integer("reps").notNull(),
+    distanceMeters: integer("distance_meters").notNull(),
+    restSeconds: integer("rest_seconds"),
+    notes: text("notes"),
+  },
+  (table) => [index("swim_blocks_routine_idx").on(table.routineId)]
 );
 
 export const workoutSessions = pgTable(
@@ -154,6 +183,32 @@ export const setLogs = pgTable(
       table.setNumber
     ),
     index("set_logs_exercise_idx").on(table.exerciseId),
+  ]
+);
+
+/**
+ * Lo que de verdad se nadó de cada bloque planeado — equivalente a set_logs,
+ * pero por bloque en vez de por serie: en la alberca el teléfono no entra al
+ * agua, así que el logueo real es "marqué el bloque hecho al salir", no
+ * serie por serie en vivo (docs/natacion.md §0).
+ */
+export const swimBlockLogs = pgTable(
+  "swim_block_logs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    sessionId: uuid("session_id").notNull().references(() => workoutSessions.id, { onDelete: "cascade" }),
+    // Nullable + SET NULL: si el bloque planeado se edita o se borra después,
+    // el log de lo que de verdad se nadó no se debe perder.
+    swimBlockId: uuid("swim_block_id").references(() => swimBlocks.id, { onDelete: "set null" }),
+    completed: boolean("completed").default(false).notNull(),
+    actualReps: integer("actual_reps"),
+    actualDistanceMeters: integer("actual_distance_meters"),
+    actualSeconds: integer("actual_seconds"),
+    loggedAt: timestamp("logged_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("swim_block_logs_session_block_idx").on(table.sessionId, table.swimBlockId),
+    index("swim_block_logs_session_idx").on(table.sessionId),
   ]
 );
 

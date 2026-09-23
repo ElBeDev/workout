@@ -16,11 +16,15 @@ export const progreso: typeof Es = {
     `You lifted ${pct}% more load than the previous ${dias} days.`,
   tendenciaBajo: (pct, dias) =>
     `You lifted ${pct}% less load than the previous ${dias} days.`,
+  tendenciaFrecuencia: "frequency",
+  frecuenciaDetalle: (semana: number, promedio: number) =>
+    `${semana} this week · avg. ${promedio.toFixed(1)} over the last 4`,
   metricaSesiones: "Workouts",
   metricaSeries: "Sets",
   metricaCarga: "Load",
   metricaTiempo: "Time",
   diasEntrenados: "Training days",
+  coberturaMuscular: "Muscle coverage",
   porEjercicio: "By exercise",
   sesiones: "Workouts",
   sinSesiones: "No workouts logged yet. Finish a workout to see it here.",
@@ -50,6 +54,7 @@ export const progreso: typeof Es = {
   metricaPlacasMax: "Max plates",
   metricaRepsMax: "Max reps",
   metricaVolumen: "Volume",
+  metrica1RM: "Est. 1RM",
   graficaSinDatos: (metrica) => `No ${metrica.toLowerCase()} data yet.`,
 
   // Detalle de sesión

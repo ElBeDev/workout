@@ -59,6 +59,7 @@ export default async function ExerciseProgressPage({
     maxPlates: number | null;
     maxReps: number | null;
     volume: number | null;
+    est1RM: number | null;
     sets: number;
   };
   const rows: Row[] = [];
@@ -73,6 +74,7 @@ export default async function ExerciseProgressPage({
         maxPlates: null,
         maxReps: null,
         volume: null,
+        est1RM: null,
         sets: 0,
       };
       rows.push(r);
@@ -89,6 +91,13 @@ export default async function ExerciseProgressPage({
     // Volume always sums in kg so a session that mixes kg- and lb-tracked
     // sets for this exercise still adds up to one coherent number.
     if (w !== null && reps !== null) r.volume = (r.volume ?? 0) + toKg(w, unit) * reps;
+    // 1RM estimado (Epley): peso × (1 + reps / 30), sobre la mejor serie de
+    // la sesión. Sólo aplica a series con peso — placas no tienen forma
+    // honesta de convertirse a un número de fuerza comparable.
+    if (w !== null && reps !== null && reps > 0) {
+      const oneRm = w * (1 + reps / 30);
+      if (r.est1RM === null || oneRm > r.est1RM) r.est1RM = oneRm;
+    }
     r.sets += 1;
   }
 
@@ -98,6 +107,7 @@ export default async function ExerciseProgressPage({
     maxPlates: r.maxPlates,
     maxReps: r.maxReps,
     volume: r.volume !== null ? Math.round(r.volume) : null,
+    est1RM: r.est1RM !== null ? Math.round(r.est1RM * 10) / 10 : null,
   }));
 
   const anyWeight = rows.some((r) => r.maxWeight !== null);

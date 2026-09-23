@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { setLogs, workoutSessions, routineExercises } from "@/db/schema";
+import { setLogs, workoutSessions, routineExercises, swimBlockLogs } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
 import { and, eq, isNull, max } from "drizzle-orm";
 import { z } from "zod";
@@ -189,6 +189,30 @@ export async function saveNotes(sessionId: string, formData: FormData) {
   await requireOwnedSession(sessionId);
   const notes = String(formData.get("notes") ?? "").trim() || null;
   await db.update(workoutSessions).set({ notes }).where(eq(workoutSessions.id, sessionId));
+  revalidatePath(`/entrenar/${sessionId}`);
+}
+
+/**
+ * Marca (o desmarca) un bloque de natación como hecho, con la distancia real
+ * si se ajustó. En la alberca el teléfono no entra al agua, así que esto se
+ * llena al salir, no serie por serie en vivo (docs/natacion.md §0).
+ */
+export async function logSwimBlock(sessionId: string, swimBlockId: string, formData: FormData) {
+  await requireOwnedSession(sessionId);
+
+  const completed = String(formData.get("completed") ?? "true") === "true";
+  const distanceRaw = String(formData.get("actualDistanceMeters") ?? "").trim();
+  const actualDistanceMeters =
+    distanceRaw !== "" && Number.isFinite(Number(distanceRaw)) ? Math.max(0, Math.round(Number(distanceRaw))) : null;
+
+  await db
+    .insert(swimBlockLogs)
+    .values({ sessionId, swimBlockId, completed, actualDistanceMeters })
+    .onConflictDoUpdate({
+      target: [swimBlockLogs.sessionId, swimBlockLogs.swimBlockId],
+      set: { completed, actualDistanceMeters, loggedAt: new Date() },
+    });
+
   revalidatePath(`/entrenar/${sessionId}`);
 }
 

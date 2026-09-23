@@ -7,6 +7,7 @@ import { perfil } from "./perfil";
 import { admin } from "./admin";
 import { acceso } from "./acceso";
 import { ejercicios } from "./ejercicios";
+import { natacion } from "./natacion";
 
 export const en = {
   comun,
@@ -18,4 +19,5 @@ export const en = {
   admin,
   acceso,
   ejercicios,
+  natacion,
 };

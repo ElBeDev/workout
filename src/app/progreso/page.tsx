@@ -7,7 +7,7 @@ import { exerciseGif } from "@/db/exercise-gif";
 import { and } from "drizzle-orm";
 import { requireUserId } from "@/lib/session";
 import { fmtDate } from "@/lib/dates";
-import { fmtKg, fmtMinutes, fmtMinutesShort, fmtNumber } from "@/lib/format";
+import { fmtKg, fmtMeters, fmtMinutes, fmtMinutesShort, fmtNumber } from "@/lib/format";
 import { loadLabel } from "@/lib/load-label";
 import { bodyPartLabel } from "@/lib/body-parts";
 import {
@@ -15,7 +15,10 @@ import {
   getDailyTraining,
   getPersonalRecords,
   getSessionSummaries,
+  getMuscleCoverage,
+  getFrequencyTrend,
 } from "@/db/queries";
+import { getSwimStats } from "@/db/swim";
 import { getDict } from "@/i18n";
 import { ConsistencyCalendar } from "@/components/ConsistencyCalendar";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
@@ -54,11 +57,14 @@ export default async function ProgresoPage({
     days: user?.goalWeeklyDays ?? 4,
   };
 
-  const [stats, byDay, records, sessions, trainedExercises] = await Promise.all([
+  const [stats, byDay, records, sessions, muscleCoverage, freq, swim, trainedExercises] = await Promise.all([
     getPeriodStats(userId, range.days),
     getDailyTraining(userId, 16 * 7),
     getPersonalRecords(userId),
-    getSessionSummaries(userId, 30),
+    getSessionSummaries(userId, { days: range.days }),
+    getMuscleCoverage(userId),
+    getFrequencyTrend(userId),
+    getSwimStats(userId, range.days),
     db
       .selectDistinct({
         id: exercises.id,
@@ -121,6 +127,13 @@ export default async function ProgresoPage({
                   range.days
                 )}
         </p>
+
+        <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
+          <TrendPill pct={freq.trendPct} label={t.progreso.tendenciaFrecuencia} />
+          <span className="text-[13px] text-muted">
+            {t.progreso.frecuenciaDetalle(freq.thisWeekSessions, freq.avgLast4Weeks)}
+          </span>
+        </div>
       </Card>
 
       <StatGrid>
@@ -135,11 +148,57 @@ export default async function ProgresoPage({
         <MetricTile label={t.progreso.metricaTiempo} value={fmtMinutesShort(stats.minutes)} />
       </StatGrid>
 
+      {swim.sessions > 0 && (
+        <section className="flex flex-col gap-3">
+          <SectionTitle>{t.natacion.progresoCard.titulo}</SectionTitle>
+          <Card hero className="grid grid-cols-3 divide-x divide-border p-4">
+            <MiniStat
+              value={fmtMeters(swim.distanceMeters, t.comun.intl)}
+              label={t.natacion.progresoCard.distanciaTotal}
+              tone="text-load"
+            />
+            <MiniStat
+              value={{ value: swim.pace ?? t.natacion.progresoCard.sinRitmo, unit: "" }}
+              label={t.natacion.progresoCard.ritmo}
+              tone="text-sets"
+            />
+            <MiniStat
+              value={{ value: String(swim.sessions), unit: "" }}
+              label={t.progreso.metricaSesiones}
+              tone="text-days"
+            />
+          </Card>
+        </section>
+      )}
+
       <section className="flex flex-col gap-3">
         <SectionTitle>{t.progreso.diasEntrenados}</SectionTitle>
         <Card className="p-4">
           <ConsistencyCalendar byDay={byDay} goals={goals} />
         </Card>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <SectionTitle>{t.progreso.coberturaMuscular}</SectionTitle>
+        <GroupedList>
+          {muscleCoverage.map((m) => (
+            <div
+              key={m.bodyPart}
+              className="flex items-center justify-between px-4 py-3 text-[15px]"
+            >
+              <span className="capitalize">{bodyPartLabel(m.bodyPart, t)}</span>
+              <span
+                className={
+                  m.daysAgo === null || m.daysAgo >= 14
+                    ? "font-semibold text-load"
+                    : "text-muted"
+                }
+              >
+                {t.hoy.ultimaVez(m.daysAgo)}
+              </span>
+            </div>
+          ))}
+        </GroupedList>
       </section>
 
       {trainedExercises.length > 0 && (
@@ -197,6 +256,8 @@ export default async function ProgresoPage({
           <GroupedList>
             {sessions.map((s) => {
               const vol = fmtKg(s.volumeKg, t.comun.intl);
+              const dist = fmtMeters(s.distanceMeters, t.comun.intl);
+              const isSwim = s.routineKind === "natacion";
               return (
                 <Link
                   key={s.id}
@@ -214,14 +275,22 @@ export default async function ProgresoPage({
                     <p className="text-[13px] text-muted">
                       {fmtDate(s.startedAt, { dateStyle: "medium" }, t.comun.intl)} · {fmtMinutes(s.minutes)}
                     </p>
-                    <p className="mt-0.5 flex items-center gap-2 text-[13px]">
-                      <span className="font-semibold text-sets">{t.progreso.series(s.sets)}</span>
-                      {s.volumeKg > 0 && (
-                        <span className="font-semibold text-load">
-                          {vol.value} {vol.unit}
-                        </span>
-                      )}
-                    </p>
+                    {isSwim ? (
+                      s.distanceMeters > 0 && (
+                        <p className="mt-0.5 text-[13px] font-semibold text-load">
+                          {dist.value} {dist.unit}
+                        </p>
+                      )
+                    ) : (
+                      <p className="mt-0.5 flex items-center gap-2 text-[13px]">
+                        <span className="font-semibold text-sets">{t.progreso.series(s.sets)}</span>
+                        {s.volumeKg > 0 && (
+                          <span className="font-semibold text-load">
+                            {vol.value} {vol.unit}
+                          </span>
+                        )}
+                      </p>
+                    )}
                   </div>
                   <ChevronRight className="h-5 w-5 shrink-0 text-faint" />
                 </Link>
@@ -230,6 +299,28 @@ export default async function ProgresoPage({
           </GroupedList>
         )}
       </section>
+    </div>
+  );
+}
+
+/** Etiqueta chica arriba, valor grande abajo — mismo patrón que el resto de
+ *  las tarjetas de stats de la app. */
+function MiniStat({
+  value,
+  label,
+  tone,
+}: {
+  value: { value: string; unit: string };
+  label: string;
+  tone: string;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <span className={`label ${tone}`}>{label}</span>
+      <span className="whitespace-nowrap text-[20px] font-bold leading-none tracking-[-0.02em] tabular-nums">
+        {value.value}
+        {value.unit && <span className="ml-1 text-[12px] font-semibold text-muted">{value.unit}</span>}
+      </span>
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { routines, routineExercises, workoutSessions, exercises } from "@/db/schema";
+import { routines, routineExercises, workoutSessions, exercises, swimBlocks } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
 import { isAdminUser } from "@/lib/admin";
 import { mirrorExerciseGif } from "@/lib/blob";
@@ -46,25 +46,43 @@ export async function duplicateRoutine(routineId: string) {
 
   const [copy] = await db
     .insert(routines)
-    .values({ userId: source.userId, name: `${source.name} (copia)`, days: [] })
+    .values({ userId: source.userId, name: `${source.name} (copia)`, days: [], kind: source.kind })
     .returning({ id: routines.id });
 
-  const items = await db
-    .select()
-    .from(routineExercises)
-    .where(eq(routineExercises.routineId, routineId));
-  if (items.length) {
-    await db.insert(routineExercises).values(
-      items.map((i) => ({
-        routineId: copy.id,
-        exerciseId: i.exerciseId,
-        sortOrder: i.sortOrder,
-        targetSets: i.targetSets,
-        targetReps: i.targetReps,
-        targetWeight: i.targetWeight,
-        loadUnit: i.loadUnit,
-      }))
-    );
+  if (source.kind === "natacion") {
+    const blocks = await db.select().from(swimBlocks).where(eq(swimBlocks.routineId, routineId));
+    if (blocks.length) {
+      await db.insert(swimBlocks).values(
+        blocks.map((b) => ({
+          routineId: copy.id,
+          sortOrder: b.sortOrder,
+          label: b.label,
+          stroke: b.stroke,
+          reps: b.reps,
+          distanceMeters: b.distanceMeters,
+          restSeconds: b.restSeconds,
+          notes: b.notes,
+        }))
+      );
+    }
+  } else {
+    const items = await db
+      .select()
+      .from(routineExercises)
+      .where(eq(routineExercises.routineId, routineId));
+    if (items.length) {
+      await db.insert(routineExercises).values(
+        items.map((i) => ({
+          routineId: copy.id,
+          exerciseId: i.exerciseId,
+          sortOrder: i.sortOrder,
+          targetSets: i.targetSets,
+          targetReps: i.targetReps,
+          targetWeight: i.targetWeight,
+          loadUnit: i.loadUnit,
+        }))
+      );
+    }
   }
 
   revalidatePath("/rutinas");

@@ -1,7 +1,7 @@
 # Mejoras a Progreso (acordado 2026-09-23)
 
-Estado: **plan acordado, sin empezar**. Cada punto tiene lo que hay hoy, qué se
-va a hacer y cómo se sabrá que quedó — mismo formato que
+Estado: **hecho (2026-09-22)**, pendiente de commit y de su fila en el
+changelog de [PLAN.md](./PLAN.md) — mismo formato que
 [siguiente-ronda.md](./siguiente-ronda.md).
 
 Documento vivo: conforme se suba cada punto se marca aquí y se agrega su fila
@@ -10,11 +10,11 @@ al registro de cambios de [PLAN.md](./PLAN.md), como manda
 
 ## Orden de ataque
 
-1. [ ] **La duración de sesión está corrupta** — bug de datos, no una mejora de producto
-2. [ ] 1RM estimado por ejercicio
-3. [ ] Cobertura muscular
-4. [ ] Tendencia de frecuencia, no sólo de carga
-5. [ ] Decidir si el selector de rango filtra toda la pantalla
+1. [x] **La duración de sesión está corrupta** — bug de datos, no una mejora de producto
+2. [x] 1RM estimado por ejercicio
+3. [x] Cobertura muscular
+4. [x] Tendencia de frecuencia, no sólo de carga
+5. [x] Decidir si el selector de rango filtra toda la pantalla — se eligió B
 
 ---
 
@@ -102,6 +102,16 @@ el jueves a "Empezar" la misma rutina crea una sesión nueva (la del lunes
 queda cerrada sola con su propia duración corta); y `npm run smoke` sigue en
 9/9.
 
+**Hecho (2026-09-22)**: `isSameLocalDay` (`src/lib/dates.ts`) y
+`closeAbandonedSession` (`src/db/queries.ts`, sella con `max(set_logs.logged_at)`
+o `started_at`) se usan en `startSession` (`src/app/entrenar/actions.ts`) y en
+`EntrenarPage` (`src/app/entrenar/[sessionId]/page.tsx`, que es quien decide
+si una sesión sigue viva sin importar por dónde se llegue). Las 5 filas de la
+tabla ya se corrigieron a mano contra Neon con el mismo criterio (verificado
+antes y después de escribir). `getPeriodStats` y `getSessionSummaries` acotan
+cada sesión a `MAX_SESSION_MINUTES` (6 h) al sumarla. `npm run build`, `npx
+eslint src` y `npm run smoke` (9/9) en verde.
+
 ---
 
 ## 2. 1RM estimado por ejercicio
@@ -122,6 +132,11 @@ placas a un número de fuerza comparable).
 **Cómo se sabrá que quedó**: la gráfica de un ejercicio con peso tiene un
 botón más ("1RM est.") junto a "Peso máx.", y el número calculado coincide a
 mano con la fórmula para un par de series de muestra.
+
+**Hecho (2026-09-22)**: nuevo campo `est1RM` en `ExerciseProgressChart` y en
+`progreso/[exerciseId]/page.tsx` (mejor 1RM de Epley entre las series con peso
+de cada sesión). Probado a mano en el navegador: una serie de 55 kg × 10 dio
+73.3, más alto que 60 kg × 5 (70) — justo el caso que "Peso máx." no ve.
 
 ---
 
@@ -144,6 +159,12 @@ columnas nuevas.
 hoy, "espalda" (o el grupo que de verdad no se ha tocado) aparece arriba con
 más días que "piernas".
 
+**Hecho (2026-09-22)**: `getMuscleCoverage` (`src/db/queries.ts`) recorre
+`BODY_PARTS` y cruza contra el último `set_logs.logged_at` por `body_part`;
+los grupos nunca entrenados van primero. Verificado contra los datos reales:
+en la cuenta de `erika gordillo`, "espalda" sale con 5 días mientras
+"piernas" (tren superior/inferior de pierna) sale con 0.
+
 ---
 
 ## 4. Tendencia de frecuencia, no sólo de carga
@@ -163,6 +184,14 @@ comparación semana-a-semana en vez de periodo-completo-contra-periodo-anterior.
 **Cómo se sabrá que quedó**: con los datos reales de hoy, la cuenta de
 `karizmendi` o `erika` muestra la caída de frecuencia aunque su carga se vea
 plana.
+
+**Hecho (2026-09-22)**: `getFrequencyTrend` (`src/db/queries.ts`) — semana
+actual contra el promedio de las 4 anteriores, siempre semana-a-semana, no
+depende del selector de rango. Se muestra junto a la tendencia de carga en
+la tarjeta grande con `TrendPill`. Verificado contra datos reales:
+`karizmendi@grupoargue.com` da -33 % y `erika gordillo` -60 % de frecuencia
+en una semana donde `getPeriodStats(7)` no muestra caída de carga (o no hay
+con qué comparar) — es justo la señal que la tendencia de carga no daba.
 
 ---
 
@@ -189,3 +218,11 @@ aquí, en vez de que quede ambiguo.
 
 **Cómo se sabrá que quedó**: la decisión (A o B) queda escrita aquí con fecha,
 y si es B, cambiar a "Semana" de verdad acorta la lista de sesiones.
+
+**Decisión (2026-09-22): B.** "Sesiones" ahora respeta el rango elegido
+arriba: `getSessionSummaries` recibe `{ days, limit }` y filtra por
+`started_at >= now - days` (con `limit: 200` como tope de filas, no de
+tiempo, para el rango "Año"). "Por ejercicio" sigue siendo de toda la vida
+siempre, sin cambios — un récord filtrado por rango deja de ser un récord.
+Probado a mano: cambiar a "Semana" en una cuenta con sesiones de varias
+semanas deja la lista con sólo las de los últimos 7 días.

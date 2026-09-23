@@ -12,6 +12,7 @@ import { createRoutine } from "./actions";
  */
 export function NewRoutineSheet() {
   const [open, setOpen] = useState(false);
+  const [kind, setKind] = useState<"fuerza" | "natacion">("fuerza");
   const t = useT();
 
   useEffect(() => {
@@ -70,6 +71,26 @@ export function NewRoutineSheet() {
                 required
                 autoFocus
               />
+              <input type="hidden" name="kind" value={kind} />
+              <div className="flex flex-col gap-1.5">
+                <span className="label text-muted">{t.natacion.tipoRutina.titulo}</span>
+                <div className="flex gap-1 rounded-full bg-surface-2 p-1 text-[13px] font-semibold">
+                  {(["fuerza", "natacion"] as const).map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => setKind(k)}
+                      aria-pressed={kind === k}
+                      className={`flex-1 rounded-full py-2 transition ${
+                        kind === k ? "bg-primary text-primary-foreground" : "text-muted"
+                      }`}
+                    >
+                      {t.natacion.tipoRutina[k]}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-faint">{t.natacion.tipoRutina.ayuda}</p>
+              </div>
               <PrimaryButton type="submit" tone="accent">
                 <Plus className="h-4 w-4" />
                 {t.rutinas.nueva.crear}

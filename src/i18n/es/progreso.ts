@@ -14,11 +14,15 @@ export const progreso = {
     `Levantaste ${pct} % más carga que los ${dias} días anteriores.`,
   tendenciaBajo: (pct: number, dias: number) =>
     `Levantaste ${pct} % menos carga que los ${dias} días anteriores.`,
+  tendenciaFrecuencia: "frecuencia",
+  frecuenciaDetalle: (semana: number, promedio: number) =>
+    `${semana} esta semana · prom. ${promedio.toFixed(1)} en las últimas 4`,
   metricaSesiones: "Sesiones",
   metricaSeries: "Series",
   metricaCarga: "Carga",
   metricaTiempo: "Tiempo",
   diasEntrenados: "Días entrenados",
+  coberturaMuscular: "Cobertura muscular",
   porEjercicio: "Por ejercicio",
   sesiones: "Sesiones",
   sinSesiones:
@@ -49,6 +53,7 @@ export const progreso = {
   metricaPlacasMax: "Placas máx.",
   metricaRepsMax: "Reps máx.",
   metricaVolumen: "Volumen",
+  metrica1RM: "1RM est.",
   graficaSinDatos: (metrica: string) => `Sin datos de ${metrica.toLowerCase()} todavía.`,
 
   // Detalle de sesión
