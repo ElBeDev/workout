@@ -1013,6 +1013,24 @@ abre una hoja con las tres opciones y una línea que explica cuándo usar cada u
 Lección general: **una opción que sólo se puede cambiar lejos de donde se
 necesita es una opción que no existe.**
 
+### 2026-09-23 — El ícono de FiTME llega a producción (`5e9a18a`)
+
+El ícono nuevo (el mark "FIT ME" amarillo y turquesa sobre negro, recortado de
+`fitmeLogo.jpg` sin el subtítulo "Gym & Wellness Center", que no se lee a
+32 px) se había hecho con el rebrand, pero sólo en local. Durante ese tiempo la
+web publicada siguió con el **triángulo de Vercel** en `favicon.ico` (el que
+trae el scaffold y nunca se había cambiado) y la **mancuerna lavanda** del
+sistema visual anterior en `icon.png`. Nadie lo notó en la app porque dentro
+de la PWA no se ve el favicon; se notó en la pestaña del navegador.
+
+Lo que hubo que cuidar al subirlo: el service worker sirve `.png`, `.ico` y
+el manifest **cache-first y con la misma URL**, así que cambiar el archivo no
+basta; una PWA ya instalada seguiría mostrando la mancuerna indefinidamente.
+Por eso el SW sube a `v5`, y al activarse borra la caché de assets vieja.
+El ícono de la pantalla de inicio en iOS/Android puede seguir viejo hasta que
+se quite la app y se vuelva a agregar: eso lo decide el sistema operativo, no
+el SW.
+
 ### Decisiones que conviene no volver a discutir
 
 - **Inter, no SF Pro**: la licencia de SF Pro solo cubre plataformas Apple.

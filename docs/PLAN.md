@@ -1,10 +1,10 @@
 # Plan: App Web de Ejercicio (mobile-first) — estilo Apple Fitness
 
-## 0. Estado actual (2026-09-22)
+## 0. Estado actual (2026-09-23)
 
 🟢 **En línea**: https://workout-eight-neon.vercel.app — repo en [github.com/ElBeDev/workout](https://github.com/ElBeDev/workout), deploy automático a Vercel en cada push a `main`.
 
-En la base hoy: **3 usuarios**, 13 rutinas, 21 sesiones terminadas (1 abierta), 171 series registradas, 1,500 ejercicios de catálogo + 1 propio — y **0 gifs con copia propia** (ver el pendiente #1). Los 73 ejercicios de rutina siguen en `kg` y no hay una sola serie registrada en lb ni en placas. Para refrescar las cifras: `select count(*)` sobre `users`, `routines`, `workout_sessions where finished_at is not null` y `set_logs`.
+En la base hoy: **4 usuarios** con **las mismas 5 rutinas cada uno** (20 en total, ver [rutinas.md](./rutinas.md)), 22 sesiones terminadas (0 abiertas), 171 series registradas, 1,500 ejercicios de catálogo + 4 propios (la sentadilla péndulo, una copia por cuenta) — y **0 gifs con copia propia** (ver el pendiente #1). Los 116 ejercicios de rutina siguen en `kg` y no hay una sola serie registrada en lb ni en placas. Para refrescar las cifras: `select count(*)` sobre `users`, `routines`, `workout_sessions where finished_at is not null` y `set_logs`.
 
 ### Qué tiene la app hoy
 
@@ -191,7 +191,35 @@ registro de que existe y cómo se armó, no como parte del código.
   función ya existe desde la Sexta ronda), mostrando la vista real de un
   coach con sus clientes.
 
+Decimotercera (2026-09-23): **el rebrand sale a producción y se reorganiza
+el programa de rutinas de todos.** Dos cosas sin relación entre sí, el
+mismo día:
+
+- **Favicon e íconos de FiTME publicados** (`5e9a18a`). La Undécima se había
+  hecho en local pero nunca se subió: la web seguía mostrando el triángulo
+  de Vercel como favicon y la mancuerna lavanda como ícono. Se subió el
+  rebrand completo tal como estaba y se agregó lo que faltaba: el service
+  worker pasa a `v5` para que las PWA ya instaladas suelten los íconos
+  viejos de la caché. Verificado en producción comparando el hash de
+  `favicon.ico`, `icon.png`, `icon-192.png` y `apple-touch-icon.png`
+  contra los locales, el `<title>`, el manifest y la versión del SW;
+  `npm run smoke` contra producción 9/9 (ver el pendiente #12 sobre una
+  primera corrida que falló por tiempo).
+- **Programa de rutinas nuevo, igual para las 4 cuentas** (sólo datos, sin
+  código): Espalda y Hombro nueva el jueves, Pierna — Femoral y Glúteo
+  nueva el viernes, "Tren Superior — Tirón" borrada por redundante, bíceps
+  y tríceps juntos lunes y jueves, todo con máquinas. Se aplicó
+  actualizando en su lugar la rutina de cada día para no desligar el
+  historial. El detalle, las reglas del dueño y el procedimiento para
+  repetirlo están en [rutinas.md](./rutinas.md).
+
 Notas de infra que ya no hay que repetir:
+- **`.env.local` apunta a la base de producción** (el `DATABASE_URL` que
+  baja `vercel env pull` para desarrollo es el mismo Neon que usa la app
+  publicada: ahí están las sesiones de las usuarias reales). Un script
+  local contra la base **es** un cambio en producción, sin deploy de por
+  medio. El `DATABASE_URL` de producción está marcado como sensible en
+  Vercel y no se puede bajar para compararlo; se confirmó por los datos.
 - El cliente de DB (`src/db/index.ts`) es "lazy" a propósito — si se inicializa en el import top-level, `next build` truena en Vercel al analizar rutas aunque `DATABASE_URL` sí exista en el entorno de runtime.
 - En Vercel, la integración de Neon prefija sus variables como `DATABASE_URL_*` si ya existe una variable llamada `DATABASE_URL` — la que de verdad lee el código es la que se llama exactamente `DATABASE_URL` (sin prefijo).
 - El primer registro en `/registro` reclamó el usuario placeholder que existía antes del login (así la rutina "Espalda" no se perdió). Ya pasó: la cuenta es `bener`, y ese código ya se eliminó de `src/app/registro/actions.ts`.
@@ -217,7 +245,8 @@ Notas de infra que ya no hay que repetir:
 - ⚠️ **El espejado de gifs nunca ha corrido, y hay dos causas** (diagnosticado el 2026-09-22 con /admin → Mantenimiento → "Diagnosticar", que prueba cada pieza por separado):
   1. **`BLOB_READ_WRITE_TOKEN` llega vacío al runtime.** La clave sí existe en `process.env` (junto a `BLOB_STORE_ID` y `BLOB_WEBHOOK_PUBLIC_KEY`), pero su valor mide **0 caracteres**, tanto en acceso estático como dinámico — o sea que no es que Next la fije en el build, es que está vacía en Vercel. Como `blobConfigured()` es falso, la subida ni se intenta. La descarga del gif externo sí funciona (probada: 107 kB), así que ExerciseDB no es el problema.
   2. **El store `workout-blob` es privado** (`vercel blob get-store store_12HfvvHadJ85rCxU` → `Access: Private`, 0 archivos, conectado al proyecto desde hace 19 días). Un store privado [no sirve archivos por URL pública](https://vercel.com/docs/vercel-blob/private-storage): hay que pasarlos por una función con autenticación o por URLs firmadas. El código actual sube con `access: "public"` y guarda `blob.url` para meterla directo en un `<img>`, así que aunque el token se arregle, los gifs espejados no se verían.
-  3. **No es sólo el espejado: las fotos de ejercicios propios caen igual, y en silencio.** `uploadExercisePhoto` arranca con el mismo `blobConfigured()`, así que devuelve `null`; `createCustomExercise` no distingue eso de «no mandaste foto», guarda el ejercicio sin imagen y responde `ok: true`. El usuario no ve ningún error. Hoy hay 1 ejercicio propio en la base y su `gif_blob_url` está en null. La opción A cierra las dos cosas de un golpe; hasta entonces, el formulario promete una foto que no se guarda.
+  3. **No es sólo el espejado: las fotos de ejercicios propios caen igual, y en silencio.** `uploadExercisePhoto` arranca con el mismo `blobConfigured()`, así que devuelve `null`; `createCustomExercise` no distingue eso de «no mandaste foto», guarda el ejercicio sin imagen y responde `ok: true`. El usuario no ve ningún error. Hoy hay 4 ejercicios propios en la base (la sentadilla péndulo, una copia por cuenta) y los 4 tienen `gif_blob_url` en null. La opción A cierra las dos cosas de un golpe; hasta entonces, el formulario promete una foto que no se guarda.
+  4. **Confirmado de nuevo el 2026-09-23 desde el CLI** al intentar subir el gif de la sentadilla péndulo. El store tenía conectados sólo Production y Preview; se le agregó **Development** desde el panel, y con eso el token OIDC que baja `vercel env pull --environment=development` sí autentica. La subida ahora llega hasta el store y la rechaza por la causa 2: `Cannot use public access on a private store`. O sea que la opción A sigue siendo el único camino y ya no hay otro obstáculo detrás. Lo que se ve en el panel: `workout-blob`, **Private**, 0 B. El dueño decidió dejarlo así por ahora.
 
   **Qué falta decidir** (necesita el panel de Vercel, no se puede desde el CLI: el token no se puede leer y crear un store nuevo es un recurso facturable):
   - **Opción A (recomendada)**: crear un store de Blob **público**, conectarlo al proyecto (eso rellena el token bien) y pulsar "Copiar gifs" en /admin. Los gifs de ejercicios no son datos privados, y el código ya asume URLs públicas: cero cambios de código.
@@ -394,21 +423,24 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 - ~~Décima: bug de duración de sesión corregido, 1RM/cobertura muscular/tendencia de frecuencia en Progreso, y natación de verdad (rutinas de bloques, checklist, tarjeta de distancia)~~ ✅
 - ~~Undécima: la app se renombra a FiTME (nombre del gimnasio real) con ícono propio a partir de su logo~~ ✅
 - ~~Duodécima: deck de propuesta para presentar FiTME (fuera del repo, artifact de Claude), con capturas reales, QR al PWA y los colores de marca de FiTME~~ ✅
+- ~~Decimotercera: favicon e íconos de FiTME publicados (SW v5), y programa de rutinas nuevo e igual para las 4 cuentas ([rutinas.md](./rutinas.md))~~ ✅
 
 **Queda abierto (sin prisa), en este orden sugerido:**
 
 El plan de ataque de lo próximo, con lo que ya se decidió, vive en [siguiente-ronda.md](./siguiente-ronda.md); esta lista es el inventario largo.
 
-1. **Arreglar el espejado de gifs**: diagnosticado (token vacío + store privado, ver notas de infra), falta decidir entre store público u servirlos por una ruta propia. Después, pulsar "Copiar gifs" en /admin → Mantenimiento.
+1. **Arreglar el espejado de gifs**: diagnosticado (token vacío + store privado, ver notas de infra), falta decidir entre store público u servirlos por una ruta propia. Después, pulsar "Copiar gifs" en /admin → Mantenimiento. Desde el 2026-09-23 también bloquea la foto de la sentadilla péndulo (4 copias sin imagen, [rutinas.md §4](./rutinas.md)); el gif ya se tiene, falta dónde subirlo.
 2. ~~Migraciones versionadas~~ ✅ (2026-09-22) — ver la nota de infra.
 3. Throttle de login por IP (hoy el bloqueo es por cuenta).
 4. Accesibilidad de la hoja "cómo se hace" (focus trap, `aria-labelledby`) y consolidar helpers duplicados (`requireOwnedSession`).
 5. Diseño, lo que sigue marcado con ⏳ en [diseno-apple-fitness.md](./diseno-apple-fitness.md): carrusel de premios, compartir la sesión como imagen, skeletons y splash screens de iOS, y el colapso del título a barra de vidrio al hacer scroll. (El aviso de récord *durante* la sesión ya está — ver el registro de cambios.)
-6. Producto: plantillas de rutina (Push/Pull/Legs) para que el admin las asigne rápido, compartir rutina por link, fotos de progreso. (Push notifications y traducir las instrucciones ya están — ver el registro de cambios.)
+6. Producto: plantillas de rutina (Push/Pull/Legs) para que el admin las asigne rápido, compartir rutina por link, fotos de progreso. (Push notifications y traducir las instrucciones ya están — ver el registro de cambios.) Las plantillas ya tienen un caso real: las 4 cuentas comparten el mismo programa y hoy **un usuario nuevo arranca vacío**, así que dárselo es un script a mano ([rutinas.md §4](./rutinas.md)).
 7. ~~El manifest sigue en lavanda.~~ ✅ (2026-09-22) `src/app/manifest.ts` ya usa `#000000`.
 8. Higiene de sesión: cambiar contraseña no cierra las demás sesiones abiertas, y `/login` no redirige si ya hay una (vienen de la sección 13).
 9. Esquema: `timestamp` sin `withTimezone` y `users.username` / `password_hash` todavía nullable, aunque ya no haga falta (idem).
-10. Posible cuenta duplicada: `karlaarizmendi` (creada 2026-09-22/23, sin rutinas ni sesiones) y `karizmendi@grupoargue.com` (rutinas y sesiones reales desde antes) parecen la misma persona. Se le dio la rutina de natación a las dos por separado en lo que se confirma; si es duplicado, decidir si se borra la vacía o se le explica a la usuaria que ya tenía cuenta.
+10. Posible cuenta duplicada: `karlaarizmendi` (creada 2026-09-22/23, sin sesiones) y `karizmendi@grupoargue.com` (rutinas y sesiones reales desde antes) parecen la misma persona. Se le dio la rutina de natación a las dos por separado en lo que se confirma, y el 2026-09-23 también el programa completo (a pedido: "todos los usuarios que existen"); si es duplicado, decidir si se borra la vacía o se le explica a la usuaria que ya tenía cuenta.
+11. Nombres mal traducidos del catálogo que ya salen en las rutinas de todos: las 5 variantes `sled 45…` traen mojibake (`45в°` en vez de `45°`) tanto en `name` como en `name_es`, o sea que ya venía así desde ExerciseDB y el traductor sólo lo arrastró, y `cable pull through` quedó como "tirón through". Arreglo de datos en `exercises.name` / `name_es` (y revisar si un re-seed o `translate-exercises.ts` los vuelven a traer mal).
+12. `tests/smoke.mjs` espera **1 segundo fijo** después de teclear la búsqueda; contra producción en frío eso no alcanza y "search in Spanish" falla con 0 resultados aunque el paso siguiente (que sí espera al elemento) encuentre el ejercicio. Pasó el 2026-09-23: 8/9 y a la segunda 9/9. Cambiar el `waitForTimeout` por esperar a que aparezca la primera tarjeta.
 
 ## 10. Mapa del código
 
@@ -522,7 +554,8 @@ src/lib/
   blob.ts               mirrorExerciseGif, pendingGifIds, uploadExercisePhoto (no-op sin token)
   theme-script.ts       Script inline del tema: pone data-theme y el meta theme-color
                         antes del primer pintado y deja window.__tema para el selector
-public/sw.js            Service worker (app shell + páginas visitadas + gifs; VERSION v3)
+public/sw.js            Service worker (app shell + páginas visitadas + gifs; VERSION v5,
+                        que tiene que coincidir con PAGE_CACHE en Connectivity.tsx)
 scripts/
   seed-exercises.ts     Carga el catálogo desde ExerciseDB (con backoff por rate limit)
   translate-exercises.ts / preview-translations.ts   name_es
@@ -586,6 +619,7 @@ Arrancó todo en un solo día (2026-09-03) y sigue creciendo: el historial fino 
 | `16b5b71` | Aviso de récord en el momento (insignia en la fila, sólo si ya había marca previa) y resumen post-entrenamiento con los récords de la sesión; de paso, dos fugas de "placas" en español en la app bilingüe |
 | `9aa2d7e` | Migraciones versionadas: se adopta el historial existente en `drizzle/` en vez de ejecutarlo contra una base que ya tiene las 9 tablas; de regalo, `manifest.ts` deja el lavanda |
 | `ac9a8c6` | Progreso: bug real de duración de sesión corregido (`isSameLocalDay` + `closeAbandonedSession`, más las 5 filas dañadas arregladas en Neon y un tope de 6 h como red de seguridad), 1RM estimado, tarjeta de cobertura muscular, tendencia de frecuencia y "Sesiones" respetando el rango. Natación de verdad: `routines.kind`, `swim_blocks`/`swim_block_logs`, editor de bloques, checklist al entrenar, tarjeta de distancia/ritmo — con la rutina real de `bener` migrada del hack de "reps" a bloques de verdad |
+| `5e9a18a` | La app se renombra a FiTME con el ícono real del gimnasio: favicon, íconos PWA, apple-touch-icon, título, manifest, Login/Registro y notificaciones (el trabajo de la Undécima, que estaba sin subir). SW `v5` para que las PWA instaladas suelten el ícono viejo; `PAGE_CACHE` de `Connectivity.tsx` vuelve a coincidir (seguía en `pages-v3`) |
 
 ## 12. Tercera ronda (acordada 2026-09-03) — cerrada
 
