@@ -1,6 +1,7 @@
 import { db } from "../src/db";
 import { exercises } from "../src/db/schema";
 import { sql } from "drizzle-orm";
+import { normalizeExerciseName } from "../src/lib/translate-exercise";
 
 const API_BASE = "https://oss.exercisedb.dev/api/v1/exercises";
 
@@ -59,7 +60,7 @@ async function main() {
   console.log(`Fetched ${apiExercises.length} exercises. Inserting...`);
 
   const rows = apiExercises.map((e) => ({
-    name: e.name,
+    name: normalizeExerciseName(e.name),
     bodyPart: e.bodyParts?.[0] ?? null,
     equipment: e.equipments?.[0] ?? null,
     gifUrl: e.gifUrl,

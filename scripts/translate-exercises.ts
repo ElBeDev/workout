@@ -4,7 +4,12 @@ import { eq } from "drizzle-orm";
 import { translateExerciseName } from "../src/lib/translate-exercise";
 
 async function main() {
-  const rows = await db.select({ id: exercises.id, name: exercises.name }).from(exercises);
+  // Catalog only: a custom exercise's name_es is what the user typed, and
+  // running it through the translator would rewrite (at least lowercase) it.
+  const rows = await db
+    .select({ id: exercises.id, name: exercises.name })
+    .from(exercises)
+    .where(eq(exercises.isCustom, false));
   console.log(`Translating ${rows.length} names...`);
 
   const chunk = 25;

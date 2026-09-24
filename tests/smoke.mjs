@@ -56,11 +56,22 @@ async function main() {
 
     await page.click("text=Agregar ejercicio");
     await page.waitForSelector('input[placeholder^="Buscar"]');
+    // The picker already shows a browse list before typing, so "a card
+    // appeared" proves nothing: wait for this query's response, then for
+    // cards that actually match it. A fixed 1 s wait lost the race against
+    // a cold start in production (8/9 on 2026-09-23 with results that did
+    // arrive a moment later).
+    const searchDone = page.waitForResponse(
+      (r) => r.url().includes("/api/exercises/search") && new URL(r.url()).searchParams.get("q") === "press de banca",
+      { timeout: 20000 }
+    );
     await page.fill('input[placeholder^="Buscar"]', "press de banca");
-    await page.waitForTimeout(1000);
-    const cards = await page.locator(".grid button[type=button]").count();
+    await searchDone.catch(() => {});
+    const matches = page.locator(".grid button[type=button]", { hasText: /press de banca/i });
+    await matches.first().waitFor({ timeout: 10000 }).catch(() => {});
+    const cards = await matches.count();
     check("search in Spanish", cards > 0, `${cards} resultados`);
-    await page.locator(".grid button[type=button]").first().click();
+    await matches.first().click();
     await page.click("text=Agregar a la rutina");
     await page.waitForTimeout(1500);
     check("add exercise", (await page.textContent("body")).includes("Empezar entrenamiento"));

@@ -184,11 +184,13 @@ cubre (en lugar de adivinar). Después, volver a aplicar la excepción de §3.
 ## 6. Lo que quedó abierto
 
 - **Foto de la sentadilla péndulo**: bloqueada por el Blob privado.
-- **Nombres mal traducidos del catálogo** que ahora salen en las rutinas de
-  todos: "45в° prensa de pierna en trineo" (mojibake de `45°`; viene así desde
-  ExerciseDB en `name` y `name_es`, en 5 ejercicios) y
-  "tirón through en polea con cuerda" (debería ser "pull-through"). Es un
-  arreglo de `name_es` en el catálogo, afecta a cualquiera que los use.
+- ~~**Nombres mal traducidos del catálogo**~~ ✅ (2026-09-23). "45в° prensa
+  de pierna en trineo" ahora es "prensa de pierna a 45° en trineo" y "tirón
+  through" es "pull-through". De paso se corrigieron el resto de los
+  nombres en uso que sonaban mal ("tríceps extensión de tríceps (v-bar)",
+  "cadera abducción", "alto pulley…", "agarre remo sentado cerrado"…): 61
+  nombres del catálogo cambiaron, arreglando las reglas del traductor, no
+  la base a mano (ver la nota de `name_es` en PLAN.md).
 - **Cuenta duplicada de Karla** (`karlaarizmendi`): ya tiene todo copiado,
   pero sigue pendiente decidir si se borra.
 - **Usuarios nuevos arrancan vacíos**: hoy se les copia a mano. Las

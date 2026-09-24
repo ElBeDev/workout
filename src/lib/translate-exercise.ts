@@ -12,6 +12,11 @@
 type Rule = [RegExp, string];
 
 const EQUIPMENT: Rule[] = [
+  // Attachments: pulled out before "cable" so they read "con barra V en polea".
+  [/\bv-bar\b/g, "con barra V"],
+  [/\bpro lat bar\b/g, "con barra pro lat"],
+  // "high pulley" only restates the cable; "en polea" already says it.
+  [/\bhigh pulley\b/g, ""],
   [/\bez[- ]?bar(bell)?\b/g, "con barra Z"],
   [/\bolympic barbell\b/g, "con barra"],
   [/\btrap bar\b/g, "con barra hexagonal"],
@@ -59,7 +64,9 @@ const POSITIONAL: Rule[] = [
   [/\b(one|single)[- ]arm\b/g, "a una mano"],
   [/\b(one|single)[- ]?legg?(ed)?\b/g, "a una pierna"],
   [/\balternat(e|ing)\b/g, "alterno"],
+  [/\b45 ?°/g, "a 45°"],
   [/\bclose[- ]grip\b/g, "agarre cerrado"],
+  [/\bnarrow[- ]grip\b/g, "agarre cerrado"],
   [/\bwide[- ]grip\b/g, "agarre abierto"],
   [/\breverse[- ]grip\b/g, "agarre invertido"],
   [/\bneutral[- ]grip\b/g, "agarre neutro"],
@@ -121,9 +128,12 @@ const MOVEMENTS: Rule[] = [
   [/\bupright row\b/g, "remo al mentón"],
   [/\bbent[- ]over row\b/g, "remo inclinado"],
   [/\bvertical row\b/g, "remo vertical"],
+  [/\brear delt row\b/g, "remo para deltoides posterior"],
   [/\brow\b/g, "remo"],
   [/\blateral raise\b/g, "elevación lateral"],
   [/\bfront raise\b/g, "elevación frontal"],
+  // Before "calf raise" and "squat": the squat here is the machine, not the movement.
+  [/\bsquat calf raise\b/g, "elevación de talones"],
   [/\bcalf raise\b/g, "elevación de talones"],
   [/\bleg raise\b/g, "elevación de piernas"],
   [/\bknee raise\b/g, "elevación de rodillas"],
@@ -137,8 +147,13 @@ const MOVEMENTS: Rule[] = [
   [/\btriceps? extension\b/g, "extensión de tríceps"],
   [/\bleg extension\b/g, "extensión de pierna"],
   [/\bback extension\b/g, "extensión lumbar"],
+  [/\bhip extension\b/g, "extensión de cadera"],
+  [/\bhip abduction\b/g, "abducción de cadera"],
+  [/\bhip adduction\b/g, "aducción de cadera"],
   [/\bhyperextension\b/g, "hiperextensión"],
   [/\bextension\b/g, "extensión"],
+  // With "triceps" in front it would come out "tríceps extensión de tríceps".
+  [/\btriceps? pushdown\b/g, "extensión de tríceps"],
   [/\bpushdown\b/g, "extensión de tríceps"],
   [/\bkickback\b/g, "patada de tríceps"],
   [/\bpull[- ]?ups?\b/g, "dominada"],
@@ -173,6 +188,7 @@ const MOVEMENTS: Rule[] = [
   [/\b(lat )?pull ?down\b/g, "jalón al pecho"],
   [/\bpullover\b/g, "pullover"],
   [/\bface pull\b/g, "face pull"],
+  [/\bpull[- ]?through\b/g, "pull-through"],
   [/\bstep[- ]?ups?\b/g, "subida al cajón"],
   [/\bgood morning\b/g, "buenos días"],
   [/\bclean\b/g, "cargada"],
@@ -215,8 +231,10 @@ const MOVEMENTS: Rule[] = [
   [/\bcrossover\b/g, "cruce"],
   [/\bboxing\b/g, "boxeo"],
   [/\bhook\b/g, "gancho"],
-  [/\bpull\b/g, "tirón"],
-  [/\bpush\b/g, "empuje"],
+  // The catch-alls run last, so they must skip what earlier rules left in
+  // English on purpose ("pull-through", "pull-in", "face pull", "push press").
+  [/(?<!face )\bpull\b(?!-)/g, "tirón"],
+  [/\bpush\b(?! press)/g, "empuje"],
 ];
 
 const INLINE: Rule[] = [
@@ -304,8 +322,17 @@ function tidy(text: string) {
     .trim();
 }
 
+/**
+ * ExerciseDB ships a few names with the degree sign mis-decoded ("sled 45в°
+ * leg press": UTF-8 `°` read as Windows-1251). The seed cleans it on the way
+ * in; this is the same fix for anything that still carries it.
+ */
+export function normalizeExerciseName(name: string): string {
+  return name.replace(/в°/g, "°");
+}
+
 export function translateExerciseName(name: string): string {
-  let text = name.toLowerCase().replace(/\s+/g, " ").trim();
+  let text = normalizeExerciseName(name).toLowerCase().replace(/\s+/g, " ").trim();
 
   const equipment: string[] = [];
   const modifiers: string[] = [];
