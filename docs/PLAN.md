@@ -212,6 +212,15 @@ mismo día:
   actualizando en su lugar la rutina de cada día para no desligar el
   historial. El detalle, las reglas del dueño y el procedimiento para
   repetirlo están en [rutinas.md](./rutinas.md).
+- **Nombres del catálogo arreglados** (`9cc9f7b`), porque el programa nuevo
+  los puso a la vista de todos: el mojibake `45в°` de 5 prensas (venía de
+  ExerciseDB) y un grupo de traducciones que salían con el orden cambiado o
+  traducidas dos veces ("tríceps extensión de tríceps", "tirón through",
+  "empuje press"). Se arregló en las reglas del traductor, no en la base a
+  mano: 61 de 1,500 `name_es` cambiaron, cada uno revisado contra una foto
+  de antes. De paso, el script de traducción dejó de reescribir los
+  ejercicios propios, y el smoke test dejó de esperar un segundo fijo en
+  la búsqueda (pendientes #11 y #12).
 
 Notas de infra que ya no hay que repetir:
 - **`.env.local` apunta a la base de producción** (el `DATABASE_URL` que
@@ -423,7 +432,7 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 - ~~Décima: bug de duración de sesión corregido, 1RM/cobertura muscular/tendencia de frecuencia en Progreso, y natación de verdad (rutinas de bloques, checklist, tarjeta de distancia)~~ ✅
 - ~~Undécima: la app se renombra a FiTME (nombre del gimnasio real) con ícono propio a partir de su logo~~ ✅
 - ~~Duodécima: deck de propuesta para presentar FiTME (fuera del repo, artifact de Claude), con capturas reales, QR al PWA y los colores de marca de FiTME~~ ✅
-- ~~Decimotercera: favicon e íconos de FiTME publicados (SW v5), y programa de rutinas nuevo e igual para las 4 cuentas ([rutinas.md](./rutinas.md))~~ ✅
+- ~~Decimotercera: favicon e íconos de FiTME publicados (SW v5), programa de rutinas nuevo e igual para las 4 cuentas ([rutinas.md](./rutinas.md)), y nombres del catálogo arreglados en el traductor~~ ✅
 
 **Queda abierto (sin prisa), en este orden sugerido:**
 

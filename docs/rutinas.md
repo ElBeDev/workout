@@ -32,6 +32,9 @@ se ve en https://workout-eight-neon.vercel.app al recargar, sin deploy.
 
 Todas las de fuerza van a **2 series** por ejercicio, sin peso objetivo
 (`target_weight` en null: cada quien lo registra la primera vez) y en `kg`.
+Los nombres de abajo son los que muestra la app (`name_es`) desde el arreglo
+de traducciones del 2026-09-23 (§6), para que se encuentren tal cual al
+buscarlos.
 
 ### Lunes — Tren Superior — Empuje
 
@@ -40,7 +43,7 @@ Todas las de fuerza van a **2 series** por ejercicio, sin peso objetivo
 3. Press de pecho inclinado en máquina — 2×8
 4. Apertura sentado en máquina — 2×12
 5. Elevación lateral a una mano en polea — 2×12
-6. Extensión de tríceps (v-bar) en polea — 2×10
+6. Extensión de tríceps con barra V en polea — 2×10
 7. Curl en polea — 2×10 *(agregado el 2026-09-23; venía de la rutina de Erika)*
 
 ### Martes — Pierna y Glúteo
@@ -65,11 +68,11 @@ Karla de "Alberca" a "Natación".
 
 ### Jueves — Espalda y Hombro *(nueva)*
 
-1. Jalón al pecho (pro dorsal bar) en polea — 2×8 *(de Erika)*
+1. Jalón al pecho con barra pro lat en polea — 2×8 *(de Erika)*
 2. Remo sentado agarre cerrado en máquina — 2×8 *(de Erika)*
 3. Press de hombro v. 3 en máquina — 2×8
 4. Jalón al pecho brazo recto en polea — 2×10 *(con barra, brazos extendidos)*
-5. Deltoides posterior: remo de pie en polea con cuerda (face pull) — 2×12 *(de Karla)*
+5. Remo para deltoides posterior de pie en polea con cuerda (face pull) — 2×12 *(de Karla)*
 6. Encogimiento de hombros en polea — 2×12 *(de Erika)*
 7. Curl en banco Scott en máquina — 2×10 *(Erika: ver §3)*
 8. Extensión de tríceps por encima de la cabeza en polea — 2×10 *(de Karla)*
@@ -86,13 +89,13 @@ mano se cambió por el **jalón con brazos rectos** a dos manos.
 Pensada como complemento del martes, no como repetición: ningún ejercicio se
 repite entre los dos días.
 
-1. Prensa de pierna 45° en trineo — 2×10 *(de Karla; pies altos en la plataforma para cargar glúteo y femoral)*
+1. Prensa de pierna a 45° en trineo — 2×10 *(de Karla; pies altos en la plataforma para cargar glúteo y femoral)*
 2. Curl femoral acostado en máquina — 2×10 *(de Karla; el martes es sentado)*
 3. Pull-through en polea con cuerda — 2×12 *(bisagra de cadera: femoral y glúteo)*
 4. Sentadilla péndulo — 2×10 *(ejercicio propio, ver §4)*
 5. Aducción de cadera sentado en máquina — 2×12 *(el martes es abducción)*
 6. Extensión de pierna en máquina — 2×12 *(de Erika)*
-7. Elevación de talones en prensa de pierna — 2×15 *(de Karla; el martes es sentado)*
+7. Elevación de talones en prensa de pierna sentado en máquina — 2×15 *(de Karla; el martes es sentado)*
 
 La posición 4 pasó por dos intentos antes de quedar: patada de glúteo en polea
 (el dueño no quiso polea ahí) → sentadilla búlgara en Smith (tampoco) →
