@@ -15,18 +15,19 @@ const inter = Inter({
   weight: ["400", "500", "600", "700"],
 });
 
-// "Workout" es el nombre de la app: no se traduce. La descripción sí, porque
-// es la que se ve al compartir el enlace y en los resultados de búsqueda.
+// "FiTME" es el nombre de la app (antes "Workout"): no se traduce. La
+// descripción sí, porque es la que se ve al compartir el enlace y en los
+// resultados de búsqueda.
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDict();
   return {
-    title: "Workout",
+    title: "FiTME",
     description: t.comun.meta.descripcion,
     manifest: "/manifest.webmanifest",
     appleWebApp: {
       capable: true,
       statusBarStyle: "default",
-      title: "Workout",
+      title: "FiTME",
     },
     icons: {
       icon: [

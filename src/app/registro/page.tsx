@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Dumbbell } from "lucide-react";
 import { Card, Input, PrimaryButton } from "@/components/ui";
 import { getDict } from "@/i18n";
 import { registerAction } from "./actions";
@@ -16,8 +15,9 @@ export default async function RegistroPage({
   return (
     <div className="flex min-h-[85vh] flex-col justify-center gap-6">
       <div className="flex flex-col items-center gap-3 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-card bg-primary text-primary-foreground shadow-hero">
-          <Dumbbell className="h-7 w-7" />
+        <div className="h-16 w-16 overflow-hidden rounded-card shadow-hero">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon-512.png" alt="" className="h-full w-full object-cover" />
         </div>
         <div>
           <h1 className="text-[34px] font-bold tracking-[-0.02em]">{t.acceso.registro.titulo}</h1>

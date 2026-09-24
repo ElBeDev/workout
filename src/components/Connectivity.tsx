@@ -6,7 +6,7 @@ import { WifiOff } from "lucide-react";
 import { useT } from "@/i18n/client";
 
 // Must match `pages-${VERSION}` in public/sw.js.
-const PAGE_CACHE = "pages-v3";
+const PAGE_CACHE = "pages-v5";
 
 /**
  * Registers the service worker, keeps the current page in the offline

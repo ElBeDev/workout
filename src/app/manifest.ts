@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Workout",
-    short_name: "Workout",
+    name: "FiTME",
+    short_name: "FiTME",
     description: "Lleva tus rutinas, pesos y repeticiones desde el celular.",
     start_url: "/",
     display: "standalone",

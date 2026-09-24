@@ -1,4 +1,4 @@
-# Documentación de Workout
+# Documentación de FiTME
 
 Todo lo escrito sobre la app vive aquí. El `README.md` de la raíz es sólo el
 arranque rápido (instalar, correr, scripts).

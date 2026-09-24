@@ -206,6 +206,30 @@ desechable.
   (`18d1a88c-c79f-46b2-8f49-28ef35587d05`): `kind = 'natacion'`, sin bloques
   — se dejó vacía a propósito, ella arma su plan.
 
+### 5.1 La rutina se repartió a todos (2026-09-22, a pedido)
+
+Los mismos 4 bloques de la rutina de `bener` (calentamiento 400 m,
+principal 8×100 m descanso 15 s, patada 4×50 m descanso 20 s, enfriamiento
+200 m), asignados al miércoles (`days: [3]`) para todos los usuarios que no
+la tenían — vía script contra Neon, sin cambios de código (el feature ya
+soportaba duplicar bloques, sólo faltaba correrlo por cada cuenta):
+
+- **`erika gordillo`** — no tenía nada el miércoles: rutina "Natación" nueva
+  (`0f2e17fe-…`) con los 4 bloques.
+- **`karlaarizmendi`** — cuenta sin rutinas ni sesiones: rutina "Natación"
+  nueva (`3bd43d3e-…`) con los 4 bloques.
+- **`karizmendi@grupoargue.com`** — ya tenía "Alberca" vacía en miércoles: se
+  le llenaron los mismos 4 bloques ahí en vez de crear una rutina duplicada
+  para el mismo día.
+
+Al hacerlo salió una cuenta rara: **`karlaarizmendi`** (creada
+2026-09-22/23, sin rutinas ni sesiones) y **`karizmendi@grupoargue.com`**
+(rutinas y sesiones reales de hace semanas) parecen la misma persona con dos
+cuentas. Se le dio la rutina a las dos por separado para no dejar a nadie sin
+ella mientras se confirma; queda anotado como pendiente en
+[PLAN.md §9.10](./PLAN.md#9-roadmap) — no es una decisión que le toque a
+quien programa, sino a quien conoce a las usuarias.
+
 ## 6. Decisiones ya tomadas (para no volver a discutirlas)
 
 - Arquitectura: **Opción A** completa desde el día 1 (tablas nuevas), no la

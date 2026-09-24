@@ -56,7 +56,7 @@ export async function probarAviso() {
   const { enviarAviso } = await import("@/lib/push");
   const [u] = await db.select({ username: users.username }).from(users).where(eq(users.id, userId));
   return enviarAviso(userId, {
-    titulo: "Workout",
+    titulo: "FiTME",
     cuerpo: `Así se va a ver tu recordatorio, ${u?.username ?? ""}.`.trim(),
     url: "/",
   });

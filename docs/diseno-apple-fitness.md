@@ -1,4 +1,4 @@
-# Rediseño visual: Workout al estilo Apple Fitness
+# Rediseño visual: FiTME al estilo Apple Fitness
 
 > Estado (2026-09-22, noche): **fases 0 a 4 completas; 5 y 6 a medias** — lo que queda
 > está marcado con ⏳ en la sección 9. Después del rediseño entraron tres tandas que

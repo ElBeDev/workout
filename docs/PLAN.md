@@ -109,6 +109,88 @@ Novena (2026-09-22): **rediseño visual completo al estilo Apple Fitness**. Se f
 - Descartar un entrenamiento confirmaba en un bloque inline que se desbordaba de la tarjeta de "En curso" y dejaba el botón cortado por el borde de la pantalla; ahora es una hoja de acción, igual desde Home que desde la sesión (`16419ee`).
 - Perfil le explicaba al usuario de dónde salen los gifs y que hay un almacenamiento propio; eso es plomería y se fue a /admin → "Mantenimiento" (`acec7ac`).
 
+Décima (2026-09-22, `ac9a8c6`): **bug real de duración de sesión corregido +
+cuatro mejoras a Progreso, y natación de verdad**. El detalle completo de
+cada mejora vive en [mejoras-progreso.md](./mejoras-progreso.md); el de
+natación en [natacion.md](./natacion.md). Resumen:
+
+- Duración de sesión: 5 de 21 sesiones reales tenían duraciones absurdas (de
+  horas a 17 días) por reabrir una sesión de un día anterior en vez de crear
+  una nueva, y por sellar el cierre automático con la hora de quien la
+  encontraba en vez de la última actividad real. Arreglado hacia adelante
+  (`isSameLocalDay`, `closeAbandonedSession`) y hacia atrás (las 5 filas
+  corregidas a mano contra Neon), más un tope de 6 h en los agregados como
+  red de seguridad.
+- Progreso: 1RM estimado (Epley) como métrica alterna en la gráfica de un
+  ejercicio, tarjeta de cobertura muscular (días desde la última vez por
+  grupo), tendencia de frecuencia junto a la de carga, y "Sesiones" ahora
+  respeta el rango elegido arriba (antes eran siempre las últimas 30).
+- Natación: `routines.kind` ('fuerza' | 'natacion') decide si una rutina usa
+  `routine_exercises` (pesas) o las tablas nuevas `swim_blocks` /
+  `swim_block_logs` (bloques de calentamiento/principal/patada/enfriamiento
+  con estilo, distancia y descanso) — modelo propio en vez de estirar el de
+  pesas. Selector de tipo al crear rutina, editor de bloques, modo
+  entrenamiento como checklist (sin logueo en vivo: el teléfono no entra a
+  la alberca), y una tarjeta de distancia/ritmo en Progreso. La rutina real
+  de `bener` se migró del hack de "reps = minutos" a bloques de verdad, y
+  esa misma rutina se replicó a los demás usuarios (`erika gordillo`,
+  `karlaarizmendi`, y los bloques de `karizmendi@grupoargue.com` en su
+  "Alberca" ya existente) para el miércoles siguiente.
+
+Undécima (2026-09-23): **la app se renombra a FiTME**, el nombre del
+gimnasio real para el que se está armando ("Workout" era un nombre genérico
+de mientras se construía). Cambiado en todo lo que el usuario ve: `<title>`,
+manifest de la PWA (`name`/`short_name`), título de la app en iOS
+(`appleWebApp`), encabezado de Login/Registro, texto de las notificaciones
+push y el comentario del service worker; también `package.json` (`name:
+"fitme"`) y los encabezados de `README.md` / `docs/README.md` /
+`diseno-apple-fitness.md`. Nuevo ícono real a partir del logo del gimnasio
+(`fitmeLogo.jpg`, recortado al mark "FIT ME" sin el subtítulo, que no se lee
+a tamaño de ícono): reemplaza `icon.png`, `favicon.ico`,
+`apple-touch-icon.png`, `icon-192.png`, `icon-512.png` y una versión
+`maskable` con más margen de seguridad; probado en miniatura (32px/64px) y
+contra una máscara circular antes de subirlo. Login y Registro también
+cambian el ícono de mancuerna genérico por el ícono real de la app. El
+service worker sube a `v5`: sirve los íconos cache-first con la misma URL,
+así que sin cambiar de versión una PWA ya instalada seguiría mostrando la
+mancuerna; de paso `PAGE_CACHE` de `Connectivity.tsx`, que se había quedado
+en `pages-v3`, vuelve a coincidir con el SW.
+
+Duodécima (2026-09-23): **deck de propuesta para presentar FiTME, hecho con
+Claude (tipo de artifact "Slides")**. No vive en este repo: es un artifact
+privado de Claude, 14 diapositivas, descargable en PDF/PPTX desde su propia
+página para mostrarlo fuera de Claude. Queda anotado aquí para que quede
+registro de que existe y cómo se armó, no como parte del código.
+
+- Contenido: portada, el problema y qué es la app, recorrido por Resumen /
+  Rutinas / Entrenar / Progreso (1RM, cobertura muscular, tendencia de
+  frecuencia), natación, diseño (claro y oscuro), panel de administrador
+  para entrenadores, qué sigue y cierre.
+- Las capturas de pantalla son reales, no maquetas: se sembró una cuenta de
+  demo con cuatro semanas de progresión (para que la gráfica de 1RM mostrara
+  una tendencia de verdad) y una cuenta admin con clientes de demo nombrados
+  a propósito después de la K en el alfabeto, para que ordenaran aparte de
+  los cuatro usuarios reales y nunca salieran en una captura pensada para
+  enseñarse fuera de la empresa. La cuenta de demo se borró al terminar.
+- Cierre con un código QR (no la URL en texto) que abre
+  `workout-eight-neon.vercel.app` directo al escanear; se generó con
+  `qrencode` y se verificó decodificándolo con `zbarimg` antes de subirlo,
+  con el ícono de FiTME incrustado al centro (probado que seguía leyendo
+  bien con el logo encima).
+- Marca: colores de FiTME tomados del logo real (`#EFE437` amarillo,
+  `#6BBDAF` turquesa, muestreados del PNG, no inventados) en cada mención de
+  la marca; como ninguno de los dos tiene contraste suficiente sobre el
+  fondo claro de las diapositivas, van sobre una placa negra chica (mismo
+  fondo que el ícono real). Fondo unificado a un solo tono claro en las 14
+  diapositivas (antes portada/cierre eran negras y natación tenía otro
+  tinte). Sin guiones largos en ningún texto, por pedido explícito: cada uno
+  se resolvió con coma, dos puntos, paréntesis o punto y coma, según pedía
+  la frase, nunca con un reemplazo automático.
+- Se quitó la diapositiva de cifras sueltas (número de usuarios, rutinas,
+  series) y se agregó una nueva sobre el panel de administrador (la
+  función ya existe desde la Sexta ronda), mostrando la vista real de un
+  coach con sus clientes.
+
 Notas de infra que ya no hay que repetir:
 - El cliente de DB (`src/db/index.ts`) es "lazy" a propósito — si se inicializa en el import top-level, `next build` truena en Vercel al analizar rutas aunque `DATABASE_URL` sí exista en el entorno de runtime.
 - En Vercel, la integración de Neon prefija sus variables como `DATABASE_URL_*` si ya existe una variable llamada `DATABASE_URL` — la que de verdad lee el código es la que se llama exactamente `DATABASE_URL` (sin prefijo).
@@ -309,6 +391,9 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 - ~~Séptima: "Agregar ejercicio" pasa de panel siempre visible a botón + hoja deslizante~~ ✅
 - ~~Octava: libras (lb) como unidad de carga alterna a kg, con historial por serie fiel a como se tecleó~~ ✅
 - ~~Novena: rediseño visual completo al estilo Apple Fitness (anillos semanales con metas, tendencias, récords, calendario de constancia, resumen post-entrenamiento)~~ ✅
+- ~~Décima: bug de duración de sesión corregido, 1RM/cobertura muscular/tendencia de frecuencia en Progreso, y natación de verdad (rutinas de bloques, checklist, tarjeta de distancia)~~ ✅
+- ~~Undécima: la app se renombra a FiTME (nombre del gimnasio real) con ícono propio a partir de su logo~~ ✅
+- ~~Duodécima: deck de propuesta para presentar FiTME (fuera del repo, artifact de Claude), con capturas reales, QR al PWA y los colores de marca de FiTME~~ ✅
 
 **Queda abierto (sin prisa), en este orden sugerido:**
 
@@ -323,6 +408,7 @@ El plan de ataque de lo próximo, con lo que ya se decidió, vive en [siguiente-
 7. ~~El manifest sigue en lavanda.~~ ✅ (2026-09-22) `src/app/manifest.ts` ya usa `#000000`.
 8. Higiene de sesión: cambiar contraseña no cierra las demás sesiones abiertas, y `/login` no redirige si ya hay una (vienen de la sección 13).
 9. Esquema: `timestamp` sin `withTimezone` y `users.username` / `password_hash` todavía nullable, aunque ya no haga falta (idem).
+10. Posible cuenta duplicada: `karlaarizmendi` (creada 2026-09-22/23, sin rutinas ni sesiones) y `karizmendi@grupoargue.com` (rutinas y sesiones reales desde antes) parecen la misma persona. Se le dio la rutina de natación a las dos por separado en lo que se confirma; si es duplicado, decidir si se borra la vacía o se le explica a la usuaria que ya tenía cuenta.
 
 ## 10. Mapa del código
 

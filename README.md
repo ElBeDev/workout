@@ -1,4 +1,4 @@
-## Workout
+## FiTME
 
 App web mobile-first (PWA) para llevar rutinas de gym: armar rutinas con
 ejercicios del catálogo (1,500 con gif, nombres en español) o propios,
