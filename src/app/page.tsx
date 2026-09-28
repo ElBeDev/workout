@@ -18,6 +18,8 @@ import { Card, GroupedList, PageHeader, SectionTitle } from "@/components/ui";
 import { RingTrio, RingLegend, type RingDatum } from "@/components/Rings";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { DiscardSessionButton } from "@/components/DiscardSessionButton";
+import { CoachInbox } from "@/components/CoachComments";
+import { getUnreadComments } from "@/db/gym";
 import { startSession } from "./entrenar/actions";
 
 export const dynamic = "force-dynamic";
@@ -35,7 +37,7 @@ export default async function HomePage() {
   const dict = await getDict();
   const t = dict.hoy;
   const [user] = await db.select().from(users).where(eq(users.id, userId));
-  const [myRoutines, openSession, weekly, rings] = await Promise.all([
+  const [myRoutines, openSession, weekly, rings, coachComments] = await Promise.all([
     getRoutineSummaries(userId),
     getOpenSession(userId),
     getWeeklyStats(userId),
@@ -44,6 +46,7 @@ export default async function HomePage() {
       sets: user?.goalWeeklySets ?? 60,
       days: user?.goalWeeklyDays ?? 4,
     }),
+    getUnreadComments(userId),
   ]);
 
   const today = todayWeekday();
@@ -139,6 +142,8 @@ export default async function HomePage() {
           </div>
         </Card>
       )}
+
+      <CoachInbox comments={coachComments} t={dict} />
 
       {myRoutines.length === 0 ? (
         <section className="flex flex-col gap-3">

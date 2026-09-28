@@ -490,6 +490,77 @@ export async function getDailyTraining(
   return byDay;
 }
 
+export type SessionExerciseGroup = {
+  exerciseId: string;
+  name: string;
+  nameEs: string | null;
+  gifUrl: string | null;
+  bodyPart: string | null;
+  sets: {
+    setId: string;
+    setNumber: number;
+    weight: string | null;
+    weightUnit: WeightUnit;
+    plates: number | null;
+    reps: number | null;
+  }[];
+};
+
+/**
+ * Las series marcadas de una sesión, agrupadas por ejercicio en el orden en
+ * que se hicieron, más sus totales. No filtra por dueño: quien llama ya
+ * comprobó que puede verla (el socio en Progreso, el coach en /admin).
+ */
+export async function getSessionExerciseGroups(
+  sessionId: string
+): Promise<{ groups: SessionExerciseGroup[]; setCount: number; volumeKg: number }> {
+  const rows = await db
+    .select({
+      exerciseId: exercises.id,
+      name: exercises.name,
+      nameEs: exercises.nameEs,
+      gifUrl: exerciseGif,
+      bodyPart: exercises.bodyPart,
+      setId: setLogs.id,
+      setNumber: setLogs.setNumber,
+      weight: setLogs.weight,
+      weightUnit: setLogs.weightUnit,
+      plates: setLogs.plates,
+      reps: setLogs.reps,
+      loggedAt: setLogs.loggedAt,
+    })
+    .from(setLogs)
+    .innerJoin(exercises, eq(setLogs.exerciseId, exercises.id))
+    .where(and(eq(setLogs.sessionId, sessionId), eq(setLogs.completed, true)))
+    .orderBy(asc(setLogs.loggedAt), asc(setLogs.setNumber));
+
+  const groups: SessionExerciseGroup[] = [];
+  for (const s of rows) {
+    let g = groups.find((x) => x.exerciseId === s.exerciseId);
+    if (!g) {
+      g = { exerciseId: s.exerciseId, name: s.name, nameEs: s.nameEs, gifUrl: s.gifUrl, bodyPart: s.bodyPart, sets: [] };
+      groups.push(g);
+    }
+    g.sets.push({
+      setId: s.setId,
+      setNumber: s.setNumber,
+      weight: s.weight,
+      weightUnit: s.weightUnit === "lbs" ? "lbs" : "kg",
+      plates: s.plates,
+      reps: s.reps,
+    });
+  }
+  for (const g of groups) g.sets.sort((a, b) => a.setNumber - b.setNumber);
+
+  // Volume always sums in kg so mixing kg- and lb-tracked exercises in one
+  // session still adds up to a single coherent number.
+  const volumeKg = rows.reduce(
+    (sum, s) => sum + toKg(Number(s.weight ?? 0), s.weightUnit === "lbs" ? "lbs" : "kg") * (s.reps ?? 0),
+    0
+  );
+  return { groups, setCount: rows.length, volumeKg };
+}
+
 export type SessionSummary = {
   id: string;
   startedAt: Date;

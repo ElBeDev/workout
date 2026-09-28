@@ -5,8 +5,9 @@ import { revalidatePath } from "next/cache";
 import { eq, isNotNull, sql } from "drizzle-orm";
 import { put } from "@vercel/blob";
 import { db } from "@/db";
-import { routines, users, exercises } from "@/db/schema";
+import { routines, users, exercises, challenges } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin";
+import { isMetric } from "@/db/gym";
 import { pendingGifIds } from "@/lib/blob";
 
 export async function createRoutineForUser(targetUserId: string, formData: FormData) {
@@ -24,6 +25,38 @@ export async function createRoutineForUser(targetUserId: string, formData: FormD
 
   revalidatePath(`/admin/usuarios/${targetUserId}`);
   redirect(`/rutinas/${routine.id}`);
+}
+
+/**
+ * Crea un reto del gimnasio. Las fechas llegan de `<input type="date">` como
+ * YYYY-MM-DD y se guardan tal cual: son días locales (hora de México), y los
+ * bordes en UTC se calculan al leer (`localDayStart`).
+ */
+export async function createChallenge(formData: FormData) {
+  const createdBy = await requireAdmin();
+  const title = String(formData.get("title") ?? "").trim().slice(0, 80);
+  const metric = String(formData.get("metric") ?? "");
+  const startsOn = String(formData.get("startsOn") ?? "");
+  const endsOn = String(formData.get("endsOn") ?? "");
+  const goalRaw = String(formData.get("goal") ?? "").trim();
+  const goal = goalRaw ? Math.round(Number(goalRaw)) : null;
+
+  const ymd = /^\d{4}-\d{2}-\d{2}$/;
+  if (!title || !isMetric(metric) || !ymd.test(startsOn) || !ymd.test(endsOn)) return;
+  if (endsOn < startsOn) redirect("/admin/retos?error=fechas");
+  if (goal !== null && (!Number.isFinite(goal) || goal <= 0 || goal > 100_000_000)) return;
+
+  await db.insert(challenges).values({ title, metric, goal, startsOn, endsOn, createdBy });
+  revalidatePath("/admin/retos");
+  revalidatePath("/retos");
+  redirect("/admin/retos");
+}
+
+export async function deleteChallenge(challengeId: string) {
+  await requireAdmin();
+  await db.delete(challenges).where(eq(challenges.id, challengeId));
+  revalidatePath("/admin/retos");
+  revalidatePath("/retos");
 }
 
 /**

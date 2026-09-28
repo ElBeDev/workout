@@ -54,6 +54,34 @@ export function isSameLocalDay(a: Date, b: Date): boolean {
   );
 }
 
+/** Fecha de hoy en APP_TIME_ZONE como YYYY-MM-DD. */
+export function todayYmd(now = new Date()): string {
+  return localDate(now).toISOString().slice(0, 10);
+}
+
+/** YYYY-MM-DD más `n` días (n puede ser negativo). */
+export function addDaysYmd(ymd: string, n: number): string {
+  const d = new Date(`${ymd}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+/** Días de `from` a `to` (YYYY-MM-DD); negativo si `to` ya pasó. */
+export function daysBetweenYmd(from: string, to: string): number {
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86400000);
+}
+
+/**
+ * El instante (UTC) en que empieza el día local `ymd` en APP_TIME_ZONE: el
+ * borde de los rangos de Retos ("del 1 al 30 de septiembre" en hora de
+ * México, no en la del servidor). Se mide el desfase en vez de clavar −6 h.
+ */
+export function localDayStart(ymd: string): Date {
+  const guess = new Date(`${ymd}T00:00:00Z`).getTime();
+  const offset = localDate(new Date(guess)).getTime() - guess;
+  return new Date(guess - offset);
+}
+
 export function daysAgo(date: Date, now = new Date()): number {
   const a = localDate(date);
   const b = localDate(now);

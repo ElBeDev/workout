@@ -4,7 +4,7 @@
 
 🟢 **En línea**: https://workout-eight-neon.vercel.app — repo en [github.com/ElBeDev/workout](https://github.com/ElBeDev/workout), deploy automático a Vercel en cada push a `main`.
 
-En la base hoy: **4 usuarios** con **las mismas 5 rutinas cada uno** (20 en total, ver [rutinas.md](./rutinas.md)), 22 sesiones terminadas (0 abiertas), 171 series registradas, 1,500 ejercicios de catálogo + 4 propios (la sentadilla péndulo, una copia por cuenta) — y **0 gifs con copia propia** (ver el pendiente #1). Los 116 ejercicios de rutina siguen en `kg` y no hay una sola serie registrada en lb ni en placas. Para refrescar las cifras: `select count(*)` sobre `users`, `routines`, `workout_sessions where finished_at is not null` y `set_logs`.
+En la base hoy: **6 usuarios** (dos se registraron el 2026-09-24 y arrancaron con una rutina cada uno; las 4 cuentas de antes tienen **las mismas 5 rutinas cada una**, ver [rutinas.md](./rutinas.md)), 22 sesiones terminadas (0 abiertas), 171 series registradas, 1,500 ejercicios de catálogo + 4 propios (la sentadilla péndulo, una copia por cuenta) — y **0 gifs con copia propia** (ver el pendiente #1). Los 116 ejercicios de rutina siguen en `kg` y no hay una sola serie registrada en lb ni en placas. Para refrescar las cifras: `select count(*)` sobre `users`, `routines`, `workout_sessions where finished_at is not null` y `set_logs`.
 
 ### Qué tiene la app hoy
 
@@ -35,7 +35,9 @@ completo y lo que sigue abierto (logueo por repetición, plantillas, SWOLF).
 
 **Perfil** — **apariencia** (Sistema / Claro / Oscuro), **sonido** del fin de descanso, **idioma** (Español / English), **recordatorio de "hoy toca"** por notificación push (una vez al día, a las 19:00 de Ciudad de México — el plan gratuito de Vercel no permite un cron más frecuente), metas semanales de los tres anillos (carga, series, días), peso corporal con gráfica, cambiar contraseña y cerrar sesión (que además purga caches de páginas y colas locales). ⚠️ Ese purgado borra **todas** las claves `workout:*`, incluida `workout:tema`, así que hoy cerrar sesión devuelve la apariencia a "Sistema". Lo correcto es excluir esa clave en `LogoutButton`, no dejar de purgar.
 
-**Administrador** (solo `is_admin`) — lista de usuarios con su número de rutinas; entrar a uno y armarle rutinas con el mismo editor de siempre, con un banner de aviso y sin el botón de entrenar (el admin arma, no entrena por nadie). Bloque de mantenimiento con el respaldo de gifs (⚠️ hoy no operativo, ver pendientes).
+**Panel del coach** (solo `is_admin`, en `/admin`) — los socios en dos bloques: arriba, en rojo, quien lleva **10 días o más sin venir** o nunca ha entrenado; abajo los activos, cada uno con su última vez y sus días/series de 30 días. La ficha de cada socio trae sus anillos de la semana, sus números de 30 días con la tendencia de frecuencia, los músculos que lleva 14+ días sin tocar, **comentarios** (sueltos o sobre una sesión; al socio le salen en Hoy hasta que pulsa "Entendido" y le llega un push), sus sesiones recientes (cada una se abre en sólo lectura con su hilo de comentarios) y sus rutinas, que se le siguen armando con el mismo editor de siempre (banner de aviso, sin botón de entrenar). `/admin/retos` crea y borra los retos del gimnasio. Bloque de mantenimiento con el respaldo de gifs (⚠️ hoy no operativo, ver pendientes). Detalle en [coach-y-retos.md](./coach-y-retos.md).
+
+**Retos** (quinta pestaña) — ranking del gimnasio de la semana o del mes por días entrenados (por omisión), carga, series o metros nadados, y los retos que arma el coach (fechas, métrica, meta por persona opcional) con tu barra de progreso, cuántos lo lograron, podio y tu lugar. Todo se calcula al vuelo de las series registradas, con los criterios de los anillos. Se muestra un **nombre visible** que cada quien elige en Perfil (nunca el usuario completo, que puede ser un correo) y se puede **salir del ranking**. Detalle en [coach-y-retos.md](./coach-y-retos.md).
 
 **PWA y offline** — instalable, con ícono y tema propios. Service worker propio: el shell y las páginas ya visitadas abren sin señal, y las series marcadas sin conexión se encolan en `localStorage` y se sincronizan al reconectar, con un banner que lo avisa.
 
@@ -43,7 +45,7 @@ completo y lo que sigue abierto (logueo por repetición, plantillas, SWOLF).
 
 ### Cómo se prueba
 
-`npm run build` y `npx eslint src` son el mínimo. La referencia real es `npm run smoke`: 9 pruebas con Playwright sobre una cuenta desechable que se crea y se borra sola, y que se corre **también contra producción** con `BASE_URL=https://workout-eight-neon.vercel.app`. Para lo visual se siembra una cuenta QA con datos y se revisan capturas en claro y oscuro.
+`npm run build` y `npx eslint src` son el mínimo. La referencia real es `npm run smoke`: 10 pruebas con Playwright sobre una cuenta desechable que se crea y se borra sola, y que se corre **también contra producción** con `BASE_URL=https://workout-eight-neon.vercel.app`. Para lo visual se siembra una cuenta QA con datos y se revisan capturas en claro y oscuro.
 
 ### Historial de rondas (cómo llegamos aquí)
 
@@ -248,6 +250,7 @@ Notas de infra que ya no hay que repetir:
 - Toda la documentación vive en `docs/` (`PLAN.md` se movió ahí con `git mv`).
 - **Migraciones versionadas** (2026-09-22): `npx drizzle-kit generate` sobre el `schema.ts` de ese día produjo `drizzle/0000_clever_nocturne.sql` — una única migración que reconstruye las 9 tablas completas, porque nunca había habido una carpeta `drizzle/` (todo se aplicó a mano hasta ahora). Para no re-ejecutarla contra una base que YA tiene esas tablas, se **adoptó** el historial en vez de correrla: se verificaron primero las 9 tablas contra `information_schema.tables`, y sólo entonces se creó `drizzle.__drizzle_migrations` (schema y tabla que usa el migrador de Drizzle) y se insertó a mano la fila que esa migración habría dejado si hubiera corrido de verdad — mismo `hash` (sha256 del `.sql` completo) y mismo `created_at` (el `when` de `drizzle/meta/_journal.json`). Verificado con `drizzle-kit migrate` y con el `migrate()` de `drizzle-orm/neon-http` directamente: los dos terminan sin error y sin tocar ninguna tabla, o sea que reconocen la migración 0000 como ya aplicada. `db:push` se corrió después y siguió sin reportar diferencia. **De aquí en adelante**: un cambio de esquema es `schema.ts` → `npm run db:generate` (crea la migración nueva) → `npm run db:migrate` (la aplica) → commit de `drizzle/`. Sigue habiendo un caso en el que hay que aplicar a mano primero (tabla con datos y sin TTY, igual que con `db:push`): ahí el orden es SQL a mano → `db:generate` (para que quede registrada) → adoptarla con el mismo procedimiento de arriba en vez de dejarla pendiente.
 - Cuarta ronda de migraciones a mano: índices (`set_logs(exercise_id)`, `workout_sessions(user_id, finished_at)`, `sessions(expires_at)`, `exercises(user_id)`, `routine_exercises(routine_id)`) y el índice único parcial `workout_sessions(user_id, routine_id) WHERE finished_at IS NULL` (una sola sesión abierta por rutina). Todos declarados también en `schema.ts`.
+- Migración versionada `drizzle/0002_massive_reptil.sql` (2026-09-24): `users.display_name`, `users.show_in_ranking` (default `true`) y las tablas `coach_comments` / `challenges` (ver [coach-y-retos.md](./coach-y-retos.md)). Aditiva; aplicada con `node --env-file=.env.local node_modules/.bin/drizzle-kit migrate` porque `npm run db:migrate` no carga `.env.local` (pendiente #14).
 - Migración versionada `drizzle/0001_faulty_franklin_storm.sql` (2026-09-22): `routines.kind` (default `'fuerza'`) y las tablas `swim_blocks` / `swim_block_logs` para natación (ver [natacion.md](./natacion.md)). Generada con `db:generate` y aplicada con el `migrate()` de `drizzle-orm/neon-http` directamente (aditiva, sin necesidad de adoptar nada a mano); `db:push` confirmó cero diferencias después.
 - Al cerrar sesión, `LogoutButton` borra los caches `pages-*` y las colas `workout:*` de `localStorage`, y avisa al SW (`purge-pages`). El SW (v3) no cachea respuestas redirigidas ni `/login`.
 - Vercel Blob: `BLOB_READ_WRITE_TOKEN` es un secreto de solo escritura en Vercel (no se puede revelar ni bajar con `vercel env pull`), así que el barrido de gifs se hace desde la app: **/admin → "Mantenimiento"** → botón que copia en tandas de 6 los gifs de los ejercicios que usa la cuenta admin. Estaba en Perfil y se movió al panel de admin (2026-09-22): es plomería interna y los usuarios no se tienen que enterar de dónde viven los gifs. El bloque se renderiza **siempre**, con o sin token: sin él sale un aviso en ámbar («Sin BLOB_READ_WRITE_TOKEN en este entorno: el respaldo no corre») en vez de desaparecer, porque esconderlo fue justo lo que mantuvo el problema invisible 19 días. Al lado vive «Diagnosticar» (`diagnoseBlob` + `BlobDiagnostics`), que prueba las tres piezas por separado —token, descarga del gif externo y subida— y dice cuál falla. Cada gif nuevo debería copiarse solo al agregarlo a una rutina. `scripts/mirror-gifs.ts` sigue ahí por si algún día se tiene el token local.
@@ -339,7 +342,9 @@ User
  └─ id, username, password_hash, is_admin, failed_logins, locked_until,
     goal_weekly_volume_kg (5000), goal_weekly_sets (60), goal_weekly_days (4)
     — las metas de los tres anillos del Resumen, editables en Perfil —,
-    email, name (heredadas, sin uso en el código), created_at
+    display_name (cómo te ven en Retos; vacío = el usuario hasta la "@"),
+    show_in_ranking (default true), email, name (heredadas, sin uso en el
+    código), created_at
 
 Session (auth, no confundir con WorkoutSession)
  └─ token, user_id, expires_at
@@ -381,6 +386,15 @@ SetLog (cada serie registrada durante la sesión)
 
 BodyWeight
  └─ id, user_id, weight, logged_at
+
+CoachComment (lo que el coach le escribe a un socio)
+ └─ id, user_id (el socio, CASCADE), author_id (el coach, SET NULL),
+    session_id (opcional, CASCADE), body, read_at, created_at
+
+Challenge (reto del gimnasio; el progreso no se guarda, se calcula)
+ └─ id, title, metric ('volume' | 'days' | 'sets' | 'distance'), goal
+    (opcional, por persona), starts_on, ends_on (date, días locales,
+    inclusive), created_by (SET NULL), created_at
 ```
 
 Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ejercicios propios, sesiones de login). `routines` → cascada a `routine_exercises`; las `workout_sessions` se quedan con `routine_id = null`.
@@ -411,7 +425,8 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 7. **Perfil** — usuario, **apariencia** (Sistema / Claro / Oscuro), **metas semanales de los anillos**, link a "Panel de administrador" (si `isAdmin`), peso corporal (registro + gráfica), cambiar contraseña, exportar CSV, cerrar sesión. ✅
 8. **Cómo se hace** (bottom sheet) — gif grande, músculo, equipo, pasos (en inglés). ✅
 9. **Offline** — banner sin conexión, páginas visitadas abren desde cache, `/offline` para las no visitadas. ✅
-10. **Admin** (solo `isAdmin`) — lista de usuarios con su conteo de rutinas → entra a uno → ve sus rutinas y crea una nueva → la arma con el mismo editor de siempre (banner "Editando como admin la rutina de <usuario>"); más el bloque "Mantenimiento": respaldo de gifs a Blob y su diagnóstico. ✅
+10. **Panel del coach** (solo `isAdmin`) — socios con "sin venir hace 10+ días" arriba → ficha del socio (anillos, 30 días, músculos olvidados, comentarios, sesiones en sólo lectura con su hilo, rutinas + crear una que se arma con el editor de siempre) → `/admin/retos` para crear/borrar retos; más el bloque "Mantenimiento": respaldo de gifs a Blob y su diagnóstico. ✅
+11. **Retos** — retos activos (progreso, podio, tu lugar), próximos, ranking semana/mes por días / carga / series / natación, terminados con su ganador. ✅
 
 ## 9. Roadmap
 
@@ -433,6 +448,7 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 - ~~Undécima: la app se renombra a FiTME (nombre del gimnasio real) con ícono propio a partir de su logo~~ ✅
 - ~~Duodécima: deck de propuesta para presentar FiTME (fuera del repo, artifact de Claude), con capturas reales, QR al PWA y los colores de marca de FiTME~~ ✅
 - ~~Decimotercera: favicon e íconos de FiTME publicados (SW v5), programa de rutinas nuevo e igual para las 4 cuentas ([rutinas.md](./rutinas.md)), y nombres del catálogo arreglados en el traductor~~ ✅
+- ~~Decimocuarta: panel del coach (quién no viene, ficha del socio, comentarios con push) y Retos (ranking del gimnasio y retos con meta) — [coach-y-retos.md](./coach-y-retos.md)~~ ✅
 
 **Queda abierto (sin prisa), en este orden sugerido:**
 
@@ -450,6 +466,8 @@ El plan de ataque de lo próximo, con lo que ya se decidió, vive en [siguiente-
 10. Posible cuenta duplicada: `karlaarizmendi` (creada 2026-09-22/23, sin sesiones) y `karizmendi@grupoargue.com` (rutinas y sesiones reales desde antes) parecen la misma persona. Se le dio la rutina de natación a las dos por separado en lo que se confirma, y el 2026-09-23 también el programa completo (a pedido: "todos los usuarios que existen"); si es duplicado, decidir si se borra la vacía o se le explica a la usuaria que ya tenía cuenta.
 11. ~~Nombres mal traducidos del catálogo~~ ✅ (2026-09-23, ver el registro de cambios y la nota de infra de `name_es`). Lo que se encontró: las 5 variantes `sled 45…` traen mojibake (`45в°` en vez de `45°`) tanto en `name` como en `name_es`, o sea que ya venía así desde ExerciseDB y el traductor sólo lo arrastró, y `cable pull through` quedó como "tirón through". Arreglo de datos en `exercises.name` / `name_es` (y revisar si un re-seed o `translate-exercises.ts` los vuelven a traer mal).
 12. ~~Espera fija en el smoke test~~ ✅ (2026-09-23): ahora espera la respuesta de esa búsqueda y tarjetas que contengan "press de banca" (el explorador ya muestra una lista antes de teclear, así que "apareció una tarjeta" no probaba nada); 9/9 dos veces seguidas contra producción. El problema era: `tests/smoke.mjs` esperaba **1 segundo fijo** después de teclear la búsqueda; contra producción en frío eso no alcanza y "search in Spanish" falla con 0 resultados aunque el paso siguiente (que sí espera al elemento) encuentre el ejercicio. Pasó el 2026-09-23: 8/9 y a la segunda 9/9. Cambiar el `waitForTimeout` por esperar a que aparezca la primera tarjeta.
+13. **"log a set" del smoke test es intermitente** (visto el 2026-09-24): contra `main` sin cambios dio 8/9 en una de tres corridas, y "add exercise" también falló una vez. Las dos esperan tiempos fijos (`waitForTimeout(1500)` tras "Agregar a la rutina", 500 ms tras marcar la serie) contra una base remota; cambiarlas por esperar al elemento, como se hizo con la búsqueda en el #12.
+14. `npm run db:migrate` no carga `.env.local` (drizzle-kit no lo lee y el script no usa `--env-file`), así que sale "url: undefined". Hoy se corre como `node --env-file=.env.local node_modules/.bin/drizzle-kit migrate`; arreglarlo en `package.json` igual que `smoke`.
 
 ## 10. Mapa del código
 
@@ -497,11 +515,18 @@ src/app/
   ejercicios/actions.ts createCustomExercise
   api/exercises/search  Búsqueda/browse (q en es/en, bodyPart, offset); catálogo + propios del usuario
   api/export            CSV del historial del usuario
-  admin/                page (lista de usuarios + bloque "Mantenimiento": respaldo de gifs
-                        y su diagnóstico, visible con o sin token),
-                        usuarios/[userId]/page.tsx (rutinas de ese usuario + crear una),
-                        actions.ts (createRoutineForUser, diagnoseBlob) — todo detrás de
-                        requireAdmin()
+  admin/                Panel del coach: page (socios con "sin venir hace 10+ días" arriba
+                        + bloque "Mantenimiento": respaldo de gifs y su diagnóstico),
+                        usuarios/[userId]/page.tsx (ficha: anillos, 30 días, músculos
+                        olvidados, comentarios, sesiones, rutinas + crear una),
+                        usuarios/[userId]/sesion/[sessionId] (sesión del socio en sólo
+                        lectura con su hilo de comentarios), retos/ (crear y borrar retos),
+                        actions.ts (createRoutineForUser, createChallenge, deleteChallenge,
+                        diagnoseBlob), coach-actions.ts (addCoachComment con push en
+                        after(), deleteCoachComment) — todo detrás de requireAdmin()
+  retos/                Ranking semana/mes por métrica (?p=&m=) y retos activos / próximos /
+                        terminados
+  comentarios/actions.ts markCoachCommentsRead (el "Entendido" de la tarjeta de Hoy)
 src/components/
   ui.tsx                Primitivas del sistema de diseño (Card, MetricTile, StatGrid,
                         GroupedList, TrendPill, PageHeader con large title, botones)
@@ -524,6 +549,9 @@ src/components/
   ExerciseProgressChart.tsx AreaChart con toggle peso/reps/volumen
   BodyWeightChart.tsx   AreaChart del peso corporal
   SuggestionPill.tsx    "Sube a X kg" / "Repite" con botón Usar
+  CoachComments.tsx     CoachInbox (tarjeta de Hoy), CoachCommentList (hilo de una sesión),
+                        CoachCommentForm y CoachCommentHistory (lo que usa el coach)
+  RankingToggle.tsx     "Aparecer en el ranking" en Perfil
   CustomExerciseForm.tsx  Alta de ejercicio propio dentro del explorador
   ThemeSwitch.tsx       Sistema / Claro / Oscuro. Lee la preferencia como store externo
                         (useSyncExternalStore sobre window.__tema) y le pide al script
@@ -543,7 +571,14 @@ src/db/
                         (totales + tendencia contra el periodo anterior), getDailyTraining,
                         getPersonalRecords, getSessionSummaries (respeta el rango elegido;
                         incluye distanceMeters/routineKind para las de natación),
-                        getMuscleCoverage, getFrequencyTrend, closeAbandonedSession
+                        getMuscleCoverage, getFrequencyTrend, closeAbandonedSession,
+                        getSessionExerciseGroups (series de una sesión por ejercicio: la
+                        usan el detalle del socio y la vista del coach)
+  gym.ts                Ranking y retos (getActivity: carga/series/días/metros por persona
+                        en un rango, rank, periodRange, getChallenges), panel del coach
+                        (getMemberStatuses, INACTIVE_DAYS, getLastActiveAt), comentarios
+                        (getUnreadComments, getSessionComments, getMemberComments) y
+                        publicName (nombre visible, nunca el correo completo)
   swim.ts               getSwimBlocks, getSwimBlockLogs, getSwimSessionBlocks,
                         getSwimStats (distancia total + ritmo del periodo), plannedDistance
 src/lib/
@@ -553,7 +588,10 @@ src/lib/
   body-parts.ts         Etiquetas en español de los grupos musculares
   dates.ts              Zona horaria MX, día de la semana, clave de semana, fmtDate (el
                         helper que cerró lo de las fechas en UTC), weekRangeLabel
-                        ("Semana del 21 al 27") y "hace N días"
+                        ("Semana del 21 al 27"), "hace N días", y los días locales como
+                        YYYY-MM-DD de Retos (todayYmd, addDaysYmd, daysBetweenYmd,
+                        localDayStart = el instante UTC en que empieza ese día en MX)
+  metric-format.ts      Valor de una métrica de Retos con su unidad y su color
   translate-exercise.ts Traductor por reglas de nombres de ejercicio
   format.ts             fmtNumber / fmtKg (pasa a toneladas arriba de 100 t) / fmtMinutes /
                         fmtMinutesShort (para los tiles) / fmtClock
@@ -629,6 +667,7 @@ Arrancó todo en un solo día (2026-09-03) y sigue creciendo: el historial fino 
 | `9aa2d7e` | Migraciones versionadas: se adopta el historial existente en `drizzle/` en vez de ejecutarlo contra una base que ya tiene las 9 tablas; de regalo, `manifest.ts` deja el lavanda |
 | `ac9a8c6` | Progreso: bug real de duración de sesión corregido (`isSameLocalDay` + `closeAbandonedSession`, más las 5 filas dañadas arregladas en Neon y un tope de 6 h como red de seguridad), 1RM estimado, tarjeta de cobertura muscular, tendencia de frecuencia y "Sesiones" respetando el rango. Natación de verdad: `routines.kind`, `swim_blocks`/`swim_block_logs`, editor de bloques, checklist al entrenar, tarjeta de distancia/ritmo — con la rutina real de `bener` migrada del hack de "reps" a bloques de verdad |
 | `5e9a18a` | La app se renombra a FiTME con el ícono real del gimnasio: favicon, íconos PWA, apple-touch-icon, título, manifest, Login/Registro y notificaciones (el trabajo de la Undécima, que estaba sin subir). SW `v5` para que las PWA instaladas suelten el ícono viejo; `PAGE_CACHE` de `Connectivity.tsx` vuelve a coincidir (seguía en `pages-v3`) |
+| _(sin subir)_ | Panel del coach y Retos ([coach-y-retos.md](./coach-y-retos.md)): `/admin` pasa a ser el seguimiento de socios (quién lleva 10+ días sin venir, ficha con anillos / 30 días / músculos olvidados / sesiones en sólo lectura), comentarios del coach (`coach_comments`, tarjeta en Hoy con "Entendido", hilo en el detalle de sesión, push con `after()`), quinta pestaña Retos (ranking semana/mes por días / carga / series / natación y retos con meta en `challenges`, creados en `/admin/retos`), nombre visible y salir del ranking en Perfil (`users.display_name` / `show_in_ranking`). `getSessionExerciseGroups` compartido; smoke con prueba de Retos (10) y su cuenta oculta del ranking. Migración `0002` ya aplicada en Neon |
 | `9cc9f7b` | Nombres del catálogo: las 5 prensas `45в°` (mojibake de ExerciseDB) a `45°` y `normalizeExerciseName` en seed y traductor; reglas del traductor corregidas (pull-through, barra V, cadera, deltoides posterior, pushdown de tríceps…) y las genéricas pull/push dejan de pisar lo que se deja en inglés: 61 `name_es` cambian, revisados uno por uno. `translate-exercises.ts` deja de reescribir ejercicios propios. Smoke test: la búsqueda espera su respuesta en vez de 1 s fijo |
 
 ## 12. Tercera ronda (acordada 2026-09-03) — cerrada

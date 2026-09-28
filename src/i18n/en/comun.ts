@@ -10,6 +10,7 @@ export const comun: typeof Es = {
     hoy: "Today",
     rutinas: "Routines",
     progreso: "Progress",
+    retos: "Challenges",
     perfil: "Profile",
   },
 

@@ -9,6 +9,7 @@ export const comun = {
     hoy: "Hoy",
     rutinas: "Rutinas",
     progreso: "Progreso",
+    retos: "Retos",
     perfil: "Perfil",
   },
 

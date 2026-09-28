@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Home, Dumbbell, ChartNoAxesColumn, User } from "lucide-react";
+import { Home, Dumbbell, ChartNoAxesColumn, Trophy, User } from "lucide-react";
 import { useT } from "@/i18n/client";
 
 // La etiqueta se resuelve al renderizar (`t.comun.nav[tab.clave]`): el
@@ -12,6 +12,7 @@ const TABS = [
   { href: "/", clave: "hoy", icon: Home },
   { href: "/rutinas", clave: "rutinas", icon: Dumbbell },
   { href: "/progreso", clave: "progreso", icon: ChartNoAxesColumn },
+  { href: "/retos", clave: "retos", icon: Trophy },
   { href: "/perfil", clave: "perfil", icon: User },
 ] as const;
 

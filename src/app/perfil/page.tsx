@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
-import { KeyRound, Scale, Trash2, Plus, ShieldAlert, ShieldCheck, Download, ChevronRight, Target } from "lucide-react";
+import { KeyRound, Scale, Trash2, Plus, ShieldAlert, ShieldCheck, Download, ChevronRight, Target, UserPen } from "lucide-react";
 import { db } from "@/db";
 import { users, bodyWeights } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
@@ -21,7 +21,9 @@ import { SoundToggle } from "@/components/SoundToggle";
 import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { ReminderToggle } from "@/components/ReminderToggle";
 import { LogoutButton } from "@/components/LogoutButton";
-import { changePasswordAction, addBodyWeight, deleteBodyWeight, updateGoals } from "./actions";
+import { RankingToggle } from "@/components/RankingToggle";
+import { publicName } from "@/db/gym";
+import { changePasswordAction, addBodyWeight, deleteBodyWeight, updateGoals, updateDisplayName } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -139,6 +141,36 @@ export default async function PerfilPage({
             </SecondaryButton>
           </form>
         </Card>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <SectionTitle>{t.perfil.ranking.titulo}</SectionTitle>
+        <GroupedList>
+          <form action={updateDisplayName} className="flex flex-col gap-2 p-4">
+            <label htmlFor="displayName" className="text-[17px] font-semibold">
+              {t.perfil.ranking.nombre}
+            </label>
+            <div className="flex gap-2">
+              <Input
+                id="displayName"
+                name="displayName"
+                maxLength={30}
+                defaultValue={user?.displayName ?? ""}
+                placeholder={publicName({ displayName: null, username: user?.username ?? null })}
+                className="flex-1"
+              />
+              <button
+                type="submit"
+                aria-label={t.perfil.ranking.guardar}
+                className="flex h-12 w-12 shrink-0 items-center justify-center self-center rounded-full bg-primary text-primary-foreground"
+              >
+                <UserPen className="h-5 w-5" />
+              </button>
+            </div>
+            <p className="text-[13px] text-muted">{t.perfil.ranking.ayuda}</p>
+          </form>
+          <RankingToggle activo={user?.showInRanking ?? true} />
+        </GroupedList>
       </section>
 
       {user?.isAdmin && (

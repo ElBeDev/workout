@@ -8,6 +8,8 @@ import { admin } from "./admin";
 import { acceso } from "./acceso";
 import { ejercicios } from "./ejercicios";
 import { natacion } from "./natacion";
+import { retos } from "./retos";
+import { coach } from "./coach";
 
 export const es = {
   comun,
@@ -20,4 +22,6 @@ export const es = {
   acceso,
   ejercicios,
   natacion,
+  retos,
+  coach,
 };

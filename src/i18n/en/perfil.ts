@@ -47,8 +47,17 @@ export const perfil: typeof Es = {
   },
 
   admin: {
-    titulo: "Admin panel",
-    descripcion: "Build routines for any user",
+    titulo: "Coach panel",
+    descripcion: "Member follow-up, routines and challenges",
+  },
+
+  ranking: {
+    titulo: "Challenges and leaderboard",
+    nombre: "Your leaderboard name",
+    ayuda: "This is how other members see you. Left empty, your username is used without the email part.",
+    guardar: "Save name",
+    aparecer: "Show me in the leaderboard",
+    aparecerDescripcion: "Turned off, you still see the challenges but nobody sees your numbers.",
   },
 
   peso: {

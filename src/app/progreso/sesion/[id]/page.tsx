@@ -1,7 +1,6 @@
 import { db } from "@/db";
-import { workoutSessions, routines, setLogs, exercises, users } from "@/db/schema";
-import { exerciseGif } from "@/db/exercise-gif";
-import { and, asc, eq } from "drizzle-orm";
+import { workoutSessions, routines, users } from "@/db/schema";
+import { and, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { NotebookPen, Waves } from "lucide-react";
@@ -10,10 +9,11 @@ import { bodyPartLabel } from "@/lib/body-parts";
 import { fmtDate } from "@/lib/dates";
 import { fmtKg, fmtMeters, fmtPace100 } from "@/lib/format";
 import { getDict, type Dict } from "@/i18n";
-import { getWeeklyRings, getPersonalRecords } from "@/db/queries";
+import { getWeeklyRings, getPersonalRecords, getSessionExerciseGroups } from "@/db/queries";
 import { getSwimSessionBlocks } from "@/db/swim";
+import { getSessionComments } from "@/db/gym";
+import { CoachCommentList } from "@/components/CoachComments";
 import { RingTrio } from "@/components/Rings";
-import { toKg, type WeightUnit } from "@/lib/suggest";
 import { Card, PageHeader, SectionTitle } from "@/components/ui";
 import { loadLabel } from "@/lib/load-label";
 import { Trophy } from "lucide-react";
@@ -60,65 +60,10 @@ export default async function SessionDetailPage({
     return <SwimSessionDetail session={session} t={t} />;
   }
 
-  const sets = await db
-    .select({
-      exerciseId: exercises.id,
-      name: exercises.name,
-      nameEs: exercises.nameEs,
-      gifUrl: exerciseGif,
-      bodyPart: exercises.bodyPart,
-      setId: setLogs.id,
-      setNumber: setLogs.setNumber,
-      weight: setLogs.weight,
-      weightUnit: setLogs.weightUnit,
-      plates: setLogs.plates,
-      reps: setLogs.reps,
-      loggedAt: setLogs.loggedAt,
-    })
-    .from(setLogs)
-    .innerJoin(exercises, eq(setLogs.exerciseId, exercises.id))
-    .where(and(eq(setLogs.sessionId, id), eq(setLogs.completed, true)))
-    .orderBy(asc(setLogs.loggedAt), asc(setLogs.setNumber));
-
-  type Group = {
-    exerciseId: string;
-    name: string;
-    nameEs: string | null;
-    gifUrl: string | null;
-    bodyPart: string | null;
-    sets: {
-      setId: string;
-      setNumber: number;
-      weight: string | null;
-      weightUnit: WeightUnit;
-      plates: number | null;
-      reps: number | null;
-    }[];
-  };
-  const groups: Group[] = [];
-  for (const s of sets) {
-    let g = groups.find((x) => x.exerciseId === s.exerciseId);
-    if (!g) {
-      g = { exerciseId: s.exerciseId, name: s.name, nameEs: s.nameEs, gifUrl: s.gifUrl, bodyPart: s.bodyPart, sets: [] };
-      groups.push(g);
-    }
-    g.sets.push({
-      setId: s.setId,
-      setNumber: s.setNumber,
-      weight: s.weight,
-      weightUnit: s.weightUnit === "lbs" ? "lbs" : "kg",
-      plates: s.plates,
-      reps: s.reps,
-    });
-  }
-  for (const g of groups) g.sets.sort((a, b) => a.setNumber - b.setNumber);
-
-  // Volume always sums in kg so mixing kg- and lb-tracked exercises in one
-  // session still adds up to a single coherent number.
-  const volume = sets.reduce(
-    (sum, s) => sum + toKg(Number(s.weight ?? 0), s.weightUnit === "lbs" ? "lbs" : "kg") * (s.reps ?? 0),
-    0
-  );
+  const [{ groups, setCount, volumeKg: volume }, comments] = await Promise.all([
+    getSessionExerciseGroups(id),
+    getSessionComments(id),
+  ]);
 
   // Recién terminada: se muestran los anillos de la semana ya con esta sesión
   // dentro, que es la recompensa de haber entrenado.
@@ -234,7 +179,7 @@ export default async function SessionDetailPage({
           value={formatDuration(session.startedAt, session.finishedAt, t)}
           tone="text-days"
         />
-        <Stat label={t.progreso.statSeries} value={String(sets.length)} tone="text-sets" />
+        <Stat label={t.progreso.statSeries} value={String(setCount)} tone="text-sets" />
         <Stat
           label={t.progreso.cargaTotal}
           value={volume ? fmtKg(volume, t.comun.intl).value : "—"}
@@ -287,6 +232,8 @@ export default async function SessionDetailPage({
           <p className="whitespace-pre-wrap text-[15px]">{session.notes}</p>
         </Card>
       )}
+
+      <CoachCommentList comments={comments} t={t} />
     </div>
   );
 }
@@ -306,7 +253,10 @@ async function SwimSessionDetail({
   };
   t: Dict;
 }) {
-  const blocks = await getSwimSessionBlocks(session.id);
+  const [blocks, comments] = await Promise.all([
+    getSwimSessionBlocks(session.id),
+    getSessionComments(session.id),
+  ]);
   const distanceMeters = blocks.reduce((sum, b) => sum + (b.actualDistanceMeters ?? 0), 0);
   const minutes = session.finishedAt
     ? Math.max(1, Math.round((session.finishedAt.getTime() - session.startedAt.getTime()) / 60000))
@@ -377,6 +327,8 @@ async function SwimSessionDetail({
           <p className="whitespace-pre-wrap text-[15px]">{session.notes}</p>
         </Card>
       )}
+
+      <CoachCommentList comments={comments} t={t} />
     </div>
   );
 }

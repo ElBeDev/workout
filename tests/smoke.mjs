@@ -25,7 +25,9 @@ function check(name, ok, extra = "") {
 async function createUser() {
   const salt = randomBytes(16).toString("hex");
   const hash = scryptSync(password, salt, 64).toString("hex");
-  const [u] = await sql`insert into users (username, password_hash) values (${username}, ${salt + ":" + hash}) returning id`;
+  // Oculta del ranking: corriendo contra producción, la cuenta desechable no
+  // debe asomarse en la tabla de Retos que ven los socios reales.
+  const [u] = await sql`insert into users (username, password_hash, show_in_ranking) values (${username}, ${salt + ":" + hash}, false) returning id`;
   return u.id;
 }
 
@@ -93,6 +95,9 @@ async function main() {
 
     await page.goto(`${BASE}/perfil`, { waitUntil: "networkidle" });
     check("perfil loads", (await page.textContent("body")).includes(username));
+
+    await page.goto(`${BASE}/retos`, { waitUntil: "networkidle" });
+    check("retos loads", (await page.textContent("body")).includes("Ranking"));
 
     await page.goto(routineUrl, { waitUntil: "networkidle" });
     await page.click("text=Eliminar rutina");

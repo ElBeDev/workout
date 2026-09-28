@@ -69,6 +69,22 @@ export async function updateGoals(formData: FormData) {
   revalidatePath("/");
 }
 
+/** Nombre con el que te ven los demás en Retos. Vacío = el usuario sin el correo. */
+export async function updateDisplayName(formData: FormData) {
+  const userId = await requireUserId();
+  const name = String(formData.get("displayName") ?? "").trim().replace(/\s+/g, " ").slice(0, 30);
+  await db.update(users).set({ displayName: name || null }).where(eq(users.id, userId));
+  revalidatePath("/perfil");
+  revalidatePath("/retos");
+}
+
+export async function setShowInRanking(show: boolean) {
+  const userId = await requireUserId();
+  await db.update(users).set({ showInRanking: show }).where(eq(users.id, userId));
+  revalidatePath("/perfil");
+  revalidatePath("/retos");
+}
+
 export async function addBodyWeight(formData: FormData) {
   const userId = await requireUserId();
   const raw = String(formData.get("weight") ?? "").replace(",", ".").trim();

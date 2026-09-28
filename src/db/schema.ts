@@ -35,6 +35,12 @@ export const users = pgTable("users", {
   reminderHour: integer("reminder_hour").notNull().default(19),
   // Fecha local del último aviso enviado, para no mandar dos el mismo día.
   reminderLastSent: date("reminder_last_sent"),
+  // Cómo te ven los demás en Retos. No es `name`: esa columna es heredada y
+  // la de bener dice "Owner". Sin él, se muestra el usuario hasta la "@",
+  // para que un usuario que es un correo no quede expuesto en el ranking.
+  displayName: text("display_name"),
+  // Salir del ranking y de las tablas de los retos (sigues viéndolos).
+  showInRanking: boolean("show_in_ranking").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -211,6 +217,48 @@ export const swimBlockLogs = pgTable(
     index("swim_block_logs_session_idx").on(table.sessionId),
   ]
 );
+
+/**
+ * Lo que el coach (un admin) le escribe a un socio: suelto, o sobre una sesión
+ * en particular. El socio lo ve en Hoy hasta que lo marca como leído, y los de
+ * una sesión se quedan para siempre en el detalle de esa sesión.
+ */
+export const coachComments = pgTable(
+  "coach_comments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    // El socio al que va dirigido.
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    // SET NULL: si se borra la cuenta del coach, lo que escribió no se pierde.
+    authorId: uuid("author_id").references(() => users.id, { onDelete: "set null" }),
+    sessionId: uuid("session_id").references(() => workoutSessions.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    readAt: timestamp("read_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("coach_comments_user_idx").on(table.userId, table.createdAt),
+    index("coach_comments_session_idx").on(table.sessionId),
+  ]
+);
+
+/**
+ * Retos del gimnasio que arma el admin: una métrica, un rango de fechas
+ * (locales, hora de México, ambos inclusive) y una meta por persona opcional.
+ * Participa todo el que tenga `show_in_ranking`; el progreso no se guarda, se
+ * calcula de `set_logs` / `swim_block_logs` igual que el ranking.
+ */
+export const challenges = pgTable("challenges", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  title: text("title").notNull(),
+  // 'volume' (kg) | 'days' | 'sets' | 'distance' (m de natación)
+  metric: text("metric").notNull(),
+  goal: integer("goal"),
+  startsOn: date("starts_on").notNull(),
+  endsOn: date("ends_on").notNull(),
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
 export const pushSubscriptions = pgTable(
   "push_subscriptions",

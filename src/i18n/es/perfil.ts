@@ -47,8 +47,17 @@ export const perfil = {
   },
 
   admin: {
-    titulo: "Panel de administrador",
-    descripcion: "Armar rutinas para cualquier usuario",
+    titulo: "Panel del coach",
+    descripcion: "Seguimiento de socios, rutinas y retos",
+  },
+
+  ranking: {
+    titulo: "Retos y ranking",
+    nombre: "Tu nombre en el ranking",
+    ayuda: "Así te ven los demás socios. Vacío, se usa tu usuario sin el correo.",
+    guardar: "Guardar nombre",
+    aparecer: "Aparecer en el ranking",
+    aparecerDescripcion: "Apagado, sigues viendo los retos pero nadie ve tus números.",
   },
 
   peso: {
