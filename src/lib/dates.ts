@@ -25,6 +25,11 @@ export function todayWeekday(now = new Date()): number {
   return localDate(now).getUTCDay();
 }
 
+/** Posición del día en la semana que empieza en lunes: lunes = 0 … domingo = 6. */
+export function weekdayRank(day: number): number {
+  return (day + 6) % 7;
+}
+
 /** ISO-ish week key (Monday-based) for a localDate() value. */
 export function weekKey(local: Date): string {
   const d = new Date(local);

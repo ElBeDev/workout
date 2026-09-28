@@ -2,7 +2,7 @@ import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, max } from "drizzl
 import { db } from "@/db";
 import { routines, routineExercises, exercises, workoutSessions, setLogs, swimBlockLogs } from "@/db/schema";
 import { exerciseGif } from "@/db/exercise-gif";
-import { localDate, weekKey, daysAgo } from "@/lib/dates";
+import { localDate, weekKey, daysAgo, weekdayRank } from "@/lib/dates";
 import { toKg, type WeightUnit } from "@/lib/suggest";
 import { BODY_PARTS, type BodyPart } from "@/lib/body-parts";
 
@@ -109,18 +109,24 @@ export async function getRoutineSummaries(userId: string): Promise<RoutineSummar
     )
     .orderBy(asc(routineExercises.sortOrder));
 
-  return rows.map((routine) => {
+  const summaries = rows.map((routine) => {
     const mine = items.filter((i) => i.routineId === routine.id);
     return {
       id: routine.id,
       name: routine.name,
-      days: routine.days ?? [],
+      days: [...(routine.days ?? [])].sort((a, b) => weekdayRank(a) - weekdayRank(b)),
       exerciseCount: mine.length,
       totalSets: mine.reduce((sum, i) => sum + i.targetSets, 0),
       thumbUrl: mine[0]?.gifUrl ?? null,
       lastDoneAt: lastDoneMap.get(routine.id) ?? null,
     };
   });
+
+  // Por el primer día de la semana en que tocan (lunes primero); las que no
+  // tienen día van al final. El sort es estable, así que el empate conserva
+  // sortOrder / createdAt.
+  const firstDay = (r: RoutineSummary) => (r.days.length ? weekdayRank(r.days[0]) : 7);
+  return summaries.sort((a, b) => firstDay(a) - firstDay(b));
 }
 
 export type WeeklyStats = {
