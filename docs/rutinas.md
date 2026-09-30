@@ -75,19 +75,25 @@ máquinas"** (§2), porque un estiramiento es de peso corporal por fuerza; la
 pidió el dueño así.
 
 1. Estiramiento de espalda con rodillo — 2×45 s
-2. Estiramiento de cadera con rodillo — 2×45 s
-3. Rotación externa de hombro de pie en polea — 2×12 reps *(manguito: press y natación)*
-4. Estiramiento de pecho y hombro frontal — 2×30 s *(lo del lunes)*
-5. Estiramiento de dorsal de rodillas — 2×30 s *(jueves y natación)*
+2. Rotación externa de hombro de pie en polea — 2×12 *(manguito: press y natación)*
+3. Rotación interna de hombro sentado en polea — 2×12 *(el otro lado del manguito)*
+4. Apertura inversa cruzada alta de pie en polea — 2×12 *(escápula y deltoides posterior)*
+5. Giro de torso en polea (leñador) — 2×12 *(core rotacional; el martes sólo hay crunch)*
 6. Zancada con giro (world's greatest stretch) — 2×30 s
-7. Estiramiento de cuádriceps acostado de lado — 2×30 s
-8. Estiramiento de isquios — 2×30 s
-9. Estiramiento de piriforme sentado — 2×30 s
-10. Estiramiento de pantorrilla contra la pared — 2×30 s
+7. Estiramiento de pecho y hombro frontal — 2×30 s *(lo del lunes)*
+8. Estiramiento de dorsal de rodillas — 2×30 s *(jueves y natación)*
+9. Estiramiento de isquios — 2×30 s
 
-Los de un solo lado van 30 s **por lado**. Los `name_es` de estos 10 se
-corrigieron a mano ese día (venían como "pantorrilla estiramiento con hands
-contra en pared"). Ver §7 sobre los segundos.
+Los de un solo lado van por lado. Los `name_es` de estos ejercicios se
+corrigieron a mano (venían como "pantorrilla estiramiento con hands contra en
+pared"). Ver §7 sobre los segundos.
+
+La primera versión (ese mismo día) era casi toda estiramiento: dos rodillos y
+siete estiramientos con sólo la rotación externa en polea. Al dueño le gustó
+la rotación externa y pidió más de ese estilo, así que se cambiaron el rodillo
+de cadera y los estiramientos de cuádriceps, pantorrilla y piriforme por tres
+de polea. Descartados: aducción en polea (el viernes ya hay aducción en
+máquina), y Pallof y Y en banda (sólo existen con banda en el catálogo).
 
 ### Jueves — Espalda y Hombro *(nueva)*
 
