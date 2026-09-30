@@ -27,6 +27,7 @@ import {
   type Suggestion,
   type WeightUnit,
 } from "@/lib/suggest";
+import { isTimed } from "@/lib/measure";
 import { getDict, type Dict } from "@/i18n";
 import { DiscardSessionButton } from "@/components/DiscardSessionButton";
 import { SessionNotes } from "./SessionNotes";
@@ -258,6 +259,7 @@ export default async function EntrenarPage({
       targetSets: routineExercises.targetSets,
       targetReps: routineExercises.targetReps,
       loadUnit: routineExercises.loadUnit,
+      measure: exercises.measure,
     })
     .from(routineExercises)
     .innerJoin(exercises, eq(routineExercises.exerciseId, exercises.id))
@@ -307,7 +309,11 @@ export default async function EntrenarPage({
           const lastTime = lastTimeByExercise.get(item.exerciseId) ?? new Map<number, LastSet>();
           const rows = rowCount.get(item.exerciseId) ?? item.targetSets;
           const unit: LoadUnit = normalizeLoadUnit(item.loadUnit);
-          const suggestion = suggestNext(lastTime, item.targetSets, item.targetReps, unit);
+          // Un estiramiento no progresa como una carga: sin sugerencia.
+          const timed = isTimed(item.measure);
+          const suggestion = timed
+            ? null
+            : suggestNext(lastTime, item.targetSets, item.targetReps, unit);
           return (
             <Card key={item.exerciseId} className="p-3">
               <div className="mb-3 flex items-center gap-3">
@@ -335,14 +341,18 @@ export default async function EntrenarPage({
                   <div className="mt-1 flex flex-wrap items-center gap-2">
                     <span className="inline-flex items-center gap-1 text-[13px] text-muted">
                       <Repeat className="h-3.5 w-3.5" />
-                      {t.entrenar.ejercicio.seriesPorReps(item.targetSets, item.targetReps)}
+                      {timed
+                        ? t.entrenar.ejercicio.seriesPorSegundos(item.targetSets, item.targetReps)
+                        : t.entrenar.ejercicio.seriesPorReps(item.targetSets, item.targetReps)}
                     </span>
-                    <LoadUnitPicker
-                      sessionId={sessionId}
-                      exerciseId={item.exerciseId}
-                      nombre={item.exerciseNameEs ?? item.exerciseName}
-                      unidad={unit}
-                    />
+                    {!timed && (
+                      <LoadUnitPicker
+                        sessionId={sessionId}
+                        exerciseId={item.exerciseId}
+                        nombre={item.exerciseNameEs ?? item.exerciseName}
+                        unidad={unit}
+                      />
+                    )}
                   </div>
                 </div>
               </div>
@@ -365,11 +375,13 @@ export default async function EntrenarPage({
 
               <div className="mb-1 flex items-center gap-2 pl-1 pr-14">
                 <span className="w-8 shrink-0" />
+                {!timed && (
+                  <span className="label flex-1 text-center text-faint">
+                    {t.entrenar.unidad.opciones[unit].titulo}
+                  </span>
+                )}
                 <span className="label flex-1 text-center text-faint">
-                  {t.entrenar.unidad.opciones[unit].titulo}
-                </span>
-                <span className="label flex-1 text-center text-faint">
-                  {t.entrenar.ejercicio.columnaReps}
+                  {timed ? t.entrenar.ejercicio.columnaSegundos : t.entrenar.ejercicio.columnaReps}
                 </span>
               </div>
 
@@ -390,6 +402,7 @@ export default async function EntrenarPage({
                       plates={existing?.plates ?? null}
                       reps={existing?.reps ?? null}
                       loadUnit={unit}
+                      timed={timed}
                       loadPlaceholder={
                         unit === "plates"
                           ? last?.plates
@@ -399,7 +412,11 @@ export default async function EntrenarPage({
                             ? t.entrenar.carga.peso(last.weight, unit)
                             : t.entrenar.carga.corta(unit)
                       }
-                      repsPlaceholder={t.entrenar.carga.reps(last?.reps || item.targetReps)}
+                      repsPlaceholder={
+                        timed
+                          ? t.entrenar.carga.segundos(last?.reps || item.targetReps)
+                          : t.entrenar.carga.reps(last?.reps || item.targetReps)
+                      }
                     />
                   );
                 })}

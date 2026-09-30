@@ -4,6 +4,7 @@ import { db } from "@/db";
 import {
   users,
   routines,
+  exercises,
   setLogs,
   swimBlockLogs,
   workoutSessions,
@@ -103,11 +104,13 @@ export async function getActivity(
     db
       .select({
         userId: workoutSessions.userId,
-        sets: sql<number>`count(*)::int`,
+        // Las series de estiramiento (por segundos) cuentan el día, no suman series.
+        sets: sql<number>`(count(*) filter (where ${exercises.measure} <> 'seconds'))::int`,
         volumeKg: sql<number>`coalesce(sum(case when ${setLogs.weight} > 0 and ${setLogs.reps} > 0 then ${setLogs.weight} * ${setLogs.reps} * (case when ${setLogs.weightUnit} = 'lbs' then ${LB_TO_KG} else 1 end) else 0 end), 0)::float8`,
       })
       .from(setLogs)
       .innerJoin(workoutSessions, eq(setLogs.sessionId, workoutSessions.id))
+      .innerJoin(exercises, eq(setLogs.exerciseId, exercises.id))
       .where(setRange)
       .groupBy(workoutSessions.userId),
     db

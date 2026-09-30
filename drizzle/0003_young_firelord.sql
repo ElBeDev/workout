@@ -1,0 +1,1 @@
+ALTER TABLE "exercises" ADD COLUMN "measure" text DEFAULT 'reps' NOT NULL;

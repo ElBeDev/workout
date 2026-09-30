@@ -31,6 +31,7 @@ export const progreso: typeof Es = {
   rutinaEliminada: "Deleted routine",
   series: (n) => `${n} ${n === 1 ? "set" : "sets"}`,
   reps: (n) => `${n ?? "—"} ${n === 1 ? "rep" : "reps"}`,
+  segundos: (n) => `${n ?? "—"} s`,
 
   // Calendario de constancia
   calendarioDias: ["M", "T", "W", "T", "F", "S", "S"],
@@ -45,6 +46,7 @@ export const progreso: typeof Es = {
   ultima: "Latest",
   unidadPlacas: "plates",
   unidadReps: "reps",
+  unidadSegundos: "s",
   ejercicioSinSesiones: "No workouts logged for this exercise yet.",
   porSesion: "By session",
   placas: (n) => `${n} ${n === 1 ? "plate" : "plates"}`,

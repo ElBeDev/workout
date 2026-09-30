@@ -31,6 +31,7 @@ export function SetRow({
   plates,
   reps,
   loadUnit,
+  timed = false,
   loadPlaceholder,
   repsPlaceholder,
 }: {
@@ -44,6 +45,8 @@ export function SetRow({
   plates: number | null;
   reps: number | null;
   loadUnit: LoadUnit;
+  /** Por segundos (estiramiento): sin campo de carga, y el campo de reps son los segundos. */
+  timed?: boolean;
   loadPlaceholder: string;
   repsPlaceholder: string;
 }) {
@@ -88,6 +91,8 @@ export function SetRow({
   // and the RSC refresh after saving can swallow it. SessionHud always
   // counts down a fixed 3 minutes.
   function startRest() {
+    // Entre estiramientos no hay descanso de 3 minutos que contar.
+    if (timed) return;
     // iOS sólo deja sonar si hubo un gesto antes, y el fin del descanso no lo
     // es: se desbloquea aquí, que es el toque que arranca la cuenta.
     desbloquearSonido();
@@ -197,28 +202,30 @@ export function SetRow({
         {setNumber}
       </span>
 
-      <input
-        name="load"
-        type="number"
-        step={isPlates ? 1 : 0.5}
-        min={0}
-        inputMode={isPlates ? "numeric" : "decimal"}
-        defaultValue={isPlates ? (plates ?? undefined) : (weight ?? undefined)}
-        placeholder={loadPlaceholder}
-        aria-label={
-          isPlates
-            ? t.entrenar.serie.ariaPlacas(setNumber)
-            : t.entrenar.serie.ariaPeso(setNumber, weightUnit)
-        }
-        className={fieldClass}
-      />
+      {!timed && (
+        <input
+          name="load"
+          type="number"
+          step={isPlates ? 1 : 0.5}
+          min={0}
+          inputMode={isPlates ? "numeric" : "decimal"}
+          defaultValue={isPlates ? (plates ?? undefined) : (weight ?? undefined)}
+          placeholder={loadPlaceholder}
+          aria-label={
+            isPlates
+              ? t.entrenar.serie.ariaPlacas(setNumber)
+              : t.entrenar.serie.ariaPeso(setNumber, weightUnit)
+          }
+          className={fieldClass}
+        />
+      )}
       <input
         name="reps"
         type="number"
         inputMode="numeric"
         defaultValue={reps ?? undefined}
         placeholder={repsPlaceholder}
-        aria-label={t.entrenar.serie.ariaReps(setNumber)}
+        aria-label={timed ? t.entrenar.serie.ariaSegundos(setNumber) : t.entrenar.serie.ariaReps(setNumber)}
         className={fieldClass}
       />
 

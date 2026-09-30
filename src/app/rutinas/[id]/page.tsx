@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { Play, ShieldCheck, Waves } from "lucide-react";
 import { requireUserId } from "@/lib/session";
 import { isAdminUser } from "@/lib/admin";
+import { isTimed } from "@/lib/measure";
 import { normalizeLoadUnit } from "@/lib/suggest";
 import { blobConfigured } from "@/lib/blob";
 import { getDict } from "@/i18n";
@@ -61,6 +62,7 @@ export default async function RutinaDetailPage({
           targetReps: routineExercises.targetReps,
           targetWeight: routineExercises.targetWeight,
           loadUnit: routineExercises.loadUnit,
+          measure: exercises.measure,
           exerciseName: exercises.name,
           exerciseNameEs: exercises.nameEs,
           gifUrl: exerciseGif,
@@ -213,6 +215,7 @@ export default async function RutinaDetailPage({
                         targetReps={item.targetReps}
                         targetWeight={item.targetWeight}
                         loadUnit={normalizeLoadUnit(item.loadUnit)}
+                        timed={isTimed(item.measure)}
                       />
                     </div>
                     <ExerciseRowMenu

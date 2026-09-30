@@ -135,11 +135,17 @@ export default async function CoachSessionPage({
                       <span className="flex h-7 w-7 shrink-0 items-center justify-center text-[13px] font-bold text-faint tabular-nums">
                         {s.setNumber}
                       </span>
-                      <span className="font-semibold tabular-nums">
-                        {loadLabel(t, s.weight, s.plates, s.weightUnit) ?? "—"}
-                      </span>
-                      <span className="text-muted">×</span>
-                      <span className="tabular-nums">{t.progreso.reps(s.reps)}</span>
+                      {g.timed ? (
+                        <span className="font-semibold tabular-nums">{t.progreso.segundos(s.reps)}</span>
+                      ) : (
+                        <>
+                          <span className="font-semibold tabular-nums">
+                            {loadLabel(t, s.weight, s.plates, s.weightUnit) ?? "—"}
+                          </span>
+                          <span className="text-muted">×</span>
+                          <span className="tabular-nums">{t.progreso.reps(s.reps)}</span>
+                        </>
+                      )}
                     </li>
                   ))}
                 </ul>

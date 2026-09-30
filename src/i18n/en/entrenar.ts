@@ -17,11 +17,14 @@ export const entrenar: typeof Es = {
     corta: (unidad) =>
       unidad === "plates" ? "plates" : unidad === "lbs" ? "lb" : "kg",
     reps: (n) => `${n} reps`,
+    segundos: (n) => `${n} s`,
   },
 
   ejercicio: {
     seriesPorReps: (series, reps) => `${series} × ${reps} reps`,
     columnaReps: "Reps",
+    seriesPorSegundos: (series, segundos) => `${series} × ${segundos} s`,
+    columnaSegundos: "Seconds",
     agregarSerie: "Add set",
   },
 
@@ -35,6 +38,7 @@ export const entrenar: typeof Es = {
     ariaPeso: (serie, unidad) =>
       `Weight, set ${serie} (${unidad === "lbs" ? "lb" : "kg"})`,
     ariaReps: (serie) => `Reps, set ${serie}`,
+    ariaSegundos: (serie) => `Seconds, set ${serie}`,
     nuevoRecord: "New personal record",
   },
 

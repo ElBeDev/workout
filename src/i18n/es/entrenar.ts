@@ -18,12 +18,15 @@ export const entrenar = {
     corta: (unidad: "kg" | "lbs" | "plates"): string =>
       unidad === "plates" ? "placas" : unidad === "lbs" ? "lb" : "kg",
     reps: (n: number) => `${n} reps`,
+    segundos: (n: number) => `${n} s`,
   },
 
   /** Tarjeta de cada ejercicio dentro de la sesión. */
   ejercicio: {
     seriesPorReps: (series: number, reps: number) => `${series} × ${reps} reps`,
     columnaReps: "Reps",
+    seriesPorSegundos: (series: number, segundos: number) => `${series} × ${segundos} s`,
+    columnaSegundos: "Segundos",
     agregarSerie: "Agregar serie",
   },
 
@@ -38,6 +41,7 @@ export const entrenar = {
     ariaPeso: (serie: number, unidad: "kg" | "lbs") =>
       `Peso serie ${serie} (${unidad === "lbs" ? "lb" : "kg"})`,
     ariaReps: (serie: number) => `Repeticiones serie ${serie}`,
+    ariaSegundos: (serie: number) => `Segundos serie ${serie}`,
     nuevoRecord: "Nuevo récord personal",
   },
 

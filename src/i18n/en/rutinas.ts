@@ -36,6 +36,7 @@ export const rutinas: typeof Es = {
   campos: {
     series: "Sets",
     reps: "Reps",
+    segundos: "Seconds",
     pesoPlaceholder: "—",
   },
 
@@ -103,6 +104,7 @@ export const rutinas: typeof Es = {
     editar: "Edit sets and reps",
     series: (n: number): string => `${n} ${n === 1 ? "set" : "sets"}`,
     reps: (n: number): string => `${n} reps`,
+    segundos: (n: number): string => `${n} s`,
     peso: (peso: string, unidad: Unidad): string => `${peso} ${unidadCorta(unidad)}`,
   },
 

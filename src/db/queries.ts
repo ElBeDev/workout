@@ -1,9 +1,10 @@
-import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, max } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, max, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { routines, routineExercises, exercises, workoutSessions, setLogs, swimBlockLogs } from "@/db/schema";
 import { exerciseGif } from "@/db/exercise-gif";
 import { localDate, weekKey, daysAgo, weekdayRank } from "@/lib/dates";
 import { toKg, type WeightUnit } from "@/lib/suggest";
+import { isTimed } from "@/lib/measure";
 import { BODY_PARTS, type BodyPart } from "@/lib/body-parts";
 
 /**
@@ -173,6 +174,8 @@ type CompletedSet = {
   plates: number | null;
   reps: number | null;
   loggedAt: Date;
+  /** Serie por segundos (estiramiento): cuenta el día, no suma series. */
+  timed: boolean;
 };
 
 /**
@@ -180,16 +183,18 @@ type CompletedSet = {
  * a propósito: los anillos tienen que moverse mientras entrenas, no al final.
  */
 async function getCompletedSets(userId: string, since: Date): Promise<CompletedSet[]> {
-  return db
+  const rows = await db
     .select({
       weight: setLogs.weight,
       weightUnit: setLogs.weightUnit,
       plates: setLogs.plates,
       reps: setLogs.reps,
       loggedAt: setLogs.loggedAt,
+      measure: exercises.measure,
     })
     .from(setLogs)
     .innerJoin(workoutSessions, eq(setLogs.sessionId, workoutSessions.id))
+    .innerJoin(exercises, eq(setLogs.exerciseId, exercises.id))
     .where(
       and(
         eq(workoutSessions.userId, userId),
@@ -197,14 +202,18 @@ async function getCompletedSets(userId: string, since: Date): Promise<CompletedS
         gte(setLogs.loggedAt, since)
       )
     );
+  return rows.map(({ measure, ...r }) => ({ ...r, timed: isTimed(measure) }));
 }
+
+/** Las que cuentan como "series": todas menos las de estiramiento. */
+const countedSets = (rows: CompletedSet[]) => rows.filter((r) => !r.timed);
 
 /**
  * Carga de una serie en kg. Las placas quedan fuera: no hay forma honesta de
  * convertir "3 placas" a kilos, y meter un número inventado arruinaría el
  * anillo de carga.
  */
-function setVolumeKg(s: CompletedSet): number {
+function setVolumeKg(s: Omit<CompletedSet, "timed">): number {
   if (!s.weight || !s.reps) return 0;
   const w = Number(s.weight);
   if (!Number.isFinite(w) || w <= 0) return 0;
@@ -238,7 +247,7 @@ export async function getWeeklyRings(userId: string, goals: RingGoals): Promise<
   const mine = rows.filter((r) => weekKey(localDate(r.loggedAt)) === thisWeek);
 
   const volumeKg = Math.round(mine.reduce((sum, r) => sum + setVolumeKg(r), 0));
-  const sets = mine.length;
+  const sets = countedSets(mine).length;
   const days = new Set(mine.map((r) => localDate(r.loggedAt).toISOString().slice(0, 10))).size;
 
   const pct = (v: number, g: number) => (g > 0 ? v / g : 0);
@@ -288,8 +297,8 @@ export async function getPeriodStats(userId: string, days: number): Promise<Peri
   const inCurrent = <T extends { loggedAt?: Date; startedAt?: Date }>(r: T) =>
     (r.loggedAt ?? r.startedAt!) >= cut;
 
-  const current = sets.filter(inCurrent);
-  const previous = sets.filter((r) => !inCurrent(r));
+  const current = countedSets(sets).filter(inCurrent);
+  const previous = countedSets(sets).filter((r) => !inCurrent(r));
   const currentSessions = sessions.filter(inCurrent);
 
   const vol = (rows: CompletedSet[]) => rows.reduce((sum, r) => sum + setVolumeKg(r), 0);
@@ -410,7 +419,15 @@ export async function getPersonalRecords(userId: string): Promise<Map<string, Pe
     })
     .from(setLogs)
     .innerJoin(workoutSessions, eq(setLogs.sessionId, workoutSessions.id))
-    .where(and(eq(workoutSessions.userId, userId), eq(setLogs.completed, true)));
+    .innerJoin(exercises, eq(setLogs.exerciseId, exercises.id))
+    // Aguantar un estiramiento más segundos no es un récord.
+    .where(
+      and(
+        eq(workoutSessions.userId, userId),
+        eq(setLogs.completed, true),
+        ne(exercises.measure, "seconds")
+      )
+    );
 
   const best = new Map<string, PersonalRecord>();
   for (const r of rows) {
@@ -452,7 +469,14 @@ export async function getMuscleCoverage(userId: string): Promise<MuscleCoverage[
     .from(setLogs)
     .innerJoin(workoutSessions, eq(setLogs.sessionId, workoutSessions.id))
     .innerJoin(exercises, eq(setLogs.exerciseId, exercises.id))
-    .where(and(eq(workoutSessions.userId, userId), eq(setLogs.completed, true)))
+    // Estirar el femoral no cuenta como haberlo entrenado.
+    .where(
+      and(
+        eq(workoutSessions.userId, userId),
+        eq(setLogs.completed, true),
+        ne(exercises.measure, "seconds")
+      )
+    )
     .groupBy(exercises.bodyPart);
 
   const lastByPart = new Map(rows.map((r) => [r.bodyPart, r.last]));
@@ -489,7 +513,7 @@ export async function getDailyTraining(
   for (const r of rows) {
     const date = localDate(r.loggedAt).toISOString().slice(0, 10);
     const day = byDay.get(date) ?? { date, sets: 0, volumeKg: 0 };
-    day.sets += 1;
+    if (!r.timed) day.sets += 1;
     day.volumeKg += setVolumeKg(r);
     byDay.set(date, day);
   }
@@ -502,6 +526,8 @@ export type SessionExerciseGroup = {
   nameEs: string | null;
   gifUrl: string | null;
   bodyPart: string | null;
+  /** Por segundos: `reps` de cada serie son segundos. */
+  timed: boolean;
   sets: {
     setId: string;
     setNumber: number;
@@ -527,6 +553,7 @@ export async function getSessionExerciseGroups(
       nameEs: exercises.nameEs,
       gifUrl: exerciseGif,
       bodyPart: exercises.bodyPart,
+      measure: exercises.measure,
       setId: setLogs.id,
       setNumber: setLogs.setNumber,
       weight: setLogs.weight,
@@ -544,7 +571,15 @@ export async function getSessionExerciseGroups(
   for (const s of rows) {
     let g = groups.find((x) => x.exerciseId === s.exerciseId);
     if (!g) {
-      g = { exerciseId: s.exerciseId, name: s.name, nameEs: s.nameEs, gifUrl: s.gifUrl, bodyPart: s.bodyPart, sets: [] };
+      g = {
+        exerciseId: s.exerciseId,
+        name: s.name,
+        nameEs: s.nameEs,
+        gifUrl: s.gifUrl,
+        bodyPart: s.bodyPart,
+        timed: isTimed(s.measure),
+        sets: [],
+      };
       groups.push(g);
     }
     g.sets.push({

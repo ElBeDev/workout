@@ -34,6 +34,7 @@ export const rutinas = {
   campos: {
     series: "Series",
     reps: "Reps",
+    segundos: "Segundos",
     pesoPlaceholder: "—",
   },
 
@@ -95,6 +96,7 @@ export const rutinas = {
     editar: "Editar series y reps",
     series: (n: number): string => `${n} ${n === 1 ? "serie" : "series"}`,
     reps: (n: number): string => `${n} reps`,
+    segundos: (n: number): string => `${n} s`,
     peso: (peso: string, unidad: Unidad): string => `${peso} ${unidadCorta(unidad)}`,
   },
 

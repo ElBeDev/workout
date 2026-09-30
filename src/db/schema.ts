@@ -75,6 +75,10 @@ export const exercises = pgTable(
     // Custom exercises belong to a user; catalog rows have user_id = null.
     userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
     isCustom: boolean("is_custom").notNull().default(false),
+    // "reps" o "seconds". En los de segundos (estiramientos, rodillo),
+    // set_logs.reps guarda los segundos sostenidos, y esas series no suman a
+    // series, carga, récords ni ranking (ver docs/rutinas.md §7).
+    measure: text("measure").notNull().default("reps"),
   },
   (table) => [
     uniqueIndex("exercises_external_id_idx").on(table.externalId),

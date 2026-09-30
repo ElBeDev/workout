@@ -19,6 +19,7 @@ export function SetRowEditor({
   weightUnit,
   plates,
   reps,
+  timed = false,
 }: {
   sessionId: string;
   setId: string;
@@ -27,6 +28,8 @@ export function SetRowEditor({
   weightUnit: WeightUnit;
   plates: number | null;
   reps: number | null;
+  /** Por segundos (estiramiento): sin carga, `reps` son segundos. */
+  timed?: boolean;
 }) {
   const t = useT();
   const isPlates = plates !== null && plates > 0 && !weight;
@@ -49,9 +52,15 @@ export function SetRowEditor({
           className="flex flex-1 items-center gap-3 text-left"
           aria-label={t.progreso.editarSerie(setNumber)}
         >
-          <span className="font-semibold tabular-nums">{loadLabel(t, weight, plates, weightUnit) ?? "—"}</span>
-          <span className="text-muted">×</span>
-          <span className="tabular-nums">{t.progreso.reps(reps)}</span>
+          {timed ? (
+            <span className="font-semibold tabular-nums">{t.progreso.segundos(reps)}</span>
+          ) : (
+            <>
+              <span className="font-semibold tabular-nums">{loadLabel(t, weight, plates, weightUnit) ?? "—"}</span>
+              <span className="text-muted">×</span>
+              <span className="tabular-nums">{t.progreso.reps(reps)}</span>
+            </>
+          )}
           <Pencil className="ml-1 h-3 w-3 text-muted opacity-60" />
         </button>
       </li>
@@ -91,7 +100,7 @@ export function SetRowEditor({
         }}
         className="flex flex-1 items-center gap-2"
       >
-        {isPlates ? (
+        {timed ? null : isPlates ? (
           <input name="plates" type="number" step="1" min={0} inputMode="numeric" defaultValue={plates ?? ""} placeholder={t.progreso.placeholderPlacas} className={fieldClass} />
         ) : (
           <input
@@ -104,7 +113,7 @@ export function SetRowEditor({
             className={fieldClass}
           />
         )}
-        <input name="reps" type="number" inputMode="numeric" defaultValue={reps ?? ""} placeholder={t.progreso.placeholderReps} className={fieldClass} />
+        <input name="reps" type="number" inputMode="numeric" defaultValue={reps ?? ""} placeholder={timed ? t.progreso.unidadSegundos : t.progreso.placeholderReps} className={fieldClass} />
         <PendingButton
           pendingLabel=""
           aria-label={t.progreso.guardar}

@@ -216,6 +216,7 @@ export default async function SessionDetailPage({
                     weightUnit={s.weightUnit}
                     plates={s.plates}
                     reps={s.reps}
+                    timed={g.timed}
                   />
                 ))}
               </ul>

@@ -66,6 +66,29 @@ rutina de bloques que se repartió el 2026-09-22 (ver
 [natacion.md §5.1](./natacion.md)); aquí sólo se le cambió el nombre a la de
 Karla de "Alberca" a "Natación".
 
+### Miércoles — Complementarias — Estiramientos y Movilidad *(2026-09-30)*
+
+Segunda rutina del miércoles, debajo de Natación (`sort_order` 3 contra 2).
+Es para ayudar a las demás, no para cargar: movilidad, manguito rotador y
+estiramiento de lo que se trabaja en la semana. Es la **excepción a "sólo
+máquinas"** (§2), porque un estiramiento es de peso corporal por fuerza; la
+pidió el dueño así.
+
+1. Estiramiento de espalda con rodillo — 2×45 s
+2. Estiramiento de cadera con rodillo — 2×45 s
+3. Rotación externa de hombro de pie en polea — 2×12 reps *(manguito: press y natación)*
+4. Estiramiento de pecho y hombro frontal — 2×30 s *(lo del lunes)*
+5. Estiramiento de dorsal de rodillas — 2×30 s *(jueves y natación)*
+6. Zancada con giro (world's greatest stretch) — 2×30 s
+7. Estiramiento de cuádriceps acostado de lado — 2×30 s
+8. Estiramiento de isquios — 2×30 s
+9. Estiramiento de piriforme sentado — 2×30 s
+10. Estiramiento de pantorrilla contra la pared — 2×30 s
+
+Los de un solo lado van 30 s **por lado**. Los `name_es` de estos 10 se
+corrigieron a mano ese día (venían como "pantorrilla estiramiento con hands
+contra en pared"). Ver §7 sobre los segundos.
+
 ### Jueves — Espalda y Hombro *(nueva)*
 
 1. Jalón al pecho con barra pro lat en polea — 2×8 *(de Erika)*
@@ -198,3 +221,19 @@ cubre (en lugar de adivinar). Después, volver a aplicar la excepción de §3.
   pero sigue pendiente decidir si se borra.
 - **Usuarios nuevos arrancan vacíos**: hoy se les copia a mano. Las
   plantillas de PLAN.md §9.6 lo resolverían.
+
+## 7. Ejercicios por segundos
+
+`exercises.measure` (`reps` | `seconds`, migración 0003). En los de
+`seconds`, `set_logs.reps` guarda los segundos sostenidos y la app los
+muestra como "2 × 30 s", sin campo de carga, sin sugerencia y sin el
+descanso de 3 minutos. Esas series **cuentan el día** (anillo de días,
+ranking de días) pero **no suman** series, carga, récords, ranking/retos de
+series, los "30 días" del coach ni la cobertura muscular: estirar el femoral
+no es haberlo entrenado.
+
+Se marcaron en `seconds` los 63 del catálogo cuyo nombre en inglés tiene la
+palabra *stretch* (menos `dynamic …` y `weighted stretch lunge`, que son
+movimiento). Ninguno tenía series registradas, así que no cambió historial.
+Un ejercicio propio no se puede marcar desde la app todavía: se hace en la
+base.
