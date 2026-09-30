@@ -66,34 +66,33 @@ rutina de bloques que se repartió el 2026-09-22 (ver
 [natacion.md §5.1](./natacion.md)); aquí sólo se le cambió el nombre a la de
 Karla de "Alberca" a "Natación".
 
-### Miércoles — Complementarias — Estiramientos y Movilidad *(2026-09-30)*
+### Miércoles — Complementarias — Core y Estabilidad *(2026-09-30)*
 
 Segunda rutina del miércoles, debajo de Natación (`sort_order` 3 contra 2).
-Es para ayudar a las demás, no para cargar: movilidad, manguito rotador y
-estiramiento de lo que se trabaja en la semana. Es la **excepción a "sólo
-máquinas"** (§2), porque un estiramiento es de peso corporal por fuerza; la
-pidió el dueño así.
+Es para ayudar a las demás, no para cargar: manguito rotador, escápula, core
+en todas las direcciones, espalda baja, tobillo y agarre. Todo en polea o
+máquina, y nada repite lo de los otros días.
 
-1. Estiramiento de espalda con rodillo — 2×45 s
-2. Rotación externa de hombro de pie en polea — 2×12 *(manguito: press y natación)*
-3. Rotación interna de hombro sentado en polea — 2×12 *(el otro lado del manguito)*
-4. Apertura inversa cruzada alta de pie en polea — 2×12 *(escápula y deltoides posterior)*
-5. Giro de torso en polea (leñador) — 2×12 *(core rotacional; el martes sólo hay crunch)*
-6. Zancada con giro (world's greatest stretch) — 2×30 s
-7. Estiramiento de pecho y hombro frontal — 2×30 s *(lo del lunes)*
-8. Estiramiento de dorsal de rodillas — 2×30 s *(jueves y natación)*
-9. Estiramiento de isquios — 2×30 s
+1. Rotación externa de hombro de pie en polea — 2×12 *(manguito: press y natación)*
+2. Apertura inversa cruzada alta de pie en polea — 2×12 *(escápula; el face pull del jueves es parecido)*
+3. Elevación diagonal en polea (leñador inverso) — 2×12 *(de abajo hacia arriba)*
+4. Giro de torso en polea (leñador) — 2×12 *(de arriba hacia abajo)*
+5. Flexión lateral en polea — 2×12 por lado *(oblicuos)*
+6. Crunch inverso en polea — 2×15 *(abdomen bajo; los del martes son de arriba)*
+7. Extensión de espalda en máquina — 2×12 *(lumbar)*
+8. Elevación de talón a una pierna de pie en polea — 2×15 *(tobillo y equilibrio; martes y viernes son sentado y a dos piernas)*
+9. Agarre de manos en máquina — 2×15 *(agarre para jalones y remos)*
 
-Los de un solo lado van por lado. Los `name_es` de estos ejercicios se
-corrigieron a mano (venían como "pantorrilla estiramiento con hands contra en
-pared"). Ver §7 sobre los segundos.
+Los `name_es` de estos ejercicios se corrigieron a mano ese día.
 
-La primera versión (ese mismo día) era casi toda estiramiento: dos rodillos y
-siete estiramientos con sólo la rotación externa en polea. Al dueño le gustó
-la rotación externa y pidió más de ese estilo, así que se cambiaron el rodillo
-de cadera y los estiramientos de cuádriceps, pantorrilla y piriforme por tres
-de polea. Descartados: aducción en polea (el viernes ya hay aducción en
-máquina), y Pallof y Y en banda (sólo existen con banda en el catálogo).
+Llegó así en tres pasos, el mismo día: (1) casi todo estiramiento, con dos
+rodillos y siete estiramientos más la rotación externa; (2) al dueño le gustó
+la rotación externa y pidió más de ese estilo, entraron rotación interna,
+apertura inversa y leñador; (3) pidió quitar lo que quedaba de estiramiento y
+la rotación interna, y entraron los otros seis. Descartados por redundantes
+o fuera de regla: aducción en polea (viernes), hiperextensión inversa (ya está
+la extensión de espalda), patada de glúteo en polea (se rechazó el viernes),
+Pallof y Y (sólo existen con banda en el catálogo).
 
 ### Jueves — Espalda y Hombro *(nueva)*
 
@@ -237,6 +236,10 @@ descanso de 3 minutos. Esas series **cuentan el día** (anillo de días,
 ranking de días) pero **no suman** series, carga, récords, ranking/retos de
 series, los "30 días" del coach ni la cobertura muscular: estirar el femoral
 no es haberlo entrenado.
+
+Hoy ninguna rutina usa ejercicios por segundos (Complementarias empezó con
+estiramientos y se quedaron fuera), pero la función sigue ahí para cuando se
+agreguen.
 
 Se marcaron en `seconds` los 63 del catálogo cuyo nombre en inglés tiene la
 palabra *stretch* (menos `dynamic …` y `weighted stretch lunge`, que son
