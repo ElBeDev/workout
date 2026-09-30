@@ -70,17 +70,17 @@ Karla de "Alberca" a "Natación".
 
 Segunda rutina del miércoles, debajo de Natación (`sort_order` 3 contra 2).
 Es para ayudar a las demás, no para cargar: manguito rotador, escápula, core
-en todas las direcciones, espalda baja, tobillo y agarre. Todo en polea o
-máquina, y nada repite lo de los otros días.
+en todas las direcciones, espalda baja, tobillo y agarre. Todo en polea,
+máquina o Smith. Lo único que repite es el crunch sentado del martes.
 
 1. Rotación externa de hombro de pie en polea — 2×12 *(manguito: press y natación)*
 2. Apertura inversa cruzada alta de pie en polea — 2×12 *(escápula; el face pull del jueves es parecido)*
 3. Elevación diagonal en polea (leñador inverso) — 2×12 *(de abajo hacia arriba)*
 4. Giro de torso en polea (leñador) — 2×12 *(de arriba hacia abajo)*
 5. Flexión lateral en polea — 2×12 por lado *(oblicuos)*
-6. Elevación de piernas sentado en máquina — 2×12 *(abdomen bajo; los crunches del martes son de arriba)*
+6. Crunch sentado en máquina — 2×15 *(la misma máquina del martes: es la única de abdomen que hay)*
 7. Extensión de espalda en máquina — 2×12 *(lumbar)*
-8. Elevación de talones de pie en máquina — 2×15 *(de pie; martes y viernes son sentado y en prensa)*
+8. Elevación de talones de pie en Smith — 2×15 *(de pie; martes y viernes son sentado y en prensa)*
 9. Curl de muñeca en polea — 2×15 *(antebrazo y agarre para jalones y remos)*
 
 Los `name_es` de estos ejercicios se corrigieron a mano ese día.
@@ -92,7 +92,9 @@ apertura inversa y leñador; (3) pidió quitar lo que quedaba de estiramiento y
 la rotación interna, y entraron los otros seis; (4) tres de esos se cambiaron por variantes: el
 crunch inverso en polea por elevación de piernas en máquina (el dueño no quiere
 crunch en polea), la pantorrilla a una pierna y el agarre por versiones que no
-necesitan tobillera ni correa. **En el gimnasio no hay tobilleras ni cinturones
+necesitan tobillera ni correa; (5) la pantorrilla de pie pasó a Smith y la
+elevación de piernas al crunch sentado del martes, porque **el gimnasio no
+tiene ni la máquina de pantorrilla de pie ni la de elevación de piernas**. **En el gimnasio no hay tobilleras ni cinturones
 para amarrarse a las poleas**: nada que las requiera. Descartados por redundantes
 o fuera de regla: aducción en polea (viernes), hiperextensión inversa (ya está
 la extensión de espalda), patada de glúteo en polea (se rechazó el viernes),
