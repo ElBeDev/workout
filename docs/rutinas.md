@@ -109,7 +109,7 @@ Pallof y Y (sólo existen con banda en el catálogo).
 5. Remo para deltoides posterior de pie en polea con cuerda (face pull) — 2×12 *(de Karla)*
 6. Encogimiento de hombros en polea — 2×12 *(de Erika)*
 7. Curl en banco Scott en máquina — 2×10 *(Erika: ver §3)*
-8. Fondos sentado en máquina — 2×10 *(2026-10-07: reemplazó a la extensión de tríceps por encima de la cabeza en polea, de Karla, que al dueño no le gustó)*
+8. Extensión de tríceps en máquina — 2×10 *(2026-10-07: sentado, empujando dos palancas hacia abajo; reemplazó a la extensión por encima de la cabeza en polea, de Karla, que al dueño no le gustó. No confundir con los fondos sentado en máquina, que se pusieron primero por error)*
 
 Descartados a propósito de las rutinas de espalda de ellas: el remo invertido
 (peso corporal), el remo a una mano en Smith (incómodo, y el remo en máquina
