@@ -19,6 +19,7 @@ import { RingTrio, RingLegend, type RingDatum } from "@/components/Rings";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { DiscardSessionButton } from "@/components/DiscardSessionButton";
 import { CoachInbox } from "@/components/CoachComments";
+import { Avatar } from "@/components/Avatar";
 import { getUnreadComments } from "@/db/gym";
 import { startSession } from "./entrenar/actions";
 
@@ -87,12 +88,8 @@ export default async function HomePage() {
         eyebrow={fmtDate(new Date(), { weekday: "long", day: "numeric", month: "long" }, dict.comun.intl)}
         title={t.titulo}
         right={
-          <Link
-            href="/perfil"
-            aria-label={t.perfil}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-2 text-[17px] font-bold uppercase text-muted"
-          >
-            {(user?.username ?? "?").slice(0, 1)}
+          <Link href="/perfil" aria-label={t.perfil} className="rounded-full transition active:scale-95">
+            <Avatar userId={userId} name={user?.username ?? "?"} updatedAt={user?.avatarUpdatedAt} size={40} />
           </Link>
         }
       />

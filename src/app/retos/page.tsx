@@ -24,6 +24,7 @@ import { daysBetweenYmd, todayYmd } from "@/lib/dates";
 import { fmtMetric, fmtMetricText, METRIC_BG, METRIC_TONE } from "@/lib/metric-format";
 import { getDict, type Dict } from "@/i18n";
 import { Card, GroupedList, PageHeader, SectionTitle } from "@/components/ui";
+import { Avatar } from "@/components/Avatar";
 
 export const dynamic = "force-dynamic";
 
@@ -274,6 +275,7 @@ function MiniRow({ row, metric, isMe, t }: { row: RankedRow; metric: Metric; isM
       className={`flex items-center gap-3 rounded-xl px-2 py-1.5 text-[15px] ${isMe ? "bg-accent/10" : ""}`}
     >
       <Position n={row.position} />
+      <Avatar userId={row.userId} name={row.name} updatedAt={row.avatarUpdatedAt} size={24} />
       <span className="min-w-0 flex-1 truncate capitalize">
         {row.name}
         {isMe && <span className="ml-1 text-[12px] font-semibold normal-case text-accent">({t.retos.tu})</span>}
@@ -290,9 +292,7 @@ function BoardRow({ row, metric, isMe, t }: { row: RankedRow; metric: Metric; is
   return (
     <div className={`flex items-center gap-3 p-3 ${isMe ? "bg-accent/10" : ""}`} aria-label={t.retos.lugar(row.position)}>
       <Position n={row.position} />
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-surface-2 text-[16px] font-bold uppercase text-muted">
-        {row.name.charAt(0)}
-      </div>
+      <Avatar userId={row.userId} name={row.name} updatedAt={row.avatarUpdatedAt} size={40} />
       <p className="min-w-0 flex-1 truncate text-[16px] font-semibold capitalize">
         {row.name}
         {isMe && <span className="ml-1.5 text-[12px] font-semibold normal-case text-accent">{t.retos.tu}</span>}

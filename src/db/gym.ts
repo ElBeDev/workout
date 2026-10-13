@@ -40,6 +40,7 @@ export function publicName(u: { displayName: string | null; username: string | n
 export type ActivityRow = {
   userId: string;
   name: string;
+  avatarUpdatedAt: Date | null;
   volumeKg: number;
   sets: number;
   days: number;
@@ -98,7 +99,12 @@ export async function getActivity(
 
   const [people, strength, strengthDays, swim] = await Promise.all([
     db
-      .select({ id: users.id, username: users.username, displayName: users.displayName })
+      .select({
+        id: users.id,
+        username: users.username,
+        displayName: users.displayName,
+        avatarUpdatedAt: users.avatarUpdatedAt,
+      })
       .from(users)
       .where(includeHidden ? undefined : eq(users.showInRanking, true)),
     db
@@ -147,6 +153,7 @@ export async function getActivity(
   return people.map((p) => ({
     userId: p.id,
     name: publicName(p),
+    avatarUpdatedAt: p.avatarUpdatedAt,
     volumeKg: Math.round(Number(strengthBy.get(p.id)?.volumeKg ?? 0)),
     sets: Number(strengthBy.get(p.id)?.sets ?? 0),
     days: daysBy.get(p.id)?.size ?? 0,
@@ -236,6 +243,7 @@ export type MemberStatus = {
   username: string | null;
   name: string;
   isAdmin: boolean;
+  avatarUpdatedAt: Date | null;
   routineCount: number;
   lastActiveAt: Date | null;
   /** null = nunca ha entrenado. */
@@ -281,6 +289,7 @@ export async function getMemberStatuses(now = new Date()): Promise<MemberStatus[
         username: users.username,
         displayName: users.displayName,
         isAdmin: users.isAdmin,
+        avatarUpdatedAt: users.avatarUpdatedAt,
       })
       .from(users),
     db
@@ -304,9 +313,11 @@ export async function getMemberStatuses(now = new Date()): Promise<MemberStatus[
       routineCount: routinesBy.get(p.id) ?? 0,
       lastActiveAt: lastAt,
       daysSince: lastAt ? daysAgo(lastAt, now) : null,
+      avatarUpdatedAt: p.avatarUpdatedAt,
       last30: activityBy.get(p.id) ?? {
         userId: p.id,
         name: publicName(p),
+        avatarUpdatedAt: p.avatarUpdatedAt,
         volumeKg: 0,
         sets: 0,
         days: 0,

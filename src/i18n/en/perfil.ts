@@ -51,6 +51,14 @@ export const perfil: typeof Es = {
     descripcion: "Member follow-up, routines and challenges",
   },
 
+  foto: {
+    subir: "Upload profile photo",
+    cambiar: "Change profile photo",
+    quitar: "Remove photo",
+    error: "Couldn't save the photo. Try another one.",
+    noSeLeyo: "Couldn't read that image. Try another one.",
+  },
+
   ranking: {
     titulo: "Challenges and leaderboard",
     nombre: "Your leaderboard name",

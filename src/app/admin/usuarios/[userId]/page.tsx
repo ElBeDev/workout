@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Avatar } from "@/components/Avatar";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { ChevronRight, Dumbbell, Layers, Plus } from "lucide-react";
@@ -109,6 +110,7 @@ export default async function AdminUserPage({
         subtitle={target.username && target.username !== name ? target.username : undefined}
         backHref="/admin"
         capitalize
+        right={<Avatar userId={target.id} name={name} updatedAt={target.avatarUpdatedAt} size={40} />}
       />
 
       <Card hero className="p-5">

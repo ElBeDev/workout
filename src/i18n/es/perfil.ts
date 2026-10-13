@@ -51,6 +51,14 @@ export const perfil = {
     descripcion: "Seguimiento de socios, rutinas y retos",
   },
 
+  foto: {
+    subir: "Subir foto de perfil",
+    cambiar: "Cambiar foto de perfil",
+    quitar: "Quitar foto",
+    error: "No se pudo guardar la foto. Prueba con otra.",
+    noSeLeyo: "No se pudo leer esa imagen. Prueba con otra.",
+  },
+
   ranking: {
     titulo: "Retos y ranking",
     nombre: "Tu nombre en el ranking",

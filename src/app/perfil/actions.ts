@@ -4,10 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { users, bodyWeights } from "@/db/schema";
+import { users, bodyWeights, userAvatars } from "@/db/schema";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { requireUserId } from "@/lib/session";
 import { blobConfigured, mirrorExerciseGif, pendingGifIds } from "@/lib/blob";
+import { AVATAR_MAX_BYTES, sniffImage } from "@/lib/avatar";
 
 export async function changePasswordAction(formData: FormData) {
   const userId = await requireUserId();
@@ -83,6 +84,39 @@ export async function setShowInRanking(show: boolean) {
   await db.update(users).set({ showInRanking: show }).where(eq(users.id, userId));
   revalidatePath("/perfil");
   revalidatePath("/retos");
+}
+
+/**
+ * Guarda la foto de perfil. El cliente ya la recortó a un cuadrado de 256 px
+ * (AvatarPicker); aquí sólo se comprueba que de verdad sea una imagen y que no
+ * se haya saltado ese paso.
+ */
+export async function uploadAvatar(formData: FormData): Promise<{ ok: boolean; error?: "invalid" | "large" }> {
+  const userId = await requireUserId();
+  const file = formData.get("avatar");
+  if (!(file instanceof File) || file.size === 0) return { ok: false, error: "invalid" };
+  if (file.size > AVATAR_MAX_BYTES) return { ok: false, error: "large" };
+
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const mime = sniffImage(bytes);
+  if (!mime) return { ok: false, error: "invalid" };
+
+  const now = new Date();
+  const image = Buffer.from(bytes);
+  await db
+    .insert(userAvatars)
+    .values({ userId, image, mime, updatedAt: now })
+    .onConflictDoUpdate({ target: userAvatars.userId, set: { image, mime, updatedAt: now } });
+  await db.update(users).set({ avatarUpdatedAt: now }).where(eq(users.id, userId));
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function deleteAvatar() {
+  const userId = await requireUserId();
+  await db.delete(userAvatars).where(eq(userAvatars.userId, userId));
+  await db.update(users).set({ avatarUpdatedAt: null }).where(eq(users.id, userId));
+  revalidatePath("/", "layout");
 }
 
 export async function addBodyWeight(formData: FormData) {

@@ -22,6 +22,7 @@ import { LanguageSwitch } from "@/components/LanguageSwitch";
 import { ReminderToggle } from "@/components/ReminderToggle";
 import { LogoutButton } from "@/components/LogoutButton";
 import { RankingToggle } from "@/components/RankingToggle";
+import { AvatarPicker } from "@/components/AvatarPicker";
 import { publicName } from "@/db/gym";
 import { changePasswordAction, addBodyWeight, deleteBodyWeight, updateGoals, updateDisplayName } from "./actions";
 
@@ -62,9 +63,7 @@ export default async function PerfilPage({
       <PageHeader title={t.perfil.titulo} />
 
       <Card className="flex items-center gap-4 p-4">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-surface-2 text-[26px] font-bold uppercase text-muted">
-          {initial}
-        </div>
+        <AvatarPicker userId={userId} name={initial} updatedAt={user?.avatarUpdatedAt ?? null} />
         <div className="min-w-0">
           <p className="truncate text-[22px] font-bold capitalize tracking-[-0.02em]">
             {user?.username}

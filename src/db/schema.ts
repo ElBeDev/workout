@@ -9,6 +9,7 @@ import {
   date,
   uniqueIndex,
   index,
+  customType,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -41,6 +42,10 @@ export const users = pgTable("users", {
   displayName: text("display_name"),
   // Salir del ranking y de las tablas de los retos (sigues viéndolos).
   showInRanking: boolean("show_in_ranking").notNull().default(true),
+  // Cuándo se subió la foto de perfil (null = sin foto). Va en la URL de la
+  // foto (`/api/avatar/<id>?v=…`) para que la caché larga se rompa al
+  // cambiarla, sin tener que leer `user_avatars` en cada lista.
+  avatarUpdatedAt: timestamp("avatar_updated_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -280,3 +285,21 @@ export const pushSubscriptions = pgTable(
   },
   (table) => [index("push_subscriptions_user_idx").on(table.userId)]
 );
+
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType: () => "bytea",
+});
+
+/**
+ * La foto de perfil, en la base y no en Blob (docs/gamificacion.md §5): el
+ * teléfono la manda ya recortada a 256 × 256 en JPEG (unos 15 KB). Tabla
+ * aparte para que leer `users` no arrastre imágenes.
+ */
+export const userAvatars = pgTable("user_avatars", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  image: bytea("image").notNull(),
+  mime: text("mime").notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Avatar } from "@/components/Avatar";
 import { ChevronRight, ShieldCheck, Trophy } from "lucide-react";
 import { requireAdmin } from "@/lib/admin";
 import { getDict, type Dict } from "@/i18n";
@@ -112,13 +113,13 @@ function MemberRow({
       href={`/admin/usuarios/${m.userId}`}
       className="flex items-center gap-3 p-3 transition active:bg-surface-2"
     >
-      <div
-        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[17px] font-bold uppercase ${
-          alert ? "bg-load/15 text-load" : "bg-surface-2 text-muted"
-        }`}
-      >
-        {m.name.charAt(0)}
-      </div>
+      <Avatar
+        userId={m.userId}
+        name={m.name}
+        updatedAt={m.avatarUpdatedAt}
+        size={44}
+        className={alert ? "ring-2 ring-load" : ""}
+      />
       <div className="min-w-0 flex-1">
         <p className="truncate text-[16px] font-semibold capitalize">
           {m.name}
