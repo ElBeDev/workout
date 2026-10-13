@@ -1,7 +1,9 @@
 # Gamificación y foto de perfil (Decimosexta)
 
-Estado: **propuesta, sin empezar**. Falta que el dueño apruebe esto y cierre
-las decisiones de la §8.
+Estado: **hecho**, las cuatro fases. El dueño aprobó la propuesta el
+2026-10-13 con las recomendaciones de la §8: rangos en español, XP como
+métrica por omisión y la foto en la base. Lo que cambió al construirlo está
+en la §9.
 
 ## 1. Lo que ya hay
 
@@ -224,3 +226,54 @@ Cada fase se sube y se verifica por separado.
    personas y fuerzas tan distintas, un duelo de carga lo gana siempre la
    misma persona. Se puede pensar después con una métrica justa, como días
    de la semana.
+
+## 9. Cómo quedó (2026-10-13)
+
+**Ajustes contra la propuesta**, hechos al correr el motor sobre los datos
+reales:
+
+- **Récords: uno por ejercicio y sesión, a 15 XP.** Con 25 XP por serie,
+  Erika tenía 64 récords en 22 días (el 28 % de su XP), porque al subir de
+  peso serie tras serie cada serie contaba. Ahora subir de peso en la misma
+  sesión es un solo récord. Las medallas de récords quedaron en 1, 25, 50 y
+  100 (antes 1, 10, 25, 50).
+- **La cuadrícula de medallas** muestra las ganadas y, de cada tipo, sólo la
+  siguiente por ganar. Las 24 de golpe eran una pared de candados.
+- **La racha de las medallas** cuenta semanas con al menos una serie o un
+  bloque. La racha de Hoy cuenta sesiones terminadas, que es casi lo mismo.
+
+**Con los datos del 2026-10-13:** Erika, Oro III (5,000 XP); Karla
+(`karizmendi@grupoargue.com`), Plata II (2,940); `reberodriguez`, Bronce II
+(985); bener, Bronce III (440).
+
+**Dónde vive cada cosa:**
+
+| Qué | Dónde |
+|---|---|
+| Reglas de XP, rangos, medallas y la línea de tiempo (funciones puras) | `src/lib/xp.ts` |
+| Leer el historial de todos una vez por petición (`cache` de React) | `src/db/timelines.ts` |
+| Rangos para listas, perfil de juego, medallas de retos, resumen de sesión | `src/db/gamificacion.ts` |
+| XP como métrica del ranking y de los retos | `src/db/gym.ts` (`METRICS`, `getActivity`) |
+| Insignia, tarjeta de rango y medallas | `src/components/Juego.tsx` |
+| Foto: ruta, recorte en el teléfono y componente | `src/app/api/avatar/[userId]/route.ts`, `src/components/AvatarPicker.tsx`, `src/components/Avatar.tsx` |
+| Tarjeta de socio | `src/app/retos/socio/[userId]/page.tsx` |
+| Textos | `src/i18n/{es,en}/juego.ts` |
+
+**Cómo se verificó:**
+
+- `tsc`, `lint` y `build` limpios. El smoke tiene una prueba nueva: "rank on
+  Hoy".
+- Con cuentas desechables, en local y en producción:
+  - foto: subirla, verla en Hoy, quitarla, y los permisos (la tuya 200; la
+    de alguien oculto 404; la de alguien visible 200; sin sesión 401);
+  - juego: una sesión con récord da "+270 XP · ¡Subiste a Bronce II! · Primer
+    récord", Retos abre en XP, y la tarjeta de un socio oculto da 404.
+- Capturas de Hoy, Perfil, Retos y el resumen, en claro y oscuro.
+
+**Lo que queda abierto:**
+
+- Las metas de días y anillos de semanas pasadas usan la meta actual de
+  cada persona, porque no hay historial de metas.
+- Los duelos 1 contra 1 se dejaron fuera (§8.5).
+- Si el historial crece a decenas de miles de series, `getTimelines` habría
+  que cachearlo entre peticiones. Hoy son unas 600 y tarda milisegundos.

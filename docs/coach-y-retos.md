@@ -58,9 +58,11 @@ Tabla `coach_comments` (`user_id` = socio, `author_id` = coach con SET NULL,
 ## 2. Retos (`/retos`, quinta pestaña)
 
 - **Ranking** de la **semana** (lunes a domingo) o del **mes** calendario, en
-  hora de México, por **días** (la métrica por omisión: es en la que cualquiera
-  puede ganar, levante lo que levante), **carga**, **series** o **natación**
-  (metros). Empates comparten lugar (1, 1, 3); quien va en cero no sale.
+  hora de México, por **XP** (la métrica por omisión desde la Decimosexta, ver
+  [gamificacion.md](./gamificacion.md); antes era **días**: las dos premian
+  venir, levante lo que levante), **días**, **carga**, **series** o
+  **natación** (metros). Cada fila lleva foto y rango, y abre la tarjeta del
+  socio. Empates comparten lugar (1, 1, 3); quien va en cero no sale.
 - **Retos** que arma el coach en `/admin/retos`: nombre, métrica, fechas
   (inclusive, días locales guardados como `date`) y meta por persona
   opcional. Activos arriba con tu barra de progreso, "N de M lo lograron",

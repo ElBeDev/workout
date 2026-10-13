@@ -251,6 +251,18 @@ inclinada", "lagartija declinada"; "agarre cerrado" y "sentado" no cambian).
 Cambiaron 76 nombres del catálogo, con el script nuevo que respeta los
 editados a mano (ver la nota de `name_es` abajo).
 
+Decimosexta (2026-10-13): **gamificación y foto de perfil.** Primero se
+investigó cómo lo hacen Liftoff, Loadout, Hevy y Duolingo, y qué dice la
+evidencia. No se copiaron los rangos de fuerza: aquí todo es en máquina, hay
+placas y somos 7. En su lugar, **XP por venir y por el trabajo**, con rangos de
+Bronce a Leyenda que nunca bajan, 24 medallas contra uno mismo, XP como
+métrica por omisión del ranking, una tarjeta de socio (foto, rango, racha y
+medallas; nunca pesos) y un aviso de "+XP / subiste / medalla nueva" al
+terminar la sesión. Todo se calcula del historial, sin tablas nuevas. La
+**foto de perfil** va en la base (`user_avatars`, migración 0004),
+recortada a 256 px en el teléfono, porque el Blob store sigue en privado.
+Detalle, ajustes y verificación en [gamificacion.md](./gamificacion.md).
+
 Notas de infra que ya no hay que repetir:
 - **`.env.local` apunta a la base de producción** (el `DATABASE_URL` que
   baja `vercel env pull` para desarrollo es el mismo Neon que usa la app
@@ -277,6 +289,7 @@ Notas de infra que ya no hay que repetir:
 - Toda la documentación vive en `docs/` (`PLAN.md` se movió ahí con `git mv`).
 - **Migraciones versionadas** (2026-09-22): `npx drizzle-kit generate` sobre el `schema.ts` de ese día produjo `drizzle/0000_clever_nocturne.sql` — una única migración que reconstruye las 9 tablas completas, porque nunca había habido una carpeta `drizzle/` (todo se aplicó a mano hasta ahora). Para no re-ejecutarla contra una base que YA tiene esas tablas, se **adoptó** el historial en vez de correrla: se verificaron primero las 9 tablas contra `information_schema.tables`, y sólo entonces se creó `drizzle.__drizzle_migrations` (schema y tabla que usa el migrador de Drizzle) y se insertó a mano la fila que esa migración habría dejado si hubiera corrido de verdad — mismo `hash` (sha256 del `.sql` completo) y mismo `created_at` (el `when` de `drizzle/meta/_journal.json`). Verificado con `drizzle-kit migrate` y con el `migrate()` de `drizzle-orm/neon-http` directamente: los dos terminan sin error y sin tocar ninguna tabla, o sea que reconocen la migración 0000 como ya aplicada. `db:push` se corrió después y siguió sin reportar diferencia. **De aquí en adelante**: un cambio de esquema es `schema.ts` → `npm run db:generate` (crea la migración nueva) → `npm run db:migrate` (la aplica) → commit de `drizzle/`. Sigue habiendo un caso en el que hay que aplicar a mano primero (tabla con datos y sin TTY, igual que con `db:push`): ahí el orden es SQL a mano → `db:generate` (para que quede registrada) → adoptarla con el mismo procedimiento de arriba en vez de dejarla pendiente.
 - Cuarta ronda de migraciones a mano: índices (`set_logs(exercise_id)`, `workout_sessions(user_id, finished_at)`, `sessions(expires_at)`, `exercises(user_id)`, `routine_exercises(routine_id)`) y el índice único parcial `workout_sessions(user_id, routine_id) WHERE finished_at IS NULL` (una sola sesión abierta por rutina). Todos declarados también en `schema.ts`.
+- Migración versionada `drizzle/0004_loose_randall_flagg.sql` (2026-10-13): tabla `user_avatars` (foto de perfil como `bytea`) y `users.avatar_updated_at` (ver [gamificacion.md](./gamificacion.md)). Aditiva; aplicada con `node --env-file=.env.local node_modules/.bin/drizzle-kit migrate` antes de subir el código.
 - Migración versionada `drizzle/0002_massive_reptil.sql` (2026-09-24): `users.display_name`, `users.show_in_ranking` (default `true`) y las tablas `coach_comments` / `challenges` (ver [coach-y-retos.md](./coach-y-retos.md)). Aditiva; aplicada con `node --env-file=.env.local node_modules/.bin/drizzle-kit migrate` porque `npm run db:migrate` no carga `.env.local` (pendiente #14).
 - Migración versionada `drizzle/0001_faulty_franklin_storm.sql` (2026-09-22): `routines.kind` (default `'fuerza'`) y las tablas `swim_blocks` / `swim_block_logs` para natación (ver [natacion.md](./natacion.md)). Generada con `db:generate` y aplicada con el `migrate()` de `drizzle-orm/neon-http` directamente (aditiva, sin necesidad de adoptar nada a mano); `db:push` confirmó cero diferencias después.
 - Al cerrar sesión, `LogoutButton` borra los caches `pages-*` y las colas `workout:*` de `localStorage`, y avisa al SW (`purge-pages`). El SW (v3) no cachea respuestas redirigidas ni `/login`.
@@ -477,6 +490,7 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 - ~~Decimotercera: favicon e íconos de FiTME publicados (SW v5), programa de rutinas nuevo e igual para las 4 cuentas ([rutinas.md](./rutinas.md)), y nombres del catálogo arreglados en el traductor~~ ✅
 - ~~Decimocuarta: panel del coach (quién no viene, ficha del socio, comentarios con push) y Retos (ranking del gimnasio y retos con meta) — [coach-y-retos.md](./coach-y-retos.md)~~ ✅
 - ~~Decimoquinta: rebrand de FiTME a GainLine, hecha por ElBeFit, con ícono propio en el sistema de la firma de ElBe Games ([rebrand-gainline.md](./rebrand-gainline.md)); la plancha y los isométricos por tiempo ([rutinas.md §7](./rutinas.md)) y nombres de planchas y calistenia arreglados~~ ✅
+- ~~Decimosexta: gamificación (XP, rangos de Bronce a Leyenda, medallas, XP en el ranking, tarjeta de socio) y foto de perfil en la base — [gamificacion.md](./gamificacion.md)~~ ✅
 
 **Queda abierto (sin prisa), en este orden sugerido:**
 

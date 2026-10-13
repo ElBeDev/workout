@@ -7,6 +7,7 @@ export const retos: typeof Es = {
 
   // Métricas
   metricas: {
+    xp: "XP",
     volume: "Load",
     days: "Days",
     sets: "Sets",
@@ -14,6 +15,7 @@ export const retos: typeof Es = {
   },
   /** Para el selector del admin: qué se cuenta exactamente. */
   metricasLargas: {
+    xp: "XP earned",
     volume: "Weight lifted (kg)",
     days: "Days trained",
     sets: "Sets done",

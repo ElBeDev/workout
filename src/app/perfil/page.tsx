@@ -23,6 +23,9 @@ import { ReminderToggle } from "@/components/ReminderToggle";
 import { LogoutButton } from "@/components/LogoutButton";
 import { RankingToggle } from "@/components/RankingToggle";
 import { AvatarPicker } from "@/components/AvatarPicker";
+import { MedalGrid, RankCard } from "@/components/Juego";
+import { getGameProfile } from "@/db/gamificacion";
+import { MEDALS } from "@/lib/xp";
 import { publicName } from "@/db/gym";
 import { changePasswordAction, addBodyWeight, deleteBodyWeight, updateGoals, updateDisplayName } from "./actions";
 
@@ -37,7 +40,10 @@ export default async function PerfilPage({
   const t = await getDict();
   const errores: Record<string, string> = t.perfil.contrasena.errores;
   const userId = await requireUserId();
-  const [user] = await db.select().from(users).where(eq(users.id, userId));
+  const [[user], game] = await Promise.all([
+    db.select().from(users).where(eq(users.id, userId)),
+    getGameProfile(userId),
+  ]);
   const initial = (user?.username ?? "?").charAt(0).toUpperCase();
 
   const weights = await db
@@ -75,6 +81,17 @@ export default async function PerfilPage({
           )}
         </div>
       </Card>
+
+      <RankCard rank={game.rank} t={t} />
+
+      <section id="logros" className="flex scroll-mt-4 flex-col gap-3">
+        <div className="flex items-baseline justify-between">
+          <SectionTitle>{t.juego.logros}</SectionTitle>
+          <p className="text-[13px] font-semibold text-muted">{t.juego.medallasDe(game.medals.length, MEDALS.length)}</p>
+        </div>
+        <MedalGrid unlocked={game.medals} t={t} />
+        <p className="text-[12px] text-muted">{t.juego.comoSeGana}</p>
+      </section>
 
       <section className="flex flex-col gap-3">
         <SectionTitle>{t.perfil.idioma.titulo}</SectionTitle>

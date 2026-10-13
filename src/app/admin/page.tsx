@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
+import { RankBadge } from "@/components/Juego";
+import { getRanks } from "@/db/gamificacion";
+import type { Rank } from "@/lib/xp";
 import { ChevronRight, ShieldCheck, Trophy } from "lucide-react";
 import { requireAdmin } from "@/lib/admin";
 import { getDict, type Dict } from "@/i18n";
@@ -22,7 +25,7 @@ export default async function AdminPage() {
   const adminId = await requireAdmin();
   const t = await getDict();
 
-  const members = await getMemberStatuses();
+  const [members, ranks] = await Promise.all([getMemberStatuses(), getRanks()]);
   const needsAttention = (m: MemberStatus) => m.daysSince === null || m.daysSince >= INACTIVE_DAYS;
   // Primero quien dejó de venir (más días, más arriba) y al final quien nunca
   // ha entrenado: al primero hay que ir a buscarlo, al segundo arrancarlo.
@@ -61,7 +64,7 @@ export default async function AdminPage() {
         ) : (
           <GroupedList>
             {attention.map((m) => (
-              <MemberRow key={m.userId} m={m} adminId={adminId} t={t} alert />
+              <MemberRow key={m.userId} m={m} rank={ranks.get(m.userId)} adminId={adminId} t={t} alert />
             ))}
           </GroupedList>
         )}
@@ -72,7 +75,7 @@ export default async function AdminPage() {
           <SectionTitle>{t.admin.activos}</SectionTitle>
           <GroupedList>
             {active.map((m) => (
-              <MemberRow key={m.userId} m={m} adminId={adminId} t={t} />
+              <MemberRow key={m.userId} m={m} rank={ranks.get(m.userId)} adminId={adminId} t={t} />
             ))}
           </GroupedList>
         </section>
@@ -98,11 +101,13 @@ export default async function AdminPage() {
 
 function MemberRow({
   m,
+  rank,
   adminId,
   t,
   alert = false,
 }: {
   m: MemberStatus;
+  rank: Rank | undefined;
   adminId: string;
   t: Dict;
   alert?: boolean;
@@ -121,8 +126,9 @@ function MemberRow({
         className={alert ? "ring-2 ring-load" : ""}
       />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[16px] font-semibold capitalize">
-          {m.name}
+        <p className="flex items-center gap-1.5 truncate text-[16px] font-semibold capitalize">
+          <span className="truncate">{m.name}</span>
+          {rank && rank.xp > 0 && <RankBadge rank={rank} size={18} t={t} />}
           {m.userId === adminId && (
             <span className="ml-1.5 inline-flex items-center gap-1 text-[11px] font-medium normal-case text-muted">
               <ShieldCheck className="h-3 w-3" /> {t.admin.tu}

@@ -10,6 +10,7 @@ import { ejercicios } from "./ejercicios";
 import { natacion } from "./natacion";
 import { retos } from "./retos";
 import { coach } from "./coach";
+import { juego } from "./juego";
 
 export const es = {
   comun,
@@ -24,4 +25,5 @@ export const es = {
   natacion,
   retos,
   coach,
+  juego,
 };

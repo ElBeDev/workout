@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { Avatar } from "@/components/Avatar";
+import { RankCard } from "@/components/Juego";
+import { getTimeline } from "@/db/timelines";
+import { rankFor } from "@/lib/xp";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { ChevronRight, Dumbbell, Layers, Plus } from "lucide-react";
@@ -54,7 +57,7 @@ export default async function AdminUserPage({
   const [target] = await db.select().from(users).where(eq(users.id, userId));
   if (!target) notFound();
 
-  const [userRoutines, rings, stats, freq, coverage, sessions, comments, lastActiveAt] = await Promise.all([
+  const [userRoutines, rings, stats, freq, coverage, sessions, comments, lastActiveAt, timeline] = await Promise.all([
     getRoutineSummaries(userId),
     getWeeklyRings(userId, {
       volumeKg: target.goalWeeklyVolumeKg,
@@ -67,6 +70,7 @@ export default async function AdminUserPage({
     getSessionSummaries(userId, { limit: 8 }),
     getMemberComments(userId),
     getLastActiveAt(userId),
+    getTimeline(userId),
   ]);
 
   const name = publicName(target);
@@ -126,6 +130,8 @@ export default async function AdminUserPage({
           </p>
         </div>
       </Card>
+
+      <RankCard rank={rankFor(timeline.totalXp)} t={t} />
 
       <section className="flex flex-col gap-3">
         <div className="flex items-baseline justify-between gap-3">

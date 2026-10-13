@@ -25,6 +25,9 @@ import { fmtMetric, fmtMetricText, METRIC_BG, METRIC_TONE } from "@/lib/metric-f
 import { getDict, type Dict } from "@/i18n";
 import { Card, GroupedList, PageHeader, SectionTitle } from "@/components/ui";
 import { Avatar } from "@/components/Avatar";
+import { RankBadge } from "@/components/Juego";
+import { getRanks } from "@/db/gamificacion";
+import type { Rank } from "@/lib/xp";
 
 export const dynamic = "force-dynamic";
 
@@ -45,15 +48,16 @@ export default async function RetosPage({
   const t = await getDict();
   const { p, m } = await searchParams;
   const period: Period = (PERIODS as readonly string[]).includes(p ?? "") ? (p as Period) : "mes";
-  // Días por omisión: es la métrica en la que cualquiera puede ganar,
-  // levante lo que levante.
-  const metric: Metric = isMetric(m) ? m : "days";
+  // XP por omisión: premia venir (100 por día) y el trabajo, no cuánto
+  // levantas, así que cualquiera puede ganar (docs/gamificacion.md §4.1).
+  const metric: Metric = isMetric(m) ? m : "xp";
 
   const range = periodRange(period);
-  const [[me], board, challenges] = await Promise.all([
+  const [[me], board, challenges, ranks] = await Promise.all([
     db.select({ showInRanking: users.showInRanking }).from(users).where(eq(users.id, userId)),
     getActivity(range.since, range.until),
     getChallenges(),
+    getRanks(),
   ]);
   const [activeBoards, finishedBoards] = await Promise.all([
     Promise.all(challenges.active.map(getChallengeActivity)),
@@ -146,7 +150,7 @@ export default async function RetosPage({
         ) : (
           <GroupedList>
             {ranked.map((r) => (
-              <BoardRow key={r.userId} row={r} metric={metric} isMe={r.userId === userId} t={t} />
+              <BoardRow key={r.userId} row={r} rank={ranks.get(r.userId)} metric={metric} isMe={r.userId === userId} t={t} />
             ))}
           </GroupedList>
         )}
@@ -287,21 +291,38 @@ function MiniRow({ row, metric, isMe, t }: { row: RankedRow; metric: Metric; isM
   );
 }
 
-function BoardRow({ row, metric, isMe, t }: { row: RankedRow; metric: Metric; isMe: boolean; t: Dict }) {
+function BoardRow({
+  row,
+  rank,
+  metric,
+  isMe,
+  t,
+}: {
+  row: RankedRow;
+  rank: Rank | undefined;
+  metric: Metric;
+  isMe: boolean;
+  t: Dict;
+}) {
   const v = fmtMetric(metric, row.value, t);
   return (
-    <div className={`flex items-center gap-3 p-3 ${isMe ? "bg-accent/10" : ""}`} aria-label={t.retos.lugar(row.position)}>
+    <Link
+      href={`/retos/socio/${row.userId}`}
+      className={`flex items-center gap-3 p-3 transition active:bg-surface-2 ${isMe ? "bg-accent/10" : ""}`}
+      aria-label={`${t.retos.lugar(row.position)} · ${t.juego.verPerfil(row.name)}`}
+    >
       <Position n={row.position} />
       <Avatar userId={row.userId} name={row.name} updatedAt={row.avatarUpdatedAt} size={40} />
-      <p className="min-w-0 flex-1 truncate text-[16px] font-semibold capitalize">
-        {row.name}
-        {isMe && <span className="ml-1.5 text-[12px] font-semibold normal-case text-accent">{t.retos.tu}</span>}
+      <p className="flex min-w-0 flex-1 items-center gap-1.5 text-[16px] font-semibold">
+        <span className="truncate capitalize">{row.name}</span>
+        {rank && <RankBadge rank={rank} size={18} t={t} />}
+        {isMe && <span className="text-[12px] font-semibold text-accent">{t.retos.tu}</span>}
       </p>
       <p className="shrink-0 text-[17px] font-bold tabular-nums">
         <span className={METRIC_TONE[metric]}>{v.value}</span>
         <span className="ml-1 text-[12px] font-semibold text-muted">{v.unit}</span>
       </p>
-    </div>
+    </Link>
   );
 }
 

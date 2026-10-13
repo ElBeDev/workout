@@ -93,6 +93,10 @@ async function main() {
     await page.waitForURL(/\/progreso/);
     check("finish session → progreso", (await page.textContent("body")).includes("Smoke Push"));
 
+    // Gamificación (docs/gamificacion.md): la sesión da XP y Hoy enseña el rango.
+    await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
+    check("rank on Hoy", /Bronce I{1,3}/.test(await page.textContent("body")));
+
     await page.goto(`${BASE}/perfil`, { waitUntil: "networkidle" });
     check("perfil loads", (await page.textContent("body")).includes(username));
 

@@ -5,6 +5,7 @@ export const retos = {
 
   // Métricas
   metricas: {
+    xp: "XP",
     volume: "Carga",
     days: "Días",
     sets: "Series",
@@ -12,6 +13,7 @@ export const retos = {
   } as Record<string, string>,
   /** Para el selector del admin: qué se cuenta exactamente. */
   metricasLargas: {
+    xp: "XP ganado",
     volume: "Carga levantada (kg)",
     days: "Días entrenados",
     sets: "Series hechas",

@@ -20,6 +20,9 @@ import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { DiscardSessionButton } from "@/components/DiscardSessionButton";
 import { CoachInbox } from "@/components/CoachComments";
 import { Avatar } from "@/components/Avatar";
+import { RankCard } from "@/components/Juego";
+import { getTimeline } from "@/db/timelines";
+import { rankFor } from "@/lib/xp";
 import { getUnreadComments } from "@/db/gym";
 import { startSession } from "./entrenar/actions";
 
@@ -38,7 +41,7 @@ export default async function HomePage() {
   const dict = await getDict();
   const t = dict.hoy;
   const [user] = await db.select().from(users).where(eq(users.id, userId));
-  const [myRoutines, openSession, weekly, rings, coachComments] = await Promise.all([
+  const [myRoutines, openSession, weekly, rings, coachComments, timeline] = await Promise.all([
     getRoutineSummaries(userId),
     getOpenSession(userId),
     getWeeklyStats(userId),
@@ -48,6 +51,7 @@ export default async function HomePage() {
       days: user?.goalWeeklyDays ?? 4,
     }),
     getUnreadComments(userId),
+    getTimeline(userId),
   ]);
 
   const today = todayWeekday();
@@ -113,6 +117,8 @@ export default async function HomePage() {
           )}
         </div>
       </Card>
+
+      <RankCard rank={rankFor(timeline.totalXp)} t={dict} href="/perfil#logros" />
 
       {openSession && (
         <Card className="border-accent/40 p-4">

@@ -13,10 +13,13 @@ import {
 } from "@/db/schema";
 import { APP_TIME_ZONE, addDaysYmd, daysAgo, localDate, localDayStart, todayYmd, weekKey } from "@/lib/dates";
 import { toKg } from "@/lib/suggest";
+import { xpBetween } from "@/lib/xp";
+import { getTimelines } from "@/db/timelines";
 
 /* ── Métricas del ranking y de los retos (docs/coach-y-retos.md) ──────────── */
 
-export const METRICS = ["volume", "days", "sets", "distance"] as const;
+// XP primero: es la métrica por omisión del ranking (docs/gamificacion.md §8).
+export const METRICS = ["xp", "days", "volume", "sets", "distance"] as const;
 export type Metric = (typeof METRICS)[number];
 
 export function isMetric(value: unknown): value is Metric {
@@ -41,6 +44,8 @@ export type ActivityRow = {
   userId: string;
   name: string;
   avatarUpdatedAt: Date | null;
+  /** XP ganado en el periodo (src/lib/xp.ts). */
+  xp: number;
   volumeKg: number;
   sets: number;
   days: number;
@@ -49,6 +54,8 @@ export type ActivityRow = {
 
 export function metricValue(row: ActivityRow, metric: Metric): number {
   switch (metric) {
+    case "xp":
+      return row.xp;
     case "volume":
       return row.volumeKg;
     case "days":
@@ -97,7 +104,7 @@ export async function getActivity(
     lt(swimBlockLogs.loggedAt, until)
   );
 
-  const [people, strength, strengthDays, swim] = await Promise.all([
+  const [people, strength, strengthDays, swim, timelines] = await Promise.all([
     db
       .select({
         id: users.id,
@@ -134,6 +141,7 @@ export async function getActivity(
       .innerJoin(workoutSessions, eq(swimBlockLogs.sessionId, workoutSessions.id))
       .where(swimRange)
       .groupBy(workoutSessions.userId, localDay(swimBlockLogs.loggedAt)),
+    getTimelines(),
   ]);
 
   const strengthBy = new Map(strength.map((r) => [r.userId, r]));
@@ -154,6 +162,10 @@ export async function getActivity(
     userId: p.id,
     name: publicName(p),
     avatarUpdatedAt: p.avatarUpdatedAt,
+    xp: (() => {
+      const t = timelines.get(p.id);
+      return t ? xpBetween(t, since, until) : 0;
+    })(),
     volumeKg: Math.round(Number(strengthBy.get(p.id)?.volumeKg ?? 0)),
     sets: Number(strengthBy.get(p.id)?.sets ?? 0),
     days: daysBy.get(p.id)?.size ?? 0,
@@ -318,6 +330,7 @@ export async function getMemberStatuses(now = new Date()): Promise<MemberStatus[
         userId: p.id,
         name: publicName(p),
         avatarUpdatedAt: p.avatarUpdatedAt,
+        xp: 0,
         volumeKg: 0,
         sets: 0,
         days: 0,

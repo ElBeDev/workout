@@ -19,6 +19,8 @@ import { loadLabel } from "@/lib/load-label";
 import { Trophy } from "lucide-react";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { SetRowEditor } from "./SetRowEditor";
+import { MedalIcon, RankBadge, rankLabel } from "@/components/Juego";
+import { getSessionGame } from "@/db/gamificacion";
 
 export const dynamic = "force-dynamic";
 
@@ -57,7 +59,7 @@ export default async function SessionDetailPage({
   if (!session) notFound();
 
   if (session.routineKind === "natacion") {
-    return <SwimSessionDetail session={session} t={t} />;
+    return <SwimSessionDetail session={session} t={t} userId={userId} finishedNow={done === "1"} />;
   }
 
   const [{ groups, setCount, volumeKg: volume }, comments] = await Promise.all([
@@ -157,6 +159,8 @@ export default async function SessionDetailPage({
         </Card>
       )}
 
+      {finishedNow && <GameSummary userId={userId} sessionId={id} t={t} />}
+
       {recordsThisSession.length > 0 && (
         <Card className="flex flex-col gap-3 p-4">
           <p className="label flex items-center gap-2 text-load">
@@ -244,7 +248,11 @@ export default async function SessionDetailPage({
 async function SwimSessionDetail({
   session,
   t,
+  userId,
+  finishedNow,
 }: {
+  userId: string;
+  finishedNow: boolean;
   session: {
     id: string;
     startedAt: Date;
@@ -272,6 +280,8 @@ async function SwimSessionDetail({
         backHref="/progreso"
         subtitle={fmtDate(session.startedAt, { dateStyle: "full", timeStyle: "short" }, t.comun.intl)}
       />
+
+      {finishedNow && <GameSummary userId={userId} sessionId={session.id} t={t} />}
 
       <Card hero className="grid grid-cols-2 gap-x-4 gap-y-5 p-5">
         <Stat
@@ -355,5 +365,48 @@ function Stat({
         {unit && <span className="ml-1 text-[15px] font-semibold text-muted">{unit}</span>}
       </p>
     </div>
+  );
+}
+
+/**
+ * Lo que ganaste en esta sesión (docs/gamificacion.md §4.2): XP, si subiste de
+ * escalón y las medallas que salieron. Todo se deduce del historial, así que
+ * editar o borrar una serie después lo corrige.
+ */
+async function GameSummary({ userId, sessionId, t }: { userId: string; sessionId: string; t: Dict }) {
+  const game = await getSessionGame(userId, sessionId);
+  if (game.gained === 0) return null;
+  return (
+    <Card className="flex flex-col gap-3 p-4">
+      <div className="flex items-center gap-3">
+        <RankBadge rank={game.after} size={36} t={t} />
+        <div className="min-w-0 flex-1">
+          <p className="text-[19px] font-bold text-accent">{t.juego.ganaste(game.gained)}</p>
+          <p className="text-[14px] font-semibold" style={game.rankedUp ? { color: game.after.color } : undefined}>
+            {game.rankedUp ? t.juego.subiste(rankLabel(game.after, t)) : rankLabel(game.after, t)}
+          </p>
+        </div>
+      </div>
+      {game.medals.length > 0 && (
+        <div className="flex flex-col gap-2 border-t border-border pt-3">
+          <p className="label text-muted">{game.medals.length === 1 ? t.juego.nuevaMedalla : t.juego.nuevasMedallas}</p>
+          <ul className="flex flex-col gap-2">
+            {game.medals.map((id) => {
+              const [group, threshold] = [id.slice(0, id.lastIndexOf("-")), Number(id.slice(id.lastIndexOf("-") + 1))];
+              const m = t.juego.medalla(group, threshold);
+              return (
+                <li key={id} className="flex items-center gap-3">
+                  <MedalIcon id={id} size={36} />
+                  <div className="min-w-0">
+                    <p className="text-[15px] font-semibold">{m.titulo}</p>
+                    <p className="text-[12px] text-muted">{m.requisito}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </Card>
   );
 }
