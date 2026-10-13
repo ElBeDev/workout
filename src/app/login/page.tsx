@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ElBeFit } from "@/components/ElBeFit";
 import { Card, Input, PrimaryButton } from "@/components/ui";
 import { getDict } from "@/i18n";
 import { loginAction } from "./actions";
@@ -20,7 +21,7 @@ export default async function LoginPage({
           <img src="/icon-512.png" alt="" className="h-full w-full object-cover" />
         </div>
         <div>
-          <h1 className="text-[34px] font-bold tracking-[-0.02em]">FiTME</h1>
+          <h1 className="text-[34px] font-bold tracking-[-0.02em]">GainLine</h1>
           <p className="text-[15px] text-muted">{t.acceso.login.subtitulo}</p>
         </div>
       </div>
@@ -54,6 +55,10 @@ export default async function LoginPage({
         <Link href="/registro" className="font-semibold text-accent">
           {t.acceso.login.registrate}
         </Link>
+      </p>
+
+      <p className="text-center text-[13px] text-muted">
+        {t.acceso.hechoPor} <ElBeFit className="text-[16px] text-foreground/70" />
       </p>
     </div>
   );

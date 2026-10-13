@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { setLogs, workoutSessions, routines, exercises } from "@/db/schema";
 import { getCurrentUserId } from "@/lib/session";
 import { APP_TIME_ZONE } from "@/lib/dates";
+import { isTimed } from "@/lib/measure";
 
 function csvCell(value: string | number | null | undefined) {
   let s = value === null || value === undefined ? "" : String(value);
@@ -27,6 +28,7 @@ export async function GET() {
       weightUnit: setLogs.weightUnit,
       plates: setLogs.plates,
       reps: setLogs.reps,
+      measure: exercises.measure,
       notes: workoutSessions.notes,
     })
     .from(setLogs)
@@ -42,9 +44,11 @@ export async function GET() {
     timeStyle: "short",
   });
 
-  const header = ["fecha", "rutina", "ejercicio", "ejercicio_en", "serie", "peso", "unidad", "placas", "reps", "notas"];
+  const header = ["fecha", "rutina", "ejercicio", "ejercicio_en", "serie", "peso", "unidad", "placas", "reps", "segundos", "notas"];
   const lines = [header.join(",")];
   for (const r of rows) {
+    // En los ejercicios por tiempo, `reps` guarda segundos (src/lib/measure.ts).
+    const timed = isTimed(r.measure);
     lines.push(
       [
         fmt.format(r.startedAt),
@@ -55,7 +59,8 @@ export async function GET() {
         r.weight ?? "",
         r.weight !== null ? (r.weightUnit === "lbs" ? "lb" : "kg") : "",
         r.plates ?? "",
-        r.reps ?? "",
+        timed ? "" : (r.reps ?? ""),
+        timed ? (r.reps ?? "") : "",
         r.notes ?? "",
       ]
         .map(csvCell)
@@ -67,7 +72,7 @@ export async function GET() {
   return new NextResponse("﻿" + lines.join("\n"), {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="workout-${today}.csv"`,
+      "Content-Disposition": `attachment; filename="gainline-${today}.csv"`,
       "Cache-Control": "no-store",
     },
   });

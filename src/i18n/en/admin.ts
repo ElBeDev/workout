@@ -18,7 +18,7 @@ export const admin: typeof Es = {
   sinRutinas: "no routines",
   resumen30: (dias: number, series: number) =>
     `${dias} ${dias === 1 ? "day" : "days"} · ${series} ${series === 1 ? "set" : "sets"} in 30 days`,
-  retosTitulo: "Gym challenges",
+  retosTitulo: "Challenges",
   retosDescripcion: "Create and delete challenges for everyone",
 
   // Mantenimiento (respaldo de gifs)

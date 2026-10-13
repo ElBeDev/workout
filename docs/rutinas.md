@@ -1,4 +1,4 @@
-# El programa de rutinas de FiTME
+# El programa de rutinas de GainLine
 
 > Estado (2026-09-23): **las 4 cuentas que existen tienen las mismas 5
 > rutinas**, con una sola excepción por usuaria (§3). Esto es **contenido,
@@ -233,22 +233,53 @@ cubre (en lugar de adivinar). Después, volver a aplicar la excepción de §3.
 - **Usuarios nuevos arrancan vacíos**: hoy se les copia a mano. Las
   plantillas de PLAN.md §9.6 lo resolverían.
 
-## 7. Ejercicios por segundos
+## 7. Ejercicios por tiempo: estiramientos e isométricos
 
-`exercises.measure` (`reps` | `seconds`, migración 0003). En los de
-`seconds`, `set_logs.reps` guarda los segundos sostenidos y la app los
-muestra como "2 × 30 s", sin campo de carga, sin sugerencia y sin el
-descanso de 3 minutos. Esas series **cuentan el día** (anillo de días,
-ranking de días) pero **no suman** series, carga, récords, ranking/retos de
-series, los "30 días" del coach ni la cobertura muscular: estirar el femoral
-no es haberlo entrenado.
+`exercises.measure` tiene tres valores (`src/lib/measure.ts`):
 
-Hoy ninguna rutina usa ejercicios por segundos (Complementarias empezó con
-estiramientos y se quedaron fuera), pero la función sigue ahí para cuando se
-agreguen.
+| Valor | Qué es | Se registra | ¿Suma series, ranking de series y cobertura? | ¿Carga y récords? |
+|---|---|---|---|---|
+| `reps` | Lo normal | Repeticiones y carga | Sí | Sí |
+| `seconds` | Estiramientos y rodillo | Segundos, sin carga | **No**: estirar el femoral no es haberlo entrenado. Sólo cuenta el día | No |
+| `hold` | Isométricos: plancha, L-sit, front lever… | Segundos, sin carga | **Sí**: una plancha sí es entrenar el abdomen | No |
 
-Se marcaron en `seconds` los 63 del catálogo cuyo nombre en inglés tiene la
-palabra *stretch* (menos `dynamic …` y `weighted stretch lunge`, que son
-movimiento). Ninguno tenía series registradas, así que no cambió historial.
-Un ejercicio propio no se puede marcar desde la app todavía: se hace en la
-base.
+En los dos por tiempo, `set_logs.reps` guarda los segundos sostenidos. La
+app los muestra como "2 × 30 s", sin campo de carga, sin sugerencia y sin el
+descanso de 3 minutos. En el CSV salen en la columna `segundos`, no en
+`reps`.
+
+**`seconds`** (2026-09, migración 0003): los 63 del catálogo cuyo nombre en
+inglés tiene *stretch* (menos `dynamic …` y `weighted stretch lunge`, que
+son movimiento). Ninguna rutina los usa hoy (Complementarias empezó con
+estiramientos y se quedaron fuera).
+
+**`hold`** (2026-10-13, Decimoquinta): se agregó porque la plancha se estaba
+registrando como si fuera de peso. `reberodriguez` tenía "weighted front
+plank" en "Tren superior 2" y la anotaba con peso 0 y "repeticiones" de 20 y
+40, que en realidad eran segundos. Al pasarla a `hold`, esas series quedaron
+bien sin tocarlas: ya eran segundos. Sólo se limpió el peso 0, que pasó a
+vacío. Hay 14 del catálogo en `hold`, elegidos a mano porque son
+sostenidos y no movimiento:
+
+- Planchas: `weighted front plank`, `bodyweight incline side plank`,
+  `power point plank`, `side bridge v. 2`, y la `front plank` nueva (abajo).
+- Calistenia: `front lever`, `back lever`, `l-sit on floor`, `v-sit on floor`,
+  `frog planche`, `full planche`, `lean planche`, `straddle planche`,
+  `handstand`.
+- `isometric chest squeeze`.
+
+Se quedaron en `reps` las variantes con movimiento, aunque digan *plank* o
+*isometric*: `front plank with twist`, `plank tap shoulder`, `push-up to side
+plank`, `reverse plank with leg lift`, `side plank hip adduction`,
+`isometric wipers` y `front lever reps`. También el `farmers walk` y los
+*carry*, porque ahí lo que progresa es la carga.
+
+El catálogo de ExerciseDB **no traía la plancha básica**, sólo la que lleva
+disco en la espalda. Se agregó a mano una fila `front plank` / "Plancha
+frontal" (`waist`, peso corporal, `hold`, sin gif y sin `external_id`, así
+que el seed no la toca).
+
+Un ejercicio propio se puede crear por tiempo desde la app: el formulario
+de "Crear ejercicio" tiene "Cómo se registra" (repeticiones y peso, o
+tiempo). Por tiempo lo crea como `hold`; desde la app no se puede crear un
+estiramiento (`seconds`), porque no contaría para nada.

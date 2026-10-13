@@ -1,4 +1,4 @@
-/* FiTME service worker: app shell + last-visited pages available offline.
+/* GainLine service worker: app shell + last-visited pages available offline.
  * - Navigations: network first, fall back to the cached copy of that URL,
  *   then to /offline. Redirected responses (e.g. → /login) are never cached
  *   under the protected URL.
@@ -8,7 +8,7 @@
  * - Message { type: "purge-pages" } (sent on logout) drops the page cache.
  * Keep PAGES in sync with src/components/Connectivity.tsx.
  */
-const VERSION = "v5";
+const VERSION = "v6";
 const PAGES = `pages-${VERSION}`;
 const ASSETS = `assets-${VERSION}`;
 const OFFLINE_URL = "/offline";
@@ -121,7 +121,7 @@ self.addEventListener("fetch", (event) => {
  * en web, así que llega por push desde el cron del servidor.
  */
 self.addEventListener("push", (event) => {
-  let datos = { titulo: "FiTME", cuerpo: "Hoy toca entrenar.", url: "/" };
+  let datos = { titulo: "GainLine", cuerpo: "Hoy toca entrenar.", url: "/" };
   try {
     if (event.data) datos = { ...datos, ...event.data.json() };
   } catch {}

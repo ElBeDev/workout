@@ -16,7 +16,7 @@ export const admin = {
   sinRutinas: "sin rutinas",
   resumen30: (dias: number, series: number) =>
     `${dias} ${dias === 1 ? "día" : "días"} · ${series} ${series === 1 ? "serie" : "series"} en 30 días`,
-  retosTitulo: "Retos del gimnasio",
+  retosTitulo: "Retos",
   retosDescripcion: "Crear y borrar retos para todos",
 
   // Mantenimiento (respaldo de gifs)

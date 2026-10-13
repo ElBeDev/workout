@@ -15,19 +15,20 @@ const inter = Inter({
   weight: ["400", "500", "600", "700"],
 });
 
-// "FiTME" es el nombre de la app (antes "Workout"): no se traduce. La
+// "GainLine" es el nombre de la app (antes "FiTME", y antes "Workout"); la
+// hace ElBeFit (docs/rebrand-gainline.md). No se traduce. La
 // descripción sí, porque es la que se ve al compartir el enlace y en los
 // resultados de búsqueda.
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getDict();
   return {
-    title: "FiTME",
+    title: "GainLine",
     description: t.comun.meta.descripcion,
     manifest: "/manifest.webmanifest",
     appleWebApp: {
       capable: true,
       statusBarStyle: "default",
-      title: "FiTME",
+      title: "GainLine",
     },
     icons: {
       icon: [

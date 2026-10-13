@@ -1,7 +1,7 @@
 /** Retos: ranking del gimnasio y retos que arma el coach (docs/coach-y-retos.md). */
 export const retos = {
   titulo: "Retos",
-  subtitulo: "La comunidad FiTME",
+  subtitulo: "La comunidad GainLine",
 
   // Métricas
   metricas: {

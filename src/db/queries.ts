@@ -4,7 +4,7 @@ import { routines, routineExercises, exercises, workoutSessions, setLogs, swimBl
 import { exerciseGif } from "@/db/exercise-gif";
 import { localDate, weekKey, daysAgo, weekdayRank } from "@/lib/dates";
 import { toKg, type WeightUnit } from "@/lib/suggest";
-import { isTimed } from "@/lib/measure";
+import { countsAsSet, isTimed } from "@/lib/measure";
 import { BODY_PARTS, type BodyPart } from "@/lib/body-parts";
 
 /**
@@ -174,8 +174,8 @@ type CompletedSet = {
   plates: number | null;
   reps: number | null;
   loggedAt: Date;
-  /** Serie por segundos (estiramiento): cuenta el día, no suma series. */
-  timed: boolean;
+  /** Estiramiento (`measure = 'seconds'`): cuenta el día, no suma series. */
+  stretch: boolean;
 };
 
 /**
@@ -202,18 +202,18 @@ async function getCompletedSets(userId: string, since: Date): Promise<CompletedS
         gte(setLogs.loggedAt, since)
       )
     );
-  return rows.map(({ measure, ...r }) => ({ ...r, timed: isTimed(measure) }));
+  return rows.map(({ measure, ...r }) => ({ ...r, stretch: !countsAsSet(measure) }));
 }
 
 /** Las que cuentan como "series": todas menos las de estiramiento. */
-const countedSets = (rows: CompletedSet[]) => rows.filter((r) => !r.timed);
+const countedSets = (rows: CompletedSet[]) => rows.filter((r) => !r.stretch);
 
 /**
  * Carga de una serie en kg. Las placas quedan fuera: no hay forma honesta de
  * convertir "3 placas" a kilos, y meter un número inventado arruinaría el
  * anillo de carga.
  */
-function setVolumeKg(s: Omit<CompletedSet, "timed">): number {
+function setVolumeKg(s: Omit<CompletedSet, "stretch">): number {
   if (!s.weight || !s.reps) return 0;
   const w = Number(s.weight);
   if (!Number.isFinite(w) || w <= 0) return 0;
@@ -420,12 +420,13 @@ export async function getPersonalRecords(userId: string): Promise<Map<string, Pe
     .from(setLogs)
     .innerJoin(workoutSessions, eq(setLogs.sessionId, workoutSessions.id))
     .innerJoin(exercises, eq(setLogs.exerciseId, exercises.id))
-    // Aguantar un estiramiento más segundos no es un récord.
+    // Los récords son de carga: aguantar más segundos (estiramiento o
+    // isométrico) no entra aquí.
     .where(
       and(
         eq(workoutSessions.userId, userId),
         eq(setLogs.completed, true),
-        ne(exercises.measure, "seconds")
+        eq(exercises.measure, "reps")
       )
     );
 
@@ -469,7 +470,8 @@ export async function getMuscleCoverage(userId: string): Promise<MuscleCoverage[
     .from(setLogs)
     .innerJoin(workoutSessions, eq(setLogs.sessionId, workoutSessions.id))
     .innerJoin(exercises, eq(setLogs.exerciseId, exercises.id))
-    // Estirar el femoral no cuenta como haberlo entrenado.
+    // Estirar el femoral no cuenta como haberlo entrenado; una plancha
+    // (`hold`) sí cuenta para el abdomen.
     .where(
       and(
         eq(workoutSessions.userId, userId),
@@ -513,7 +515,7 @@ export async function getDailyTraining(
   for (const r of rows) {
     const date = localDate(r.loggedAt).toISOString().slice(0, 10);
     const day = byDay.get(date) ?? { date, sets: 0, volumeKg: 0 };
-    if (!r.timed) day.sets += 1;
+    if (!r.stretch) day.sets += 1;
     day.volumeKg += setVolumeKg(r);
     byDay.set(date, day);
   }

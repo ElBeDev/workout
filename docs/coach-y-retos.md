@@ -6,8 +6,8 @@ Estado: **hecho en local, sin subir** (ver el registro de cambios de
 default; el código que está en producción no la nota).
 
 Salió de la pregunta "¿qué le falta para estar a la altura de las grandes?". De
-la lista se eligieron dos cosas que Strong o Hevy no pueden copiar porque FiTME
-es la app **de un gimnasio**, no una app suelta:
+la lista se eligieron dos cosas que Strong o Hevy no pueden copiar porque GainLine
+es una app **con coach y comunidad**, no una app suelta:
 
 1. [x] **Panel del coach**: ver el progreso de cada socio, quién no ha venido
    en 10 días, y dejarle comentarios.

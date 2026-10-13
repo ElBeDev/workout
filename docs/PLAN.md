@@ -224,6 +224,33 @@ mismo día:
   ejercicios propios, y el smoke test dejó de esperar un segundo fijo en
   la búsqueda (pendientes #11 y #12).
 
+Decimoquinta (2026-10-13): **la app deja de ser FiTME y pasa a llamarse
+GainLine, hecha por ElBeFit.** El trato con el gimnasio no se concretó, así
+que la app se vuelve un producto personal del dueño: su empresa es ElBe,
+cada línea lleva su nombre (ElBeGames para videojuegos, ElBeFit para esta)
+y la app tiene el suyo propio, GainLine ("GL"). Se cambió todo lo que el
+usuario ve (título, manifest, iOS, login, avisos push, Retos), los 6 íconos
+salen de un ícono nuevo hecho con el mismo sistema que la firma de ElBe
+Games (y ya no del logo de FiTME, que se quitó del repo), el SW sube a `v6`
+y Login/Registro dicen "Hecho por ElBeFit" al pie. Las entradas Undécima a
+Decimotercera se dejan como están porque son historia. El detalle, el
+inventario y lo que cada usuario tiene que hacer en su teléfono están en
+[rebrand-gainline.md](./rebrand-gainline.md).
+
+En la misma ronda: **la plancha se registra por tiempo.** `exercises.measure`
+gana un tercer valor, `hold` (isométricos), que se registra en segundos y sin
+carga como los estiramientos, pero que sí suma series, ranking de series y
+cobertura muscular; no entra en récords. Hay 14 del catálogo en `hold`, más
+una plancha frontal básica que ExerciseDB no traía, y el formulario de
+ejercicio propio pregunta "Cómo se registra". El detalle está en
+[rutinas.md §7](./rutinas.md). Y **los nombres de las planchas y la
+calistenia se arreglaron en el traductor** ("frontal plancha" → "plancha
+frontal"; "front lever" salía "frontal en máquina"), con concordancia en
+femenino para los modificadores que describen el ejercicio ("apertura
+inclinada", "lagartija declinada"; "agarre cerrado" y "sentado" no cambian).
+Cambiaron 76 nombres del catálogo, con el script nuevo que respeta los
+editados a mano (ver la nota de `name_es` abajo).
+
 Notas de infra que ya no hay que repetir:
 - **`.env.local` apunta a la base de producción** (el `DATABASE_URL` que
   baja `vercel env pull` para desarrollo es el mismo Neon que usa la app
@@ -237,7 +264,7 @@ Notas de infra que ya no hay que repetir:
 - `npm run db:push` (drizzle-kit) pide confirmación interactiva cuando la tabla tiene datos y no funciona sin TTY (p. ej. desde un agente). Las últimas migraciones (`username`/`password_hash`/`sessions`, y `workout_sessions.routine_id` nullable con `ON DELETE SET NULL`) se aplicaron con SQL a mano contra Neon y luego se verificó que `db:push` no detectara diferencias. El `schema.ts` es la fuente de verdad.
 - Ya hay más usuarios reales además de `bener` (se registraron dos personas más). Cualquier script contra la base debe filtrar por usuario; nunca borrar en masa.
 - La segunda ronda de migraciones (`routines.days int[]`, `workout_sessions.notes`, `exercises.name_es`, tabla `body_weights`) también se aplicó con SQL a mano y luego `db:push` confirmó cero diferencias.
-- `name_es` se regenera con `node --env-file=.env.local ./node_modules/.bin/tsx scripts/translate-exercises.ts` (idempotente); `scripts/preview-translations.ts` muestra una muestra antes de escribir. **El `name_es` del catálogo es 100 % salida del traductor** (verificado el 2026-09-23: 0 de 1,500 filas distintas a `translateExerciseName(name)`), así que un nombre mal traducido se arregla en las reglas de `src/lib/translate-exercise.ts` y volviendo a correr el script, nunca con un `update` a mano: el siguiente run lo pisaría. Antes de correrlo conviene guardar los `name_es` actuales y comparar contra la salida nueva. El script sólo toca el catálogo (`is_custom = false`); hasta el 2026-09-23 también reescribía el nombre de los ejercicios propios, que es lo que el usuario tecleó. El seed limpia el mojibake de ExerciseDB (`в°` → `°`) con `normalizeExerciseName`.
+- `name_es` se regenera con `node --env-file=.env.local ./node_modules/.bin/tsx scripts/translate-exercises.ts` (idempotente); `scripts/preview-translations.ts` muestra una muestra antes de escribir. **El `name_es` del catálogo es 100 % salida del traductor** (verificado el 2026-09-23: 0 de 1,500 filas distintas a `translateExerciseName(name)`), así que un nombre mal traducido se arregla en las reglas de `src/lib/translate-exercise.ts` y volviendo a correr el script, nunca con un `update` a mano: el siguiente run lo pisaría. Antes de correrlo conviene guardar los `name_es` actuales y comparar contra la salida nueva. **Desde octubre ya no es 100 %**: varios ejercicios del programa se renombraron a mano (p. ej. "Elevación diagonal en polea (leñador inverso)"), así que `translate-exercises.ts` completo los pisaría. Para un cambio de reglas se usa `scripts/retranslate-changed.ts` (Decimoquinta), que sólo actualiza las filas cuyo `name_es` sigue siendo la salida del traductor anterior. El script sólo toca el catálogo (`is_custom = false`); hasta el 2026-09-23 también reescribía el nombre de los ejercicios propios, que es lo que el usuario tecleó. El seed limpia el mojibake de ExerciseDB (`в°` → `°`) con `normalizeExerciseName`.
 - El service worker (`public/sw.js`) tiene un `VERSION`; si cambia la estrategia de cache hay que subir ese número para que los clientes descarten el cache viejo.
 - "Hoy" y "esta semana" se calculan en `America/Mexico_City` (`src/lib/dates.ts`) porque Vercel corre en UTC.
 - Quinta migración a mano: `set_logs.plates integer` y `routine_exercises.load_unit text default 'kg'`.
@@ -449,6 +476,7 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 - ~~Duodécima: deck de propuesta para presentar FiTME (fuera del repo, artifact de Claude), con capturas reales, QR al PWA y los colores de marca de FiTME~~ ✅
 - ~~Decimotercera: favicon e íconos de FiTME publicados (SW v5), programa de rutinas nuevo e igual para las 4 cuentas ([rutinas.md](./rutinas.md)), y nombres del catálogo arreglados en el traductor~~ ✅
 - ~~Decimocuarta: panel del coach (quién no viene, ficha del socio, comentarios con push) y Retos (ranking del gimnasio y retos con meta) — [coach-y-retos.md](./coach-y-retos.md)~~ ✅
+- Decimoquinta: rebrand de FiTME a GainLine, hecha por ElBeFit, con ícono propio en el sistema de la firma de ElBe Games — [rebrand-gainline.md](./rebrand-gainline.md)
 
 **Queda abierto (sin prisa), en este orden sugerido:**
 

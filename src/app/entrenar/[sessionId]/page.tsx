@@ -309,7 +309,7 @@ export default async function EntrenarPage({
           const lastTime = lastTimeByExercise.get(item.exerciseId) ?? new Map<number, LastSet>();
           const rows = rowCount.get(item.exerciseId) ?? item.targetSets;
           const unit: LoadUnit = normalizeLoadUnit(item.loadUnit);
-          // Un estiramiento no progresa como una carga: sin sugerencia.
+          // Un estiramiento o una plancha no progresan como una carga: sin sugerencia.
           const timed = isTimed(item.measure);
           const suggestion = timed
             ? null

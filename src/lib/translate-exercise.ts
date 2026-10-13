@@ -26,7 +26,8 @@ const EQUIPMENT: Rule[] = [
   [/\bkettlebells?\b/g, "con kettlebell"],
   [/\bcable\b/g, "en polea"],
   [/\bsmith( machine)?\b/g, "en smith"],
-  [/\blever(age)?( machine)?\b/g, "en máquina"],
+  // "front lever" / "back lever" are calisthenics holds, not the machine.
+  [/(?<!\b(?:front|back) )\blever(age)?( machine)?\b/g, "en máquina"],
   [/\bmachine\b/g, "en máquina"],
   [/\bsled\b/g, "en trineo"],
   [/\bsuspension\b/g, "en TRX"],
@@ -158,6 +159,7 @@ const MOVEMENTS: Rule[] = [
   [/\bkickback\b/g, "patada de tríceps"],
   [/\bpull[- ]?ups?\b/g, "dominada"],
   [/\bchin[- ]?ups?\b/g, "dominada supina"],
+  [/\bhandstand push[- ]?ups?\b/g, "lagartija en parada de manos"],
   [/\bpush[- ]?ups?\b/g, "lagartija"],
   [/\bpull[- ]in\b/g, "pull-in"],
   [/\bdips?\b/g, "fondos"],
@@ -175,13 +177,28 @@ const MOVEMENTS: Rule[] = [
   [/\bdeadlift\b/g, "peso muerto"],
   [/\bhip thrust\b/g, "hip thrust"],
   [/\bglute bridge\b/g, "puente de glúteo"],
-  [/\bbridge\b/g, "puente"],
+  [/(?<!side )\bbridge\b/g, "puente"],
   [/\breverse crunch\b/g, "crunch inverso"],
   [/\bside crunch\b/g, "crunch lateral"],
   [/\bcrunch(es)?\b/g, "crunch"],
   [/\bjack knife\b/g, "navaja"],
   [/\bsit[- ]?ups?\b/g, "abdominal"],
+  // Before INLINE turns "front"/"side" into a prefix ("frontal plancha").
+  [/\bplank tap shoulder\b/g, "plancha con toque de hombro"],
+  [/\bpower point plank\b/g, "plancha power point"],
+  [/\bfront plank\b/g, "plancha frontal"],
+  [/\b(side plank|side bridge)\b/g, "plancha lateral"],
+  [/\breverse plank\b/g, "plancha inversa"],
   [/\bplank\b/g, "plancha"],
+  [/\bfront lever reps\b/g, "palanca frontal con repeticiones"],
+  [/\bfront lever\b/g, "palanca frontal"],
+  [/\bback lever\b/g, "palanca trasera"],
+  [/\bfrog planche\b/g, "planche de rana"],
+  [/\bhandstand\b/g, "parada de manos"],
+  [/\bl-sit\b/g, "L-sit"],
+  [/\bv-sit\b/g, "V-sit"],
+  [/\bchest squeeze\b/g, "apretón de pecho"],
+  [/\bleg lift\b/g, "elevación de pierna"],
   [/\brussian twist\b/g, "giro ruso"],
   [/\btwists?\b/g, "giro"],
   [/\bshrugs?\b/g, "encogimiento de hombros"],
@@ -331,6 +348,31 @@ export function normalizeExerciseName(name: string): string {
   return name.replace(/в°/g, "°");
 }
 
+// Core nouns that are feminine in Spanish. The positional modifiers are
+// written masculine ("inclinado"), which reads wrong after them
+// ("plancha lateral inclinado").
+const FEMININE_CORE =
+  /^(plancha|sentadilla|zancada|elevación|apertura|extensión|hiperextensión|flexión|dominada|lagartija|prensa|cargada|patada|rotación|caminata|carrera|marcha|subida|palanca|parada|abducción|aducción|bicicleta|elíptica|navaja|planche)\b/;
+
+// Only the modifiers that describe the exercise agree with it. The ones that
+// describe the lifter ("sentado", "acostado", "colgado", "apoyado") stay as
+// gym Spanish says them: "extensión de tríceps sentado".
+const AGREEING: Rule[] = [
+  [/\binclinado\b/g, "inclinada"],
+  [/\bdeclinado\b/g, "declinada"],
+  [/\balterno\b/g, "alterna"],
+  [/\bisométrico\b/g, "isométrica"],
+  [/\bestático\b/g, "estática"],
+  [/\bdinámico\b/g, "dinámica"],
+  [/\bexplosivo\b/g, "explosiva"],
+  [/\bcompleto\b/g, "completa"],
+  [/\bcruzado\b/g, "cruzada"],
+  [/(?<!agarre )\babierto\b/g, "abierta"],
+  [/(?<!agarre )\bcerrado\b/g, "cerrada"],
+  [/\blento\b/g, "lenta"],
+  [/\belevado\b/g, "elevada"],
+];
+
 export function translateExerciseName(name: string): string {
   let text = normalizeExerciseName(name).toLowerCase().replace(/\s+/g, " ").trim();
 
@@ -344,6 +386,7 @@ export function translateExerciseName(name: string): string {
   text = apply(text, BODY);
 
   const core = tidy(text);
-  const parts = [core, ...new Set(modifiers), ...new Set(equipment)].filter(Boolean);
+  const agreed = FEMININE_CORE.test(core) ? modifiers.map((m) => apply(m, AGREEING)) : modifiers;
+  const parts = [core, ...new Set(agreed), ...new Set(equipment)].filter(Boolean);
   return tidy(parts.join(" ")) || name;
 }

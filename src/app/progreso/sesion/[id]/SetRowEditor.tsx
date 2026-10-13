@@ -28,7 +28,7 @@ export function SetRowEditor({
   weightUnit: WeightUnit;
   plates: number | null;
   reps: number | null;
-  /** Por segundos (estiramiento): sin carga, `reps` son segundos. */
+  /** Por tiempo (estiramiento o isométrico): sin carga, `reps` son segundos. */
   timed?: boolean;
 }) {
   const t = useT();

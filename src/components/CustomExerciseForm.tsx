@@ -85,6 +85,11 @@ export function CustomExerciseForm({
         ))}
       </select>
 
+      <select name="measure" defaultValue="reps" aria-label={t.ejercicios.comoSeRegistra} className={fieldClass}>
+        <option value="reps">{t.ejercicios.medidaReps}</option>
+        <option value="hold">{t.ejercicios.medidaTiempo}</option>
+      </select>
+
       <input name="equipment" placeholder={t.ejercicios.equipoPlaceholder} className={fieldClass} />
       <textarea
         name="instructions"

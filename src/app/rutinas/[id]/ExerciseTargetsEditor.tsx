@@ -24,7 +24,7 @@ export function ExerciseTargetsEditor({
   targetReps: number;
   targetWeight: string | null;
   loadUnit: LoadUnit;
-  /** Ejercicio por segundos (estiramiento): sin carga, sin unidad. */
+  /** Ejercicio por tiempo (estiramiento o isométrico): sin carga, sin unidad. */
   timed?: boolean;
 }) {
   const t = useT();

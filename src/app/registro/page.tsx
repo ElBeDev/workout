@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ElBeFit } from "@/components/ElBeFit";
 import { Card, Input, PrimaryButton } from "@/components/ui";
 import { getDict } from "@/i18n";
 import { registerAction } from "./actions";
@@ -68,6 +69,10 @@ export default async function RegistroPage({
         <Link href="/login" className="font-semibold text-accent">
           {t.acceso.registro.iniciaSesion}
         </Link>
+      </p>
+
+      <p className="text-center text-[13px] text-muted">
+        {t.acceso.hechoPor} <ElBeFit className="text-[16px] text-foreground/70" />
       </p>
     </div>
   );

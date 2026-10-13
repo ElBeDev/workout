@@ -3,7 +3,7 @@ import type { retos as Es } from "../es/retos";
 /** Challenges: gym leaderboard and challenges set up by the coach (docs/coach-y-retos.md). */
 export const retos: typeof Es = {
   titulo: "Challenges",
-  subtitulo: "The FiTME community",
+  subtitulo: "The GainLine community",
 
   // Métricas
   metricas: {

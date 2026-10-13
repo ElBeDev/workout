@@ -2,6 +2,8 @@ import type { acceso as Es } from "../es/acceso";
 
 /** Login y registro. */
 export const acceso: typeof Es = {
+  hechoPor: "Made by",
+
   login: {
     subtitulo: "Sign in to see your routines.",
     usuario: "Username",

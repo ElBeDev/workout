@@ -1,5 +1,8 @@
 /** Login y registro. */
 export const acceso = {
+  /** Quién hace la app, al pie de Login y Registro (docs/rebrand-gainline.md). */
+  hechoPor: "Hecho por",
+
   login: {
     subtitulo: "Inicia sesión para ver tus rutinas.",
     usuario: "Usuario",
