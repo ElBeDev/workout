@@ -1,7 +1,7 @@
 # Rebrand: de FiTME a GainLine, por ElBeFit (Decimoquinta)
 
-Estado: **hecho en local, sin subir**. Falta commit, push y la
-verificación en producción (paso 8).
+Estado: **en producción** desde `4931c48` (2026-10-13), verificado. Sólo
+falta que cada usuario de iPhone reinstale el acceso (§5).
 
 ## 1. Por qué
 
@@ -137,26 +137,28 @@ lockfile seguía en `"workout"` desde antes de FiTME.
   que pasó en su momento.
 - Este documento está en la tabla de [docs/README.md](./README.md).
 
-### Paso 7: la base de datos (pendiente)
+### Paso 7: la base de datos ✅
 
-Hay que buscar "fitme" (sin importar mayúsculas) en los títulos de
-`challenges` y en los comentarios del coach, en producción. Es contenido
-que alguien escribió a mano y no se ve desde el código. Si aparece, se
-cambia con la aprobación del dueño.
+Se buscó "fitme" / "fit me" (sin importar mayúsculas) en producción: en los
+títulos de los retos, los comentarios del coach, los nombres de rutina, las
+notas de sesión y los ejercicios. No apareció en ningún lado.
 
-### Paso 8: verificar y subir (a medias)
+### Paso 8: verificar y subir ✅
 
 1. ✅ `npm run lint` y `npm run build` sin errores.
 2. ✅ `npm run smoke` en local, 10/10. Revisado también con capturas: el
    manifest y el `<title>` dicen GainLine, `sw.js` dice `v6`, y Login se
    ve bien en claro y en oscuro.
-3. Commit y push a `main` (Vercel despliega solo).
-4. En producción:
-   - comparar el hash de `favicon.ico`, `icon.png`, `icon-192.png` y
-     `apple-touch-icon.png` contra los locales;
-   - revisar el `<title>`, `/manifest.webmanifest` y que `sw.js` diga `v6`;
-   - correr `npm run smoke` con `BASE_URL=https://workout-eight-neon.vercel.app`.
-5. Revisar en un teléfono de verdad: login, el ícono en la pantalla de
+3. ✅ Commit `4931c48` y push a `main`; Vercel lo publicó en unos 75 s.
+4. ✅ En producción:
+   - los 6 íconos coinciden byte a byte con los locales;
+   - `<title>` y manifest dicen GainLine, `sw.js` dice `v6` y Login muestra
+     "Hecho por ElBeFit";
+   - `npm run smoke` contra producción dio 10/10.
+
+   `apple-touch-icon.png` salió distinto en la primera petición, porque el
+   edge todavía tenía el viejo en caché, y en la siguiente ya coincidía.
+5. Falta revisarlo en un teléfono de verdad: el ícono en la pantalla de
    inicio y un aviso de prueba desde Perfil.
 
 ## 4. Lo que queda abierto
