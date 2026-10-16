@@ -11,34 +11,48 @@ que la app nativa lo use sin rehacerlo (§2).
 
 ## Dónde vamos
 
-Actualizado: **2026-10-15**. Pasos **1 a 3 de 7** hechos, subidos y probados
-en producción (smoke 17/17 contra `workout-eight-neon.vercel.app`).
+Actualizado: **2026-10-15**. Pasos **1 a 4 de 7** hechos, subidos y probados
+en producción (smoke 26/26 contra `workout-eight-neon.vercel.app`).
 
 | Paso | Qué | Estado | Commit |
 |---|---|---|---|
 | 1 | Esquema y datos de hoy | ✅ En producción | `6c711a4` |
 | 2 | Permisos y panel `/coach` | ✅ En producción | `9a94b10` |
 | 3 | Ranking, XP y retos por grupo | ✅ En producción | `921a739` |
-| 4 | Alta de coach, invitaciones, "Mi coach", copiar rutinas | **⏭️ Siguiente.** Diseño en §4.5 | — |
-| 5 | Cobro con Stripe | Falta la cuenta de Stripe | — |
+| 4 | Alta de coach, invitaciones, "Mi coach", copiar rutinas | ✅ En producción | `72e6d81` |
+| 5 | Cobro con Stripe | **⏭️ Siguiente.** Falta la cuenta de Stripe | — |
 | 6 | Panel del dueño, página pública y legales | — | — |
 | 7 | Marca del coach | — | — |
 
 **Lo que ya ve la gente hoy:**
 
-- `bener` es coach (plan `comp`, gratis, código **`GL-27DE`**) y los otros 6
-  son sus alumnos. Nadie más es coach todavía: no hay forma de darse de alta
-  como coach hasta el paso 4.
-- El panel del coach está en **`/coach`** y sólo trae a sus alumnos. `/admin`
-  es del dueño y por ahora sólo tiene el mantenimiento de gifs.
+- `bener` es coach (plan `comp`, gratis, código **`GL-27DE`**, liga
+  `/unirse/GL-27DE`) y los otros 6 son sus alumnos.
+- **Cualquiera puede darse de alta como coach** en `/registro/coach` (o desde
+  el login, "Soy coach"), o volver coach su cuenta desde Perfil → Mi coach →
+  "Crea tu grupo". Arranca con 14 días de prueba. ⚠️ **Todavía no se cobra**:
+  al terminar la prueba no pasa nada hasta el paso 5.
+- El panel del coach está en **`/coach`**: tarjeta Invitar (código, liga, QR,
+  copiar y WhatsApp, "N de 30 alumnos"), solicitudes por aceptar, retos y sus
+  alumnos. En la ficha de cada alumno, "Quitar de mi grupo". `/admin` es del
+  dueño y por ahora sólo tiene el mantenimiento de gifs.
+- **Para unirse a un coach**: abrir su liga o escanear su QR (con o sin
+  cuenta), escribir su código en Perfil → Mi coach, o pedir unirse con su
+  usuario (el coach acepta o rechaza). Desde ahí mismo se deja al coach.
+- Las rutinas que arma el coach dicen **"De tu coach"**, y el coach puede
+  copiar una rutina a varios alumnos de una vez ("Copiar a alumnos").
+- Avisos push al coach y al alumno en cada paso (se unió, pidió unirse,
+  aceptado, rechazado, se fue, lo quitaron, plan lleno).
 - Ranking, retos, XP, fotos y tarjetas son **por grupo de coach**. El ranking
   de `bener` salió idéntico al de antes, con él incluido (§5).
 - Quien no tiene coach ve en Retos una tarjeta en vez de ranking. Hoy nadie
   está en ese caso; la cuenta del smoke lo prueba.
 
-**Lo que todavía no hay** (para no prometerlo): alta de coach, liga e
-invitación, "Mi coach" en Perfil, solicitudes, "De tu coach" en la lista de
-rutinas, copiar una rutina a varios alumnos, cobro, panel del dueño.
+**Lo que todavía no hay** (para no prometerlo): cobro (la prueba de 14 días
+no vence en nada), el panel del dueño con la lista de coaches, la página
+pública con precios, términos y aviso de privacidad, la marca del coach
+(logo y color) y su foto en la liga. Y un pendiente conocido: el progreso de
+un ejercicio *propio* del coach da 404 al alumno (§4.5).
 
 ---
 
@@ -431,9 +445,17 @@ siguiente. Ninguno deja la app a medias para los usuarios de hoy.
    coach: tarjeta en vez de ranking. Migración 0006: `coaches.in_ranking`,
    encendido para `bener`. El ranking real salió idéntico al de antes (7 en
    el grupo, `bener` 4.º). Smoke 17/17, con dos pruebas nuevas de grupos.
-4. [ ] **Coaches y vínculos** (§4, §6; diseño en §4.5). Registro de coach,
-   `/unirse/[code]`, QR, "Mi coach", solicitudes, invitar, copiar rutina a
-   varios alumnos, "De tu coach".
+4. [x] **Coaches y vínculos** (§4, §6; diseño en §4.5), `72e6d81`. Tal cual
+   el diseño de §4.5: servicios en `src/server/coaches.ts`, `vinculos.ts` y
+   `rutinas.ts` (los avisos salen como datos y los manda `src/lib/avisos.ts`
+   con `after()`); cookie `invitacion` en `src/lib/invitacion.ts`; liga
+   absoluta con `src/lib/origen.ts`; QR con el paquete `qrcode` (SVG en el
+   servidor, negro sobre blanco aun en oscuro); `ConfirmAction` para dejar al
+   coach y quitar alumnos. Revisado con capturas en claro y oscuro (liga sin
+   sesión, panel, Mi coach); de ahí salieron tres ajustes: el cupo bajo el
+   código, "WhatsApp" a secas y el aviso de "sin alumnos" sin el título de
+   "sin venir". Smoke 26/26, con 9 pruebas nuevas que recorren todo en el
+   navegador.
 5. [ ] **Cobro** (§7). Necesita la cuenta de Stripe. Primero en modo de
    pruebas.
 6. [ ] **Panel del dueño, página pública y legales** (§8). `/coaches` con qué
@@ -479,6 +501,9 @@ contra producción:
 | ¿Dónde vive el panel del coach? | `/coach`; `/admin` para el dueño | Plan aprobado |
 | ¿El alumno sin coach ve algo en Retos? | Una tarjeta en vez de ranking (§5) | Plan aprobado |
 | ¿Un alumno puede tener varios coaches? | No, uno a la vez (lo garantiza la base) | Plan aprobado |
+| ¿Un coach puede tener coach? | No. Para volverse coach, un alumno deja antes a su coach | Diseño del paso 4 |
+| ¿Pedir unirse por usuario con coach activo? | No: para cambiar de coach se usa la liga o el código, que preguntan antes | Diseño del paso 4 |
+| ¿Qué pasa al registrarse con la liga? | Queda ligado de una vez; al iniciar sesión con la liga, vuelve a ella a confirmar | Diseño del paso 4 |
 | ¿Cuenta de Stripe? | La del dueño, con los datos fiscales de ElBe. **Hace falta para el paso 5** | Pendiente |
 | ¿Los ejercicios propios del coach los ven sus alumnos? | Pendiente conocido (§4.5); se resuelve después del paso 4 | Pendiente |
 
@@ -492,3 +517,8 @@ contra producción:
   `coaches.in_ranking` (encendido sólo para él). Antes de empezar el paso 4,
   el dueño pidió dejar documentado dónde vamos: de ahí salen "Dónde vamos"
   (arriba) y §4.5.
+- **2026-10-15**: paso 4 subido (`72e6d81`) y verificado en producción, 26/26.
+  Al instalar `qrcode`, `npm audit` marcó vulnerabilidades que ya estaban; una
+  es crítica en Next.js (`next/og`), que la app no usa. Anotado como
+  pendiente #15 en PLAN.md. Sigue el paso 5, que necesita la cuenta de
+  Stripe.

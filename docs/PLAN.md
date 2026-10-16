@@ -493,7 +493,7 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 - ~~Decimocuarta: panel del coach (quién no viene, ficha del socio, comentarios con push) y Retos (ranking del gimnasio y retos con meta) — [coach-y-retos.md](./coach-y-retos.md)~~ ✅
 - ~~Decimoquinta: rebrand de FiTME a GainLine, hecha por ElBeFit, con ícono propio en el sistema de la firma de ElBe Games ([rebrand-gainline.md](./rebrand-gainline.md)); la plancha y los isométricos por tiempo ([rutinas.md §7](./rutinas.md)) y nombres de planchas y calistenia arreglados~~ ✅
 - ~~Decimosexta: gamificación (XP, rangos de Bronce a Leyenda, medallas, XP en el ranking, tarjeta de socio) y foto de perfil en la base — [gamificacion.md](./gamificacion.md)~~ ✅
-- Decimoséptima (en curso): GainLine para coaches. Paga el coach ($199 MXN al mes), el alumno entrena gratis; cuentas de coach, vínculo alumno–coach, ranking y retos por grupo, cobro con Stripe, y todo listo para la app nativa — [negocio.md](./negocio.md) y [coaches.md](./coaches.md), que lleva el avance paso por paso. Pasos 1–3 de 7 ✅
+- Decimoséptima (en curso): GainLine para coaches. Paga el coach ($199 MXN al mes), el alumno entrena gratis; cuentas de coach, vínculo alumno–coach, ranking y retos por grupo, cobro con Stripe, y todo listo para la app nativa — [negocio.md](./negocio.md) y [coaches.md](./coaches.md), que lleva el avance paso por paso. Pasos 1–4 de 7 ✅
 
 **Queda abierto (sin prisa), en este orden sugerido:**
 
@@ -513,6 +513,8 @@ El plan de ataque de lo próximo, con lo que ya se decidió, vive en [siguiente-
 12. ~~Espera fija en el smoke test~~ ✅ (2026-09-23): ahora espera la respuesta de esa búsqueda y tarjetas que contengan "press de banca" (el explorador ya muestra una lista antes de teclear, así que "apareció una tarjeta" no probaba nada); 9/9 dos veces seguidas contra producción. El problema era: `tests/smoke.mjs` esperaba **1 segundo fijo** después de teclear la búsqueda; contra producción en frío eso no alcanza y "search in Spanish" falla con 0 resultados aunque el paso siguiente (que sí espera al elemento) encuentre el ejercicio. Pasó el 2026-09-23: 8/9 y a la segunda 9/9. Cambiar el `waitForTimeout` por esperar a que aparezca la primera tarjeta.
 13. **"log a set" del smoke test es intermitente** (visto el 2026-09-24): contra `main` sin cambios dio 8/9 en una de tres corridas, y "add exercise" también falló una vez. Las dos esperan tiempos fijos (`waitForTimeout(1500)` tras "Agregar a la rutina", 500 ms tras marcar la serie) contra una base remota; cambiarlas por esperar al elemento, como se hizo con la búsqueda en el #12.
 14. `npm run db:migrate` no carga `.env.local` (drizzle-kit no lo lee y el script no usa `--env-file`), así que sale "url: undefined". Hoy se corre como `node --env-file=.env.local node_modules/.bin/drizzle-kit migrate`; arreglarlo en `package.json` igual que `smoke`.
+15. **Next.js con una vulnerabilidad crítica** (visto el 2026-10-15 con `npm audit`): ejecución remota de código en `next/og` (`ImageResponse`). La app no usa `next/og`, así que no está expuesta, pero conviene subir `next` a la versión con el parche. `npm audit` marca además otras 13 (moderadas y altas) en dependencias de desarrollo y de Next (`sharp`, `undici`, `esbuild`, `braces`…).
+16. **Ejercicios propios del coach en rutinas de alumnos** (Decimoséptima, [coaches.md §4.5](./coaches.md)): el alumno los entrena, pero su página de progreso le da 404 porque sólo deja ver el catálogo y los propios de quien mira.
 
 ## 10. Mapa del código
 
@@ -732,6 +734,8 @@ Arrancó todo en un solo día (2026-09-03) y sigue creciendo: el historial fino 
 | `6c711a4` | Decimoséptima, paso 1 ([coaches.md](./coaches.md)): migración 0005 (`users.role`, `coaches`, `coach_clients`, `stripe_events`, `routines.created_by`, `challenges.coach_id`); `bener` coach con `GL-27DE` y los otros 6 sus alumnos. Docs [negocio.md](./negocio.md) y coaches.md |
 | `9a94b10` | Decimoséptima, paso 2: permisos en `src/server/acceso.ts`, guardias en `src/lib/coach.ts`; el panel pasa de `/admin` a `/coach` y sólo ve a sus alumnos; `/admin` para el dueño; redirecciones de las URLs viejas. Smoke 15/15 con prueba de aislamiento entre coaches |
 | `921a739` | Decimoséptima, paso 3: ranking, XP, retos, medallas, fotos y tarjetas por grupo de coach; `getActivity` y `getTimelines` ya no leen toda la base; migración 0006 `coaches.in_ranking` (encendido sólo para `bener`). Smoke 17/17 en producción |
+| `5c74a59` | docs: "Dónde vamos" en coaches.md, el diseño del paso 4 antes de construirlo, decisiones con quién y cuándo, bitácora |
+| `72e6d81` | Decimoséptima, paso 4: alta de coach (`/registro/coach` o desde Perfil), liga `/unirse/[code]` con y sin sesión (cookie `invitacion`), Invitar en `/coach` (código, liga, QR, WhatsApp, cupo), solicitudes, "Mi coach" en Perfil, quitar alumno, "De tu coach" y copiar rutina a varios alumnos. Servicios en `src/server/`. Smoke 26/26 en producción |
 
 ## 12. Tercera ronda (acordada 2026-09-03) — cerrada
 

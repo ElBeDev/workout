@@ -1,7 +1,7 @@
 # GainLine como negocio: el coach paga, el alumno entrena gratis
 
 Estado: **aprobado por el dueño el 2026-10-15; en construcción.** La fase 1
-va a la mitad: lo que ya está y lo que falta, paso por paso, en
+está completa y la fase 2 (cobro) es lo siguiente: lo que ya está y lo que falta, paso por paso, en
 [coaches.md → "Dónde vamos"](./coaches.md#dónde-vamos). Precios de la
 competencia tomados de sitios de terceros en 2026 (fuentes al final): hay que
 confirmarlos antes de usarlos en una venta.
@@ -212,19 +212,19 @@ la app web que ya existe; la app nativa llega cuando ya hay coaches pagando.
 
 - [x] `users.role`: `member` o `coach`; `is_admin` queda como el dueño (tú),
       que ve a todos los coaches.
-- [ ] Registro con la elección "Voy a entrenar" / "Soy coach" (§3.1).
+- [x] Registro con la elección "Voy a entrenar" / "Soy coach" (§3.1): en el
+      login, "Regístrate · Soy coach".
 - [x] Tabla `coach_clients` (`coach_id`, `client_id`, estado `pending` /
       `active` / `ended`, fechas). Un solo vínculo abierto por alumno,
       garantizado por la base.
-- [ ] Código, liga y QR del coach, más la solicitud por nombre de usuario
-      (§3.2). En el alumno, Perfil → "Mi coach", con "Dejar a mi coach". *(El
-      código ya existe en la base: `bener` tiene `GL-27DE`.)*
+- [x] Código, liga y QR del coach, más la solicitud por nombre de usuario
+      (§3.2). En el alumno, Perfil → "Mi coach", con "Dejar a mi coach". La
+      tuya: `/unirse/GL-27DE`.
 - [x] El panel del coach (ahora en `/coach`) **sólo con sus alumnos**. Probado
       en cada smoke: un coach no ve nada de los alumnos de otro, ni con la URL
       directa.
-- [ ] Rutinas armadas por el coach marcadas con quién las hizo: la columna
-      `routines.created_by` ya está y se llena; falta la etiqueta "De tu
-      coach".
+- [x] Rutinas armadas por el coach marcadas "De tu coach", y copiar una
+      rutina a varios alumnos de una vez.
 - [x] Ranking y retos por grupo del coach (§3.5). Los coaches no compiten,
       salvo tú.
 - [x] Migrar lo de hoy: `bener` es coach (gratis) y los otros 6 sus alumnos.
