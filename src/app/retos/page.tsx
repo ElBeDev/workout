@@ -64,8 +64,10 @@ export default async function RetosPage({
     Promise.all(challenges.finished.map(getChallengeActivity)),
   ]);
 
-  const ranked = rank(board, metric);
+  // Todos salen en el ranking, aunque vayan en cero: es la tabla del gimnasio.
+  const ranked = rank(board, metric, { withZeros: true });
   const mine = ranked.find((r) => r.userId === userId) ?? null;
+  const anyScored = ranked.some((r) => r.value > 0);
   const hidden = me && !me.showInRanking;
   const href = (next: { p?: Period; m?: Metric }) =>
     `/retos?p=${next.p ?? period}&m=${next.m ?? metric}`;
@@ -145,16 +147,15 @@ export default async function RetosPage({
           ))}
         </div>
 
-        {ranked.length === 0 ? (
-          <Card className="p-6 text-center text-[15px] text-muted">{t.retos.sinActividad}</Card>
-        ) : (
+        {!anyScored && <p className="text-[13px] text-muted">{t.retos.sinActividad}</p>}
+        {ranked.length > 0 && (
           <GroupedList>
             {ranked.map((r) => (
               <BoardRow key={r.userId} row={r} rank={ranks.get(r.userId)} metric={metric} isMe={r.userId === userId} t={t} />
             ))}
           </GroupedList>
         )}
-        {!hidden && ranked.length > 0 && !mine && (
+        {!hidden && anyScored && mine?.value === 0 && (
           <p className="text-[13px] text-muted">{t.retos.noSumas}</p>
         )}
         {metric === "volume" && <p className="text-[12px] text-faint">{t.retos.notaCarga}</p>}
@@ -311,7 +312,7 @@ function BoardRow({
       className={`flex items-center gap-3 p-3 transition active:bg-surface-2 ${isMe ? "bg-accent/10" : ""}`}
       aria-label={`${t.retos.lugar(row.position)} · ${t.juego.verPerfil(row.name)}`}
     >
-      <Position n={row.position} />
+      <Position n={row.value > 0 ? row.position : null} />
       <Avatar userId={row.userId} name={row.name} updatedAt={row.avatarUpdatedAt} size={40} />
       <p className="flex min-w-0 flex-1 items-center gap-1.5 text-[16px] font-semibold">
         <span className="truncate capitalize">{row.name}</span>
@@ -326,8 +327,11 @@ function BoardRow({
   );
 }
 
-/** Lugar en la tabla: el primero con corona, los demás con su número. */
-function Position({ n }: { n: number }) {
+/**
+ * Lugar en la tabla: el primero con corona, los demás con su número y quien
+ * va en cero (`null`) con un guion, sin lugar.
+ */
+function Position({ n }: { n: number | null }) {
   if (n === 1) {
     return (
       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-load/15 text-load">
@@ -337,7 +341,7 @@ function Position({ n }: { n: number }) {
   }
   return (
     <span className="flex h-7 w-7 shrink-0 items-center justify-center text-[14px] font-bold tabular-nums text-faint">
-      {n}
+      {n ?? "–"}
     </span>
   );
 }

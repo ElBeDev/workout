@@ -176,13 +176,19 @@ export async function getActivity(
 export type RankedRow = ActivityRow & { value: number; position: number };
 
 /**
- * Ordena por la métrica, de mayor a menor, y deja fuera a quien va en cero.
- * Los empates comparten lugar (1, 1, 3), como en cualquier tabla deportiva.
+ * Ordena por la métrica, de mayor a menor. Los empates comparten lugar
+ * (1, 1, 3), como en cualquier tabla deportiva. Quien va en cero queda fuera,
+ * salvo con `withZeros` (el ranking del gimnasio: ahí sale todo el mundo,
+ * los de cero al fondo).
  */
-export function rank(rows: ActivityRow[], metric: Metric): RankedRow[] {
+export function rank(
+  rows: ActivityRow[],
+  metric: Metric,
+  { withZeros = false }: { withZeros?: boolean } = {}
+): RankedRow[] {
   const sorted = rows
     .map((r) => ({ ...r, value: metricValue(r, metric) }))
-    .filter((r) => r.value > 0)
+    .filter((r) => withZeros || r.value > 0)
     .sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
   let position = 0;
   return sorted.map((r, i) => {

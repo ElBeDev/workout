@@ -62,7 +62,10 @@ Tabla `coach_comments` (`user_id` = socio, `author_id` = coach con SET NULL,
   [gamificacion.md](./gamificacion.md); antes era **días**: las dos premian
   venir, levante lo que levante), **días**, **carga**, **series** o
   **natación** (metros). Cada fila lleva foto y rango, y abre la tarjeta del
-  socio. Empates comparten lugar (1, 1, 3); quien va en cero no sale.
+  socio. Empates comparten lugar (1, 1, 3). Sale **todo el mundo** (salvo
+  quien se ocultó en Perfil): quien va en cero queda al fondo, con un guion
+  en vez de lugar. En los podios y ganadores de los retos el cero sí queda
+  fuera.
 - **Retos** que arma el coach en `/admin/retos`: nombre, métrica, fechas
   (inclusive, días locales guardados como `date`) y meta por persona
   opcional. Activos arriba con tu barra de progreso, "N de M lo lograron",
