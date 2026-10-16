@@ -237,8 +237,9 @@ la app web que ya existe; la app nativa llega cuando ya hay coaches pagando.
 - [ ] Webhooks de Stripe: estado del plan en la base, bloqueo al fallar el
       cobro (§5), tope de alumnos por plan.
 - [ ] Página "Mi plan" del coach.
-- [x] Términos de servicio y aviso de privacidad (en `/terminos` y `/privacidad`, como borrador hasta tener tus datos y la revisión de un abogado) (los pide la ley y los pedirán
-      las tiendas).
+- [x] Términos de servicio y aviso de privacidad (los pide la ley y los pedirán
+      las tiendas). En `/terminos` y `/privacidad`, como borrador hasta tener
+      tus datos y la revisión de un abogado.
 
 ### Fase 3: vender
 
