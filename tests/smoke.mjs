@@ -31,6 +31,62 @@ async function createUser() {
   return u.id;
 }
 
+/**
+ * Aislamiento entre coaches (docs/coaches.md §11): el coach A no puede ver
+ * nada del alumno del coach B, ni entrando a la URL directa; a su propio
+ * alumno sí, aunque esté oculto del ranking. Todas las cuentas van ocultas
+ * para no asomarse en el ranking de producción, y se borran al final.
+ */
+async function isolation(browser) {
+  const tag = Date.now().toString(36);
+  const salt = randomBytes(16).toString("hex");
+  const hash = salt + ":" + scryptSync(password, salt, 64).toString("hex");
+  const mk = async (name, role) => {
+    const [u] = await sql`insert into users (username, password_hash, show_in_ranking, role) values (${`smoke_${name}_${tag}`}, ${hash}, false, ${role}) returning id, username`;
+    return u;
+  };
+  const coachA = await mk("coacha", "coach");
+  const coachB = await mk("coachb", "coach");
+  const clientA = await mk("alumnoa", "member");
+  const clientB = await mk("alumnob", "member");
+  const ids = [coachA.id, coachB.id, clientA.id, clientB.id];
+  try {
+    await sql`insert into coaches (user_id, code, plan, billing_status) values (${coachA.id}, ${`SMK-A${tag}`}, 'comp', 'active'), (${coachB.id}, ${`SMK-B${tag}`}, 'comp', 'active')`;
+    await sql`insert into coach_clients (coach_id, client_id, status, source, accepted_at) values (${coachA.id}, ${clientA.id}, 'active', 'migration', now()), (${coachB.id}, ${clientB.id}, 'active', 'migration', now())`;
+    const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xd9]);
+    await sql`insert into user_avatars (user_id, image, mime) values (${clientA.id}, ${jpeg}, 'image/jpeg'), (${clientB.id}, ${jpeg}, 'image/jpeg')`;
+    const [routineB] = await sql`insert into routines (user_id, name) values (${clientB.id}, 'Smoke B') returning id`;
+    const [sessionB] = await sql`insert into workout_sessions (user_id, routine_id, finished_at) values (${clientB.id}, ${routineB.id}, now()) returning id`;
+
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    await ctx.addCookies([{ name: "workout:idioma", value: "es", url: BASE }]);
+    const page = await ctx.newPage();
+    await page.goto(`${BASE}/login`);
+    await page.fill('input[name="username"]', coachA.username);
+    await page.fill('input[name="password"]', password);
+    await Promise.all([page.waitForURL(`${BASE}/`), page.click('button[type="submit"]')]);
+
+    const status = async (path) => (await page.request.get(`${BASE}${path}`, { maxRedirects: 0 })).status();
+    await page.goto(`${BASE}/coach`, { waitUntil: "networkidle" });
+    const panel = await page.textContent("body");
+    check("coach panel: only own members", panel.includes(clientA.username) && !panel.includes(clientB.username));
+    check("own member visible", (await status(`/coach/usuarios/${clientA.id}`)) === 200);
+    check("own hidden member's photo", (await status(`/api/avatar/${clientA.id}`)) === 200);
+    const blocked = await Promise.all([
+      status(`/coach/usuarios/${clientB.id}`),
+      status(`/coach/usuarios/${clientB.id}/sesion/${sessionB.id}`),
+      status(`/rutinas/${routineB.id}`),
+      status(`/api/avatar/${clientB.id}`),
+      status(`/retos/socio/${clientB.id}`),
+    ]);
+    check("other coach's member: 404 everywhere", blocked.every((s) => s === 404), blocked.join(","));
+    await ctx.close();
+  } finally {
+    await sql`delete from users where id = any(${ids})`;
+    console.log(`cleanup: deleted the 4 isolation accounts`);
+  }
+}
+
 async function main() {
   const userId = await createUser();
   const browser = await chromium.launch();
@@ -107,6 +163,7 @@ async function main() {
     await page.click("text=Eliminar rutina");
     await Promise.all([page.waitForURL(`${BASE}/rutinas`), page.click("text=Sí, eliminar")]);
     check("delete routine", page.url() === `${BASE}/rutinas`);
+    await isolation(browser);
   } catch (err) {
     check("unexpected error", false, String(err).slice(0, 200));
   } finally {

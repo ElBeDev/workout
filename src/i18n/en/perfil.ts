@@ -48,7 +48,11 @@ export const perfil: typeof Es = {
 
   admin: {
     titulo: "Coach panel",
-    descripcion: "Member follow-up, routines and challenges",
+    descripcion: "Follow up on your members, routines and challenges",
+  },
+  dueno: {
+    titulo: "Administration",
+    descripcion: "Coaches, plans and maintenance",
   },
 
   foto: {

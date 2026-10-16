@@ -1,63 +1,11 @@
 "use server";
 
-import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
 import { eq, isNotNull, sql } from "drizzle-orm";
 import { put } from "@vercel/blob";
 import { db } from "@/db";
-import { routines, users, exercises, challenges } from "@/db/schema";
-import { requireAdmin } from "@/lib/admin";
-import { isMetric } from "@/db/gym";
+import { exercises } from "@/db/schema";
+import { requireOwner } from "@/lib/coach";
 import { pendingGifIds } from "@/lib/blob";
-
-export async function createRoutineForUser(targetUserId: string, formData: FormData) {
-  await requireAdmin();
-  const name = String(formData.get("name") ?? "").trim();
-  if (!name) return;
-
-  const [target] = await db.select({ id: users.id }).from(users).where(eq(users.id, targetUserId));
-  if (!target) redirect("/admin");
-
-  const [routine] = await db
-    .insert(routines)
-    .values({ userId: targetUserId, name })
-    .returning({ id: routines.id });
-
-  revalidatePath(`/admin/usuarios/${targetUserId}`);
-  redirect(`/rutinas/${routine.id}`);
-}
-
-/**
- * Crea un reto del gimnasio. Las fechas llegan de `<input type="date">` como
- * YYYY-MM-DD y se guardan tal cual: son días locales (hora de México), y los
- * bordes en UTC se calculan al leer (`localDayStart`).
- */
-export async function createChallenge(formData: FormData) {
-  const createdBy = await requireAdmin();
-  const title = String(formData.get("title") ?? "").trim().slice(0, 80);
-  const metric = String(formData.get("metric") ?? "");
-  const startsOn = String(formData.get("startsOn") ?? "");
-  const endsOn = String(formData.get("endsOn") ?? "");
-  const goalRaw = String(formData.get("goal") ?? "").trim();
-  const goal = goalRaw ? Math.round(Number(goalRaw)) : null;
-
-  const ymd = /^\d{4}-\d{2}-\d{2}$/;
-  if (!title || !isMetric(metric) || !ymd.test(startsOn) || !ymd.test(endsOn)) return;
-  if (endsOn < startsOn) redirect("/admin/retos?error=fechas");
-  if (goal !== null && (!Number.isFinite(goal) || goal <= 0 || goal > 100_000_000)) return;
-
-  await db.insert(challenges).values({ title, metric, goal, startsOn, endsOn, createdBy });
-  revalidatePath("/admin/retos");
-  revalidatePath("/retos");
-  redirect("/admin/retos");
-}
-
-export async function deleteChallenge(challengeId: string) {
-  await requireAdmin();
-  await db.delete(challenges).where(eq(challenges.id, challengeId));
-  revalidatePath("/admin/retos");
-  revalidatePath("/retos");
-}
 
 /**
  * Por qué no hay copias de los gifs. `mirrorExerciseGif` se traga los errores
@@ -74,7 +22,7 @@ export async function diagnoseBlob(): Promise<{
   copias: number;
   pendientes: number;
 }> {
-  await requireAdmin();
+  await requireOwner();
 
   const token = Boolean(process.env.BLOB_READ_WRITE_TOKEN);
   // Acceso estático vs. dinámico: si el estático viene vacío y el dinámico no,
@@ -128,7 +76,7 @@ export async function diagnoseBlob(): Promise<{
     .from(exercises)
     .where(isNotNull(exercises.gifBlobUrl));
 
-  const pendientes = (await pendingGifIds(await requireAdmin())).length;
+  const pendientes = (await pendingGifIds(await requireOwner())).length;
 
   return {
     token,

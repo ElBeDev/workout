@@ -558,15 +558,19 @@ src/app/
   ejercicios/actions.ts createCustomExercise
   api/exercises/search  Búsqueda/browse (q en es/en, bodyPart, offset); catálogo + propios del usuario
   api/export            CSV del historial del usuario
-  admin/                Panel del coach: page (socios con "sin venir hace 10+ días" arriba
-                        + bloque "Mantenimiento": respaldo de gifs y su diagnóstico),
-                        usuarios/[userId]/page.tsx (ficha: anillos, 30 días, músculos
-                        olvidados, comentarios, sesiones, rutinas + crear una),
-                        usuarios/[userId]/sesion/[sessionId] (sesión del socio en sólo
-                        lectura con su hilo de comentarios), retos/ (crear y borrar retos),
-                        actions.ts (createRoutineForUser, createChallenge, deleteChallenge,
-                        diagnoseBlob), coach-actions.ts (addCoachComment con push en
-                        after(), deleteCoachComment) — todo detrás de requireAdmin()
+  coach/                Panel del coach (Decimoséptima, docs/coaches.md §6): page (sus
+                        alumnos, "sin venir hace 10+ días" arriba), usuarios/[userId]
+                        (ficha: anillos, 30 días, músculos olvidados, comentarios,
+                        sesiones, rutinas + crear una), usuarios/[userId]/sesion/[sessionId]
+                        (sesión del alumno en sólo lectura con su hilo), retos/ (los
+                        retos de su grupo), actions.ts (createRoutineForUser con
+                        created_by, createChallenge, deleteChallenge), coach-actions.ts
+                        (addCoachComment con push en after(), deleteCoachComment: sólo
+                        los suyos) — detrás de requireCoach() / requireCoachDe(socio)
+  admin/                Panel del dueño (is_admin): por ahora sólo "Mantenimiento" (respaldo
+                        de gifs y diagnoseBlob en actions.ts), detrás de requireOwner().
+                        Las URLs viejas /admin/usuarios y /admin/retos redirigen a /coach
+                        (next.config.ts)
   retos/                Ranking semana/mes por métrica (?p=&m=) y retos activos / próximos /
                         terminados
   comentarios/actions.ts markCoachCommentsRead (el "Entendido" de la tarjeta de Hoy)
@@ -625,7 +629,13 @@ src/db/
   swim.ts               getSwimBlocks, getSwimBlockLogs, getSwimSessionBlocks,
                         getSwimStats (distancia total + ritmo del periodo), plannedDistance
 src/lib/
-  admin.ts               isAdminUser, requireAdmin (redirige a Home si no es admin)
+  coach.ts              requireCoach, requireCoachDe(socio) (404 si no es su alumno),
+                        requireOwner — guardias de la web sobre src/server/acceso.ts
+src/server/
+  acceso.ts             Los permisos entre personas, en un solo lugar (docs/coaches.md §2.2):
+                        getActor, esCoach, coachActivoDe, alumnosDe, esCoachDe,
+                        puedeVerSocio, puedeEditarRutinasDe. Sin cookies ni redirects,
+                        para que la API de la app nativa los reuse
   session.ts            createSession (purga expiradas) / destroySession / getCurrentUserId / requireUserId
   password.ts           scrypt hash + verify
   body-parts.ts         Etiquetas en español de los grupos musculares

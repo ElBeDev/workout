@@ -5,7 +5,7 @@ import type { Dict } from "@/i18n";
 import { fmtDate } from "@/lib/dates";
 import { Card, SectionTitle } from "@/components/ui";
 import { PendingButton } from "@/components/PendingButton";
-import { addCoachComment, deleteCoachComment } from "@/app/admin/coach-actions";
+import { addCoachComment, deleteCoachComment } from "@/app/coach/coach-actions";
 import { markCoachCommentsRead } from "@/app/comentarios/actions";
 
 /**
@@ -177,7 +177,7 @@ export function CoachCommentHistory({
   return (
     <ul className="flex flex-col gap-3">
       {comments.map((c) => (
-        <CommentItem key={c.id} c={c} t={t} deletable sessionHref={`/admin/usuarios/${userId}/sesion`} />
+        <CommentItem key={c.id} c={c} t={t} deletable sessionHref={`/coach/usuarios/${userId}/sesion`} />
       ))}
     </ul>
   );

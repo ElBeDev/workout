@@ -19,7 +19,13 @@ export const admin: typeof Es = {
   resumen30: (dias: number, series: number) =>
     `${dias} ${dias === 1 ? "day" : "days"} · ${series} ${series === 1 ? "set" : "sets"} in 30 days`,
   retosTitulo: "Challenges",
-  retosDescripcion: "Create and delete challenges for everyone",
+  retosDescripcion: "Create and delete challenges for your members",
+
+  // Panel del dueño de la plataforma (/admin)
+  dueno: {
+    titulo: "Administration",
+    subtitulo: "The GainLine platform",
+  },
 
   // Mantenimiento (respaldo de gifs)
   mantenimiento: "Maintenance",

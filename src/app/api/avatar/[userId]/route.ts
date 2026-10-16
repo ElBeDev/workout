@@ -3,10 +3,11 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users, userAvatars } from "@/db/schema";
 import { getCurrentUserId } from "@/lib/session";
+import { esCoachDe } from "@/server/acceso";
 
 /**
  * La foto de perfil de alguien. Sólo con sesión iniciada, y la de quien se
- * ocultó del ranking sólo la ve esa persona o el coach (docs/gamificacion.md §5).
+ * ocultó del ranking sólo la ve esa persona o su coach (docs/gamificacion.md §5).
  * La URL lleva `?v=` con la fecha de la foto, así que se puede guardar un año.
  */
 export async function GET(_req: NextRequest, ctx: RouteContext<"/api/avatar/[userId]">) {
@@ -17,12 +18,9 @@ export async function GET(_req: NextRequest, ctx: RouteContext<"/api/avatar/[use
   if (!/^[0-9a-f-]{36}$/.test(userId)) return new Response(null, { status: 404 });
 
   if (viewerId !== userId) {
-    const [target, viewer] = await Promise.all([
-      db.select({ show: users.showInRanking }).from(users).where(eq(users.id, userId)),
-      db.select({ isAdmin: users.isAdmin }).from(users).where(eq(users.id, viewerId)),
-    ]);
-    if (!target[0]) return new Response(null, { status: 404 });
-    if (!target[0].show && !viewer[0]?.isAdmin) return new Response(null, { status: 404 });
+    const [target] = await db.select({ show: users.showInRanking }).from(users).where(eq(users.id, userId));
+    if (!target) return new Response(null, { status: 404 });
+    if (!target.show && !(await esCoachDe(viewerId, userId))) return new Response(null, { status: 404 });
   }
 
   const [avatar] = await db

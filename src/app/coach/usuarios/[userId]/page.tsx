@@ -17,7 +17,7 @@ import {
   getWeeklyRings,
 } from "@/db/queries";
 import { getLastActiveAt, getMemberComments, INACTIVE_DAYS, publicName } from "@/db/gym";
-import { requireAdmin } from "@/lib/admin";
+import { requireCoachDe } from "@/lib/coach";
 import { daysAgo, fmtDate } from "@/lib/dates";
 import { bodyPartLabel } from "@/lib/body-parts";
 import { fmtKg, fmtMeters, fmtMinutes, fmtMinutesShort, fmtNumber } from "@/lib/format";
@@ -50,8 +50,8 @@ export default async function AdminUserPage({
 }: {
   params: Promise<{ userId: string }>;
 }) {
-  await requireAdmin();
   const { userId } = await params;
+  await requireCoachDe(userId);
   const t = await getDict();
 
   const [target] = await db.select().from(users).where(eq(users.id, userId));
@@ -112,7 +112,7 @@ export default async function AdminUserPage({
       <PageHeader
         title={name}
         subtitle={target.username && target.username !== name ? target.username : undefined}
-        backHref="/admin"
+        backHref="/coach"
         capitalize
         right={<Avatar userId={target.id} name={name} updatedAt={target.avatarUpdatedAt} size={40} />}
       />
@@ -181,7 +181,7 @@ export default async function AdminUserPage({
               return (
                 <Link
                   key={s.id}
-                  href={`/admin/usuarios/${userId}/sesion/${s.id}`}
+                  href={`/coach/usuarios/${userId}/sesion/${s.id}`}
                   className="flex items-center gap-3 p-3.5 transition active:bg-surface-2"
                 >
                   <div className="min-w-0 flex-1">

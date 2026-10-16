@@ -91,8 +91,9 @@ const LB_TO_KG = sql.raw(String(toKg(1, "lbs")));
 export async function getActivity(
   since: Date,
   until: Date,
-  { includeHidden = false }: { includeHidden?: boolean } = {}
+  { includeHidden = false, userIds }: { includeHidden?: boolean; userIds?: string[] } = {}
 ): Promise<ActivityRow[]> {
+  if (userIds && userIds.length === 0) return [];
   const setRange = and(
     eq(setLogs.completed, true),
     gte(setLogs.loggedAt, since),
@@ -113,7 +114,12 @@ export async function getActivity(
         avatarUpdatedAt: users.avatarUpdatedAt,
       })
       .from(users)
-      .where(includeHidden ? undefined : eq(users.showInRanking, true)),
+      .where(
+        and(
+          includeHidden ? undefined : eq(users.showInRanking, true),
+          userIds ? inArray(users.id, userIds) : undefined
+        )
+      ),
     db
       .select({
         userId: workoutSessions.userId,
@@ -245,8 +251,13 @@ export async function getChallenges(now = new Date()) {
 }
 
 /** Todos los retos, para el admin (los viejos también, para poder borrarlos). */
-export async function getAllChallenges(): Promise<Challenge[]> {
-  return db.select().from(challenges).orderBy(desc(challenges.startsOn), desc(challenges.createdAt));
+/** Todos los retos de un coach, para su panel. */
+export async function getAllChallenges(coachId: string): Promise<Challenge[]> {
+  return db
+    .select()
+    .from(challenges)
+    .where(eq(challenges.coachId, coachId))
+    .orderBy(desc(challenges.startsOn), desc(challenges.createdAt));
 }
 
 /** La actividad de cada participante dentro de las fechas del reto. */
@@ -260,7 +271,6 @@ export type MemberStatus = {
   userId: string;
   username: string | null;
   name: string;
-  isAdmin: boolean;
   avatarUpdatedAt: Date | null;
   routineCount: number;
   lastActiveAt: Date | null;
@@ -298,24 +308,26 @@ async function getLastActive(userIds?: string[]): Promise<Map<string, Date>> {
   return last;
 }
 
-/** Todos los socios con su última actividad y sus números de 30 días. */
-export async function getMemberStatuses(now = new Date()): Promise<MemberStatus[]> {
+/** Los alumnos de un coach con su última actividad y sus números de 30 días. */
+export async function getMemberStatuses(clientIds: string[], now = new Date()): Promise<MemberStatus[]> {
+  if (clientIds.length === 0) return [];
   const [people, routineCounts, lastActive, last30] = await Promise.all([
     db
       .select({
         id: users.id,
         username: users.username,
         displayName: users.displayName,
-        isAdmin: users.isAdmin,
         avatarUpdatedAt: users.avatarUpdatedAt,
       })
-      .from(users),
+      .from(users)
+      .where(inArray(users.id, clientIds)),
     db
       .select({ userId: routines.userId, count: sql<number>`count(*)::int` })
       .from(routines)
+      .where(inArray(routines.userId, clientIds))
       .groupBy(routines.userId),
-    getLastActive(),
-    getActivity(new Date(now.getTime() - 30 * 86400000), now, { includeHidden: true }),
+    getLastActive(clientIds),
+    getActivity(new Date(now.getTime() - 30 * 86400000), now, { includeHidden: true, userIds: clientIds }),
   ]);
 
   const routinesBy = new Map(routineCounts.map((r) => [r.userId, r.count]));
@@ -327,7 +339,6 @@ export async function getMemberStatuses(now = new Date()): Promise<MemberStatus[
       userId: p.id,
       username: p.username,
       name: publicName(p),
-      isAdmin: p.isAdmin,
       routineCount: routinesBy.get(p.id) ?? 0,
       lastActiveAt: lastAt,
       daysSince: lastAt ? daysAgo(lastAt, now) : null,

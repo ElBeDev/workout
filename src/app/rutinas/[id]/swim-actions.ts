@@ -6,14 +6,14 @@ import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { routines, swimBlocks } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
-import { isAdminUser } from "@/lib/admin";
+import { puedeEditarRutinasDe } from "@/server/acceso";
 
 // Mismo criterio que en actions.ts (pendiente consolidar, ver docs/PLAN.md §9.4).
 async function requireOwnedRoutine(routineId: string) {
   const userId = await requireUserId();
   const [routine] = await db.select().from(routines).where(eq(routines.id, routineId));
   if (!routine) redirect("/rutinas");
-  if (routine.userId !== userId && !(await isAdminUser(userId))) redirect("/rutinas");
+  if (!(await puedeEditarRutinasDe(userId, routine.userId))) redirect("/rutinas");
   return routine;
 }
 

@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { Play, ShieldCheck, Waves } from "lucide-react";
 import { requireUserId } from "@/lib/session";
-import { isAdminUser } from "@/lib/admin";
+import { puedeEditarRutinasDe } from "@/server/acceso";
 import { timeUnit } from "@/lib/measure";
 import { normalizeLoadUnit } from "@/lib/suggest";
 import { blobConfigured } from "@/lib/blob";
@@ -43,7 +43,7 @@ export default async function RutinaDetailPage({
   if (!routine) notFound();
 
   const isOwner = routine.userId === userId;
-  if (!isOwner && !(await isAdminUser(userId))) notFound();
+  if (!isOwner && !(await puedeEditarRutinasDe(userId, routine.userId))) notFound();
 
   let ownerName: string | null = null;
   if (!isOwner) {
@@ -88,7 +88,7 @@ export default async function RutinaDetailPage({
     <div className="flex flex-col gap-6">
       <PageHeader
         title={routine.name}
-        backHref={isOwner ? "/rutinas" : `/admin/usuarios/${routine.userId}`}
+        backHref={isOwner ? "/rutinas" : `/coach/usuarios/${routine.userId}`}
       />
 
       {!isOwner && (

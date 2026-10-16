@@ -48,7 +48,11 @@ export const perfil = {
 
   admin: {
     titulo: "Panel del coach",
-    descripcion: "Seguimiento de socios, rutinas y retos",
+    descripcion: "Seguimiento de tus alumnos, rutinas y retos",
+  },
+  dueno: {
+    titulo: "Administración",
+    descripcion: "Coaches, planes y mantenimiento",
   },
 
   foto: {

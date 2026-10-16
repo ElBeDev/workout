@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
-import { KeyRound, Scale, Trash2, Plus, ShieldAlert, ShieldCheck, Download, ChevronRight, Target, UserPen } from "lucide-react";
+import { KeyRound, Scale, Trash2, Plus, ShieldAlert, ShieldCheck, Download, ChevronRight, Target, UserPen, Users } from "lucide-react";
 import { db } from "@/db";
 import { users, bodyWeights } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
@@ -189,18 +189,32 @@ export default async function PerfilPage({
         </GroupedList>
       </section>
 
-      {user?.isAdmin && (
+      {(user?.role === "coach" || user?.isAdmin) && (
         <GroupedList>
-          <Link href="/admin" className="flex items-center gap-3 p-4 transition active:bg-surface-2">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[17px] font-semibold">{t.perfil.admin.titulo}</p>
-              <p className="text-[13px] text-muted">{t.perfil.admin.descripcion}</p>
-            </div>
-            <ChevronRight className="h-5 w-5 shrink-0 text-faint" />
-          </Link>
+          {user.role === "coach" && (
+            <Link href="/coach" className="flex items-center gap-3 p-4 transition active:bg-surface-2">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                <Users className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[17px] font-semibold">{t.perfil.admin.titulo}</p>
+                <p className="text-[13px] text-muted">{t.perfil.admin.descripcion}</p>
+              </div>
+              <ChevronRight className="h-5 w-5 shrink-0 text-faint" />
+            </Link>
+          )}
+          {user.isAdmin && (
+            <Link href="/admin" className="flex items-center gap-3 p-4 transition active:bg-surface-2">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-2 text-muted">
+                <ShieldCheck className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[17px] font-semibold">{t.perfil.dueno.titulo}</p>
+                <p className="text-[13px] text-muted">{t.perfil.dueno.descripcion}</p>
+              </div>
+              <ChevronRight className="h-5 w-5 shrink-0 text-faint" />
+            </Link>
+          )}
         </GroupedList>
       )}
 

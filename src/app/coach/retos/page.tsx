@@ -1,5 +1,5 @@
 import { Plus, Trash2 } from "lucide-react";
-import { requireAdmin } from "@/lib/admin";
+import { requireCoach } from "@/lib/coach";
 import { getAllChallenges, isMetric, METRICS } from "@/db/gym";
 import { addDaysYmd, todayYmd } from "@/lib/dates";
 import { fmtMetricText } from "@/lib/metric-format";
@@ -12,16 +12,16 @@ export const dynamic = "force-dynamic";
 const selectClass =
   "w-full appearance-none rounded-xl bg-surface-2 px-4 py-3.5 text-[17px] text-foreground outline-none focus:ring-2 focus:ring-accent";
 
-/** Alta y baja de retos del gimnasio (docs/coach-y-retos.md). */
+/** Alta y baja de los retos del grupo del coach (docs/coach-y-retos.md). */
 export default async function AdminChallengesPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  await requireAdmin();
+  const coachId = await requireCoach();
   const { error } = await searchParams;
   const t = await getDict();
-  const all = await getAllChallenges();
+  const all = await getAllChallenges(coachId);
   const today = todayYmd();
   const range = (a: string, b: string) =>
     new Intl.DateTimeFormat(t.comun.intl, { day: "numeric", month: "short", timeZone: "UTC" }).formatRange(
@@ -31,7 +31,7 @@ export default async function AdminChallengesPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={t.admin.retos.titulo} subtitle={t.admin.retos.subtitulo} backHref="/admin" />
+      <PageHeader title={t.admin.retos.titulo} subtitle={t.admin.retos.subtitulo} backHref="/coach" />
 
       <Card className="flex flex-col gap-3 p-4">
         <SectionTitle>{t.admin.retos.nuevo}</SectionTitle>

@@ -1,9 +1,7 @@
 import { notFound } from "next/navigation";
-import { eq } from "drizzle-orm";
 import { CalendarCheck, Flame, Lock } from "lucide-react";
-import { db } from "@/db";
-import { users } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
+import { esCoachDe } from "@/server/acceso";
 import { fmtDate } from "@/lib/dates";
 import { publicName } from "@/db/gym";
 import { getWeeklyStats } from "@/db/queries";
@@ -18,8 +16,8 @@ export const dynamic = "force-dynamic";
 
 /**
  * Tarjeta de un socio (docs/gamificacion.md §4.3): foto, rango, racha y
- * medallas. Nada de pesos ni sesiones, que son suyos y del coach. Quien se
- * ocultó del ranking no tiene tarjeta para los demás.
+ * medallas. Nada de pesos ni sesiones, que son suyos y de su coach. Quien se
+ * ocultó del ranking no tiene tarjeta para los demás, salvo para su coach.
  */
 export default async function MemberCardPage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId: targetId } = await params;
@@ -27,12 +25,9 @@ export default async function MemberCardPage({ params }: { params: Promise<{ use
   const viewerId = await requireUserId();
   const t = await getDict();
 
-  const [target, [viewer]] = await Promise.all([
-    getMemberCardUser(targetId),
-    db.select({ isAdmin: users.isAdmin }).from(users).where(eq(users.id, viewerId)),
-  ]);
+  const target = await getMemberCardUser(targetId);
   if (!target) notFound();
-  if (!target.showInRanking && targetId !== viewerId && !viewer?.isAdmin) notFound();
+  if (!target.showInRanking && targetId !== viewerId && !(await esCoachDe(viewerId, targetId))) notFound();
 
   const [game, weekly] = await Promise.all([getGameProfile(targetId), getWeeklyStats(targetId)]);
   const name = publicName(target);

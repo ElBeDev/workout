@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { coachComments, users, workoutSessions } from "@/db/schema";
-import { requireAdmin } from "@/lib/admin";
+import { coachComments, workoutSessions } from "@/db/schema";
+import { requireCoach, requireCoachDe } from "@/lib/coach";
 import { enviarAviso } from "@/lib/push";
 import { DICCIONARIOS } from "@/i18n/dicts";
 
@@ -21,12 +21,10 @@ export async function addCoachComment(
   sessionId: string | null,
   formData: FormData
 ) {
-  const authorId = await requireAdmin();
+  const authorId = await requireCoachDe(targetUserId);
   const body = String(formData.get("body") ?? "").trim().slice(0, MAX_COMMENT);
   if (!body) return;
 
-  const [target] = await db.select({ id: users.id }).from(users).where(eq(users.id, targetUserId));
-  if (!target) return;
   if (sessionId) {
     const [session] = await db
       .select({ id: workoutSessions.id })
@@ -50,19 +48,20 @@ export async function addCoachComment(
     }
   });
 
-  revalidatePath(`/admin/usuarios/${targetUserId}`);
-  if (sessionId) revalidatePath(`/admin/usuarios/${targetUserId}/sesion/${sessionId}`);
+  revalidatePath(`/coach/usuarios/${targetUserId}`);
+  if (sessionId) revalidatePath(`/coach/usuarios/${targetUserId}/sesion/${sessionId}`);
 }
 
+/** Cada coach borra sólo lo que él escribió. */
 export async function deleteCoachComment(commentId: string) {
-  await requireAdmin();
+  const authorId = await requireCoach();
   const [deleted] = await db
     .delete(coachComments)
-    .where(eq(coachComments.id, commentId))
+    .where(and(eq(coachComments.id, commentId), eq(coachComments.authorId, authorId)))
     .returning({ userId: coachComments.userId, sessionId: coachComments.sessionId });
   if (!deleted) return;
-  revalidatePath(`/admin/usuarios/${deleted.userId}`);
+  revalidatePath(`/coach/usuarios/${deleted.userId}`);
   if (deleted.sessionId) {
-    revalidatePath(`/admin/usuarios/${deleted.userId}/sesion/${deleted.sessionId}`);
+    revalidatePath(`/coach/usuarios/${deleted.userId}/sesion/${deleted.sessionId}`);
   }
 }

@@ -5,17 +5,17 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { routines, routineExercises, workoutSessions, exercises, swimBlocks } from "@/db/schema";
 import { requireUserId } from "@/lib/session";
-import { isAdminUser } from "@/lib/admin";
+import { puedeEditarRutinasDe } from "@/server/acceso";
 import { mirrorExerciseGif } from "@/lib/blob";
 import { normalizeLoadUnit } from "@/lib/suggest";
 import { and, eq, isNull, or, sql } from "drizzle-orm";
 
-/** Owner of the routine, or an admin building it for someone else. */
+/** Owner of the routine, or their active coach building it for them. */
 async function requireOwnedRoutine(routineId: string) {
   const userId = await requireUserId();
   const [routine] = await db.select().from(routines).where(eq(routines.id, routineId));
   if (!routine) redirect("/rutinas");
-  if (routine.userId !== userId && !(await isAdminUser(userId))) redirect("/rutinas");
+  if (!(await puedeEditarRutinasDe(userId, routine.userId))) redirect("/rutinas");
   return routine;
 }
 
@@ -42,7 +42,7 @@ export async function duplicateRoutine(routineId: string) {
   const userId = await requireUserId();
   const [source] = await db.select().from(routines).where(eq(routines.id, routineId));
   if (!source) redirect("/rutinas");
-  if (source.userId !== userId && !(await isAdminUser(userId))) redirect("/rutinas");
+  if (!(await puedeEditarRutinasDe(userId, source.userId))) redirect("/rutinas");
 
   const [copy] = await db
     .insert(routines)

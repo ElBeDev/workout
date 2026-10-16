@@ -1,6 +1,6 @@
 # Decimoséptima: GainLine para coaches
 
-Estado: **en curso.** Paso 1 de 7 hecho (2026-10-15).
+Estado: **en curso.** Pasos 1 y 2 de 7 hechos (2026-10-15).
  Es la parte técnica de
 [negocio.md](./negocio.md) (qué se vende, a quién y a cuánto): aquí está cómo se
 construye sobre el código de hoy, en qué orden y cómo se sabe que quedó.
@@ -295,9 +295,17 @@ siguiente. Ninguno deja la app a medias para los usuarios de hoy.
    (`source = 'migration'`). No había retos que pasarle. Comprobado que la
    base rechaza un segundo vínculo abierto para el mismo alumno. Sin cambios
    visibles: smoke 11/11.
-2. [ ] **Permisos** (§2.2). `src/server/acceso.ts`; fuera `isAdminUser()` de
-   rutinas, ficha del socio, foto y tarjeta. `/admin` pasa a `/coach` filtrado
-   por sus alumnos. Sin cambios visibles para los de hoy (son todos de `bener`).
+2. [x] **Permisos** (§2.2). `src/server/acceso.ts` y las guardias
+   `requireCoach` / `requireCoachDe` / `requireOwner` en `src/lib/coach.ts`
+   (adiós `src/lib/admin.ts`). El panel se mudó a `/coach` y sólo lee a sus
+   alumnos (`getMemberStatuses(ids)`, `getActivity({ userIds })`); `/admin`
+   quedó con el mantenimiento, para el dueño, y las URLs viejas redirigen.
+   Comentarios: cada coach borra sólo los suyos. Retos del panel: sólo los de
+   su grupo. Rutinas, foto y tarjeta de socio: el permiso es "es su coach
+   activo", ya no "es admin". Dos cambios a propósito: **el dueño no tiene
+   puerta trasera** a los datos de los alumnos de otros coaches (sólo los ve
+   su coach), y el coach ya no aparece en su propia lista de alumnos. Smoke
+   15/15 con la prueba de aislamiento (§11).
 3. [ ] **Grupos** (§5). Ranking, XP, retos y fotos por grupo. `getTimelines()`
    recibe ids.
 4. [ ] **Coaches y vínculos** (§4, §6). Registro de coach, `/unirse/[code]`, QR,

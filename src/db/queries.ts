@@ -543,7 +543,7 @@ export type SessionExerciseGroup = {
 /**
  * Las series marcadas de una sesión, agrupadas por ejercicio en el orden en
  * que se hicieron, más sus totales. No filtra por dueño: quien llama ya
- * comprobó que puede verla (el socio en Progreso, el coach en /admin).
+ * comprobó que puede verla (el socio en Progreso, su coach en /coach).
  */
 export async function getSessionExerciseGroups(
   sessionId: string

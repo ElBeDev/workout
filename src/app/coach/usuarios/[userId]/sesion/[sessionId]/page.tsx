@@ -6,7 +6,7 @@ import { routines, users, workoutSessions } from "@/db/schema";
 import { getSessionExerciseGroups } from "@/db/queries";
 import { getSwimSessionBlocks } from "@/db/swim";
 import { getSessionComments, publicName } from "@/db/gym";
-import { requireAdmin } from "@/lib/admin";
+import { requireCoachDe } from "@/lib/coach";
 import { fmtDate } from "@/lib/dates";
 import { bodyPartLabel } from "@/lib/body-parts";
 import { loadLabel } from "@/lib/load-label";
@@ -28,8 +28,8 @@ export default async function CoachSessionPage({
 }: {
   params: Promise<{ userId: string; sessionId: string }>;
 }) {
-  await requireAdmin();
   const { userId, sessionId } = await params;
+  await requireCoachDe(userId);
   const t = await getDict();
 
   const [session] = await db
@@ -69,7 +69,7 @@ export default async function CoachSessionPage({
       <PageHeader
         eyebrow={`${publicName(session)} · ${t.admin.sesion.soloLectura}`}
         title={session.routineName ?? t.progreso.rutinaEliminada}
-        backHref={`/admin/usuarios/${userId}`}
+        backHref={`/coach/usuarios/${userId}`}
         subtitle={fmtDate(session.startedAt, { dateStyle: "full", timeStyle: "short" }, t.comun.intl)}
       />
 

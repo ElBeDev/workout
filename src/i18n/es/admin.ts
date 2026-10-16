@@ -17,7 +17,13 @@ export const admin = {
   resumen30: (dias: number, series: number) =>
     `${dias} ${dias === 1 ? "día" : "días"} · ${series} ${series === 1 ? "serie" : "series"} en 30 días`,
   retosTitulo: "Retos",
-  retosDescripcion: "Crear y borrar retos para todos",
+  retosDescripcion: "Crear y borrar retos para tus alumnos",
+
+  // Panel del dueño de la plataforma (/admin)
+  dueno: {
+    titulo: "Administración",
+    subtitulo: "La plataforma GainLine",
+  },
 
   // Mantenimiento (respaldo de gifs)
   mantenimiento: "Mantenimiento",
