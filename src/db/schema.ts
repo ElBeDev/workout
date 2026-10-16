@@ -80,11 +80,12 @@ export const exercises = pgTable(
     // Custom exercises belong to a user; catalog rows have user_id = null.
     userId: uuid("user_id").references(() => users.id, { onDelete: "cascade" }),
     isCustom: boolean("is_custom").notNull().default(false),
-    // "reps", "seconds" o "hold" (src/lib/measure.ts). En los dos por tiempo,
-    // set_logs.reps guarda los segundos sostenidos. Los "seconds"
-    // (estiramientos, rodillo) no suman a series, carga, récords ni ranking;
-    // los "hold" (isométricos: plancha, L-sit…) sí suman series, pero no
-    // carga ni récords (ver docs/rutinas.md §7).
+    // "reps", "seconds", "hold" o "minutes" (src/lib/measure.ts). En los
+    // tres por tiempo, set_logs.reps guarda el tiempo (minutos en "minutes",
+    // segundos en los otros). Los "seconds" (estiramientos, rodillo) no suman
+    // a series, carga, récords ni ranking; los "hold" (isométricos y cardio
+    // corto) y "minutes" (cardio) sí suman series, pero no carga ni récords
+    // (ver docs/rutinas.md §7).
     measure: text("measure").notNull().default("reps"),
   },
   (table) => [

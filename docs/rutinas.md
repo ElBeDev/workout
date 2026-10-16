@@ -66,19 +66,58 @@ rutina de bloques que se repartió el 2026-09-22 (ver
 [natacion.md §5.1](./natacion.md)); aquí sólo se le cambió el nombre a la de
 Karla de "Alberca" a "Natación".
 
-### Miércoles — Complementarias — Core y Estabilidad *(2026-09-30)*
+### Miércoles — Complementarias — Abdomen *(2026-10-14)*
 
 Segunda rutina del miércoles, debajo de Natación (`sort_order` 3 contra 2).
-Es para ayudar a las demás, no para cargar: manguito rotador, escápula, core
-en todas las direcciones, espalda baja, tobillo y agarre. Todo en polea,
-máquina o Smith. Lo único que repite es el crunch sentado del martes.
+El 2026-10-14 el dueño pidió que fuera de abdomen: "una chingona de abdomen,
+no muchos ejercicios, y le metes máquinas también". Quedó en cinco
+ejercicios a 3 series (no 2, para que pocos ejercicios rindan), y el nombre
+pasó de "Core y Estabilidad" a "Abdomen".
+
+1. Elevación de piernas en silla romana — 3×12 *(`captains chair straight leg raise`: antebrazos en las almohadillas; abdomen bajo)*
+2. Rueda abdominal — 3×10 *(`wheel rollerout`, de rodillas; pronto en la rutina para cuidar la espalda baja)*
+3. Abdominales en banco declinado con peso — 3×12 *(`weighted decline sit-up`, con disco al pecho o detrás de la cabeza)*
+4. Crunch sentado en máquina — 3×15 *(la misma máquina del martes: es la única de abdomen que hay)*
+5. Giro de torso en polea (leñador) — 3×12 por lado *(de arriba hacia abajo)*
+6. Elevación diagonal en polea (leñador inverso) — 3×12 por lado *(de abajo hacia arriba)*
+7. Plancha frontal — 3×45 s *(`hold`, se registra en segundos)*
+
+**Excepción a la regla de sólo máquinas**: la silla romana y la plancha son
+de peso corporal. No hay nada para abdomen bajo en máquina o polea: no hay
+máquina de elevación de piernas, el crunch inverso en polea necesita tobillera
+y el dueño no quiere crunch en polea. El "máquinas también" del pedido se
+leyó como mezcla, y el dueño lo confirmó al pedir él mismo la silla romana.
+
+Ese mismo día se ajustó una vez: la elevación de piernas colgado pasó a la
+silla romana ("la donde se recargan los codos"), y la flexión lateral en
+polea salió por el leñador inverso ("la que se jala la polea hacia arriba"),
+para que el leñador vaya en los dos sentidos y de los dos lados. El `name_es`
+de la silla romana ("captains elevación pierna recta en silla") se corrigió a
+mano.
+
+Luego el dueño pidió "otras 2 más así pesadas" y entraron la rueda abdominal y
+los abdominales declinados con peso, con lo que quedó en siete. Los `name_es`
+de las dos ("rollerout con rueda", "abdominales declinado con peso") se
+corrigieron a mano. Al paso 2 de las instrucciones del declinado se le agregó
+dónde va el disco, porque el texto original no lo decía. Plan B si no hay
+rueda en el gimnasio: elevación oblicua de rodillas en la silla romana
+(`hanging oblique knee raise`).
+
+Salieron de Core y Estabilidad la rotación externa de hombro, la apertura
+inversa, la flexión lateral, la extensión de espalda, la pantorrilla en Smith
+y el curl de muñeca. Karla (`karizmendi@grupoargue.com`) ya había recortado la
+suya a cuatro (los dos leñadores, flexión lateral y apertura inversa); se
+igualó con las demás. Respaldo de las filas de antes en el scratchpad de esa
+sesión, no en el repo.
+
+#### Antes: Core y Estabilidad *(2026-09-30 → 2026-10-13)*
 
 1. Rotación externa de hombro de pie en polea — 2×12 *(manguito: press y natación)*
 2. Apertura inversa cruzada alta de pie en polea — 2×12 *(escápula; el face pull del jueves es parecido)*
 3. Elevación diagonal en polea (leñador inverso) — 2×12 *(de abajo hacia arriba)*
 4. Giro de torso en polea (leñador) — 2×12 *(de arriba hacia abajo)*
 5. Flexión lateral en polea — 2×12 por lado *(oblicuos)*
-6. Crunch sentado en máquina — 2×15 *(la misma máquina del martes: es la única de abdomen que hay)*
+6. Crunch sentado en máquina — 2×15
 7. Extensión de espalda en máquina — 2×12 *(lumbar)*
 8. Elevación de talones de pie en Smith — 2×15 *(de pie; martes y viernes son sentado y en prensa)*
 9. Curl de muñeca en polea — 2×15 *(antebrazo y agarre para jalones y remos)*
@@ -233,20 +272,22 @@ cubre (en lugar de adivinar). Después, volver a aplicar la excepción de §3.
 - **Usuarios nuevos arrancan vacíos**: hoy se les copia a mano. Las
   plantillas de PLAN.md §9.6 lo resolverían.
 
-## 7. Ejercicios por tiempo: estiramientos e isométricos
+## 7. Ejercicios por tiempo: estiramientos, isométricos y cardio
 
-`exercises.measure` tiene tres valores (`src/lib/measure.ts`):
+`exercises.measure` tiene cuatro valores (`src/lib/measure.ts`):
 
 | Valor | Qué es | Se registra | ¿Suma series, ranking de series y cobertura? | ¿Carga y récords? |
 |---|---|---|---|---|
 | `reps` | Lo normal | Repeticiones y carga | Sí | Sí |
 | `seconds` | Estiramientos y rodillo | Segundos, sin carga | **No**: estirar el femoral no es haberlo entrenado. Sólo cuenta el día | No |
-| `hold` | Isométricos: plancha, L-sit, front lever… | Segundos, sin carga | **Sí**: una plancha sí es entrenar el abdomen | No |
+| `hold` | Isométricos (plancha, L-sit, front lever…) y cardio corto en intervalos | Segundos, sin carga | **Sí**: una plancha sí es entrenar el abdomen | No |
+| `minutes` | Cardio: caminadora, bici, elíptica, escaladora, correr, cuerda | **Minutos**, sin carga | **Sí** | No |
 
-En los dos por tiempo, `set_logs.reps` guarda los segundos sostenidos. La
-app los muestra como "2 × 30 s", sin campo de carga, sin sugerencia y sin el
-descanso de 3 minutos. En el CSV salen en la columna `segundos`, no en
-`reps`.
+En los tres por tiempo, `set_logs.reps` guarda el tiempo: minutos en
+`minutes`, segundos en los otros dos. La app los muestra como "2 × 30 s" o
+"1 × 20 min", sin campo de carga, sin sugerencia y sin el descanso de 3
+minutos. En el CSV salen en la columna `segundos`, no en `reps` (el cardio
+se pasa de minutos a segundos ahí).
 
 **`seconds`** (2026-09, migración 0003): los 63 del catálogo cuyo nombre en
 inglés tiene *stretch* (menos `dynamic …` y `weighted stretch lunge`, que
@@ -277,9 +318,38 @@ plank`, `reverse plank with leg lift`, `side plank hip adduction`,
 El catálogo de ExerciseDB **no traía la plancha básica**, sólo la que lleva
 disco en la espalda. Se agregó a mano una fila `front plank` / "Plancha
 frontal" (`waist`, peso corporal, `hold`, sin gif y sin `external_id`, así
-que el seed no la toca).
+que el seed no la toca). Desde el 2026-10-14 es la primera `hold` del
+programa compartido: cierra Complementarias — Abdomen, 3×45 s.
+
+**`minutes`** (2026-10-15): el cardio estaba en `reps`, con campo de
+peso, y no tenía sentido. Los criterios, aplicados a todo `body_part =
+'cardio'` (33) más dos máquinas de cardio que el catálogo tenía en otra
+parte:
+
+- **`minutes`** (15), cardio continuo: caminadora, bicis (`stationary bike
+  run/walk`, `cycle cross trainer`, `hands bike`), las tres elípticas,
+  `walking on stepmill`, `ski ergometer`, `run`, `run (equipment)`,
+  `short stride run`, `wheel run` y `jump rope`.
+- **`hold`** (20), cardio en intervalos cortos, que se anota "30 s" y no
+  cabe en minutos enteros: mountain climber, jacks, star/scissor/astride
+  jumps, skater hops, bear crawl, burpees, `high knee against wall`,
+  `ski step`, `push to run`, `swing 360`, `semi squat jump`, `half knee
+  bends` y `walking high knees lunge`.
+
+`reberodriguez` tenía `run (equipment)` en "Tren inferior 1" (1×10, peso 0)
+y lo había anotado una vez con 18 "repeticiones" y peso 0: eran minutos.
+Como con la plancha, al pasarlo a `minutes` quedó bien sin tocar la serie;
+sólo se limpió el peso 0, en la serie y en el objetivo.
+
+En la misma auditoría pasaron a **`seconds`** tres posturas de yoga que no
+tenían *stretch* en el nombre: `butterfly yoga pose`, `reclining big toe
+pose with rope` y `seated wide angle pose sequence`. Lo demás del catálogo
+ya era coherente: los que dicen *bridge*, *hold* o *static* son movimiento
+con repeticiones, y `air bike` y `wind sprints` son ejercicios de abdomen
+aunque suenen a cardio.
 
 Un ejercicio propio se puede crear por tiempo desde la app: el formulario
 de "Crear ejercicio" tiene "Cómo se registra" (repeticiones y peso, o
-tiempo). Por tiempo lo crea como `hold`; desde la app no se puede crear un
-estiramiento (`seconds`), porque no contaría para nada.
+tiempo). Hay dos opciones por tiempo: segundos (`hold`) y minutos
+(`minutes`, para cardio); desde la app no se puede crear un estiramiento
+(`seconds`), porque no contaría para nada.

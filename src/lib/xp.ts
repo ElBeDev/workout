@@ -113,7 +113,7 @@ export type SetInput = {
   at: Date;
   sessionId: string;
   exerciseId: string;
-  /** "reps" | "seconds" | "hold" (src/lib/measure.ts). */
+  /** "reps" | "seconds" | "hold" | "minutes" (src/lib/measure.ts). */
   measure: string;
   weight: string | number | null;
   weightUnit: string;

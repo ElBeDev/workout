@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { setLogs, workoutSessions, routines, exercises } from "@/db/schema";
 import { getCurrentUserId } from "@/lib/session";
 import { APP_TIME_ZONE } from "@/lib/dates";
-import { isTimed } from "@/lib/measure";
+import { timeUnit } from "@/lib/measure";
 
 function csvCell(value: string | number | null | undefined) {
   let s = value === null || value === undefined ? "" : String(value);
@@ -47,8 +47,10 @@ export async function GET() {
   const header = ["fecha", "rutina", "ejercicio", "ejercicio_en", "serie", "peso", "unidad", "placas", "reps", "segundos", "notas"];
   const lines = [header.join(",")];
   for (const r of rows) {
-    // En los ejercicios por tiempo, `reps` guarda segundos (src/lib/measure.ts).
-    const timed = isTimed(r.measure);
+    // En los ejercicios por tiempo, `reps` guarda el tiempo (src/lib/measure.ts);
+    // el cardio va en minutos y aquí se pasa a segundos, para que la columna
+    // signifique siempre lo mismo.
+    const timed = timeUnit(r.measure);
     lines.push(
       [
         fmt.format(r.startedAt),
@@ -60,7 +62,7 @@ export async function GET() {
         r.weight !== null ? (r.weightUnit === "lbs" ? "lb" : "kg") : "",
         r.plates ?? "",
         timed ? "" : (r.reps ?? ""),
-        timed ? (r.reps ?? "") : "",
+        timed && r.reps !== null ? r.reps * (timed === "min" ? 60 : 1) : "",
         r.notes ?? "",
       ]
         .map(csvCell)

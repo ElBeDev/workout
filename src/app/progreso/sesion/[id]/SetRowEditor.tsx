@@ -5,6 +5,7 @@ import { Check, Pencil, Trash2, X } from "lucide-react";
 import { PendingButton } from "@/components/PendingButton";
 import { useT } from "@/i18n/client";
 import type { WeightUnit } from "@/lib/suggest";
+import type { TimeUnit } from "@/lib/measure";
 import { loadLabel } from "@/lib/load-label";
 import { updateSet, deleteSet } from "./actions";
 
@@ -19,7 +20,7 @@ export function SetRowEditor({
   weightUnit,
   plates,
   reps,
-  timed = false,
+  timed = null,
 }: {
   sessionId: string;
   setId: string;
@@ -28,8 +29,8 @@ export function SetRowEditor({
   weightUnit: WeightUnit;
   plates: number | null;
   reps: number | null;
-  /** Por tiempo (estiramiento o isométrico): sin carga, `reps` son segundos. */
-  timed?: boolean;
+  /** Por tiempo (estiramiento, isométrico o cardio): sin carga, `reps` es el tiempo en esta unidad. */
+  timed?: TimeUnit | null;
 }) {
   const t = useT();
   const isPlates = plates !== null && plates > 0 && !weight;
@@ -53,7 +54,7 @@ export function SetRowEditor({
           aria-label={t.progreso.editarSerie(setNumber)}
         >
           {timed ? (
-            <span className="font-semibold tabular-nums">{t.progreso.segundos(reps)}</span>
+            <span className="font-semibold tabular-nums">{t.progreso.tiempo(reps, timed)}</span>
           ) : (
             <>
               <span className="font-semibold tabular-nums">{loadLabel(t, weight, plates, weightUnit) ?? "—"}</span>
@@ -113,7 +114,7 @@ export function SetRowEditor({
             className={fieldClass}
           />
         )}
-        <input name="reps" type="number" inputMode="numeric" defaultValue={reps ?? ""} placeholder={timed ? t.progreso.unidadSegundos : t.progreso.placeholderReps} className={fieldClass} />
+        <input name="reps" type="number" inputMode="numeric" defaultValue={reps ?? ""} placeholder={timed ?? t.progreso.placeholderReps} className={fieldClass} />
         <PendingButton
           pendingLabel=""
           aria-label={t.progreso.guardar}

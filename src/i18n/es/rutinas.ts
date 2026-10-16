@@ -1,5 +1,7 @@
 /** Lista de rutinas, detalle, ajustes y alta de ejercicios. */
 
+import type { TimeUnit } from "@/lib/measure";
+
 type Unidad = "kg" | "lbs" | "plates";
 
 const unidadCorta = (unidad: Unidad): string =>
@@ -34,7 +36,7 @@ export const rutinas = {
   campos: {
     series: "Series",
     reps: "Reps",
-    segundos: "Segundos",
+    tiempo: { s: "Segundos", min: "Minutos" } as Record<TimeUnit, string>,
     pesoPlaceholder: "—",
   },
 
@@ -96,7 +98,7 @@ export const rutinas = {
     editar: "Editar series y reps",
     series: (n: number): string => `${n} ${n === 1 ? "serie" : "series"}`,
     reps: (n: number): string => `${n} reps`,
-    segundos: (n: number): string => `${n} s`,
+    tiempo: (n: number, u: TimeUnit): string => `${n} ${u}`,
     peso: (peso: string, unidad: Unidad): string => `${peso} ${unidadCorta(unidad)}`,
   },
 

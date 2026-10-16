@@ -6,6 +6,7 @@ import { enqueueSet, findPendingSet } from "@/lib/offline-queue";
 import { desbloquearSonido } from "@/lib/rest-sound";
 import { useT } from "@/i18n/client";
 import type { LoadUnit } from "@/lib/suggest";
+import type { TimeUnit } from "@/lib/measure";
 import { logSet } from "./actions";
 
 // Se teclea con el pulgar entre series: campo alto y número grande.
@@ -31,7 +32,7 @@ export function SetRow({
   plates,
   reps,
   loadUnit,
-  timed = false,
+  timed = null,
   loadPlaceholder,
   repsPlaceholder,
 }: {
@@ -45,8 +46,8 @@ export function SetRow({
   plates: number | null;
   reps: number | null;
   loadUnit: LoadUnit;
-  /** Por tiempo (estiramiento o isométrico): sin campo de carga, y el campo de reps son los segundos. */
-  timed?: boolean;
+  /** Por tiempo (estiramiento, isométrico o cardio): sin campo de carga, y el campo de reps es el tiempo en esta unidad. */
+  timed?: TimeUnit | null;
   loadPlaceholder: string;
   repsPlaceholder: string;
 }) {
@@ -91,7 +92,7 @@ export function SetRow({
   // and the RSC refresh after saving can swallow it. SessionHud always
   // counts down a fixed 3 minutes.
   function startRest() {
-    // Entre estiramientos o isométricos no hay descanso de 3 minutos que contar.
+    // Entre estiramientos, isométricos o cardio no hay descanso de 3 minutos que contar.
     if (timed) return;
     // iOS sólo deja sonar si hubo un gesto antes, y el fin del descanso no lo
     // es: se desbloquea aquí, que es el toque que arranca la cuenta.
@@ -225,7 +226,7 @@ export function SetRow({
         inputMode="numeric"
         defaultValue={reps ?? undefined}
         placeholder={repsPlaceholder}
-        aria-label={timed ? t.entrenar.serie.ariaSegundos(setNumber) : t.entrenar.serie.ariaReps(setNumber)}
+        aria-label={timed ? t.entrenar.serie.ariaTiempo(setNumber, timed) : t.entrenar.serie.ariaReps(setNumber)}
         className={fieldClass}
       />
 

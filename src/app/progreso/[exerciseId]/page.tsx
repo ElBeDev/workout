@@ -13,7 +13,7 @@ import { getDict } from "@/i18n";
 import { Card, GroupedList, PageHeader } from "@/components/ui";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { ExerciseProgressChart, type Metric } from "@/components/ExerciseProgressChart";
-import { isTimed } from "@/lib/measure";
+import { timeUnit } from "@/lib/measure";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +31,7 @@ export default async function ExerciseProgressPage({
     .from(exercises)
     .where(and(eq(exercises.id, exerciseId), or(isNull(exercises.userId), eq(exercises.userId, userId))));
   if (!exercise) notFound();
-  const timed = isTimed(exercise.measure);
+  const timed = timeUnit(exercise.measure);
 
   const sets = await db
     .select({
@@ -125,9 +125,7 @@ export default async function ExerciseProgressPage({
       : "kg"
     : anyPlates
       ? t.progreso.unidadPlacas
-      : timed
-        ? t.progreso.unidadSegundos
-        : t.progreso.unidadReps;
+      : (timed ?? t.progreso.unidadReps);
   const pick = (r: Row) => (anyWeight ? r.maxWeight : anyPlates ? r.maxPlates : r.maxReps);
   const best = rows.reduce<number | null>((acc, r) => {
     const v = pick(r);
@@ -201,7 +199,7 @@ export default async function ExerciseProgressPage({
                             ? t.progreso.placas(r.maxPlates)
                             : r.maxReps !== null
                               ? timed
-                                ? t.progreso.segundos(r.maxReps)
+                                ? t.progreso.tiempo(r.maxReps, timed)
                                 : t.progreso.reps(r.maxReps)
                               : "—"}
                       </span>

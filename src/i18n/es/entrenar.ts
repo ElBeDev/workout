@@ -1,3 +1,5 @@
+import type { TimeUnit } from "@/lib/measure";
+
 /** Modo entrenamiento: HUD, filas de serie, unidad de carga, notas. */
 export const entrenar = {
   /** HUD pegado arriba: cronómetro, descanso y avance de series. */
@@ -18,15 +20,15 @@ export const entrenar = {
     corta: (unidad: "kg" | "lbs" | "plates"): string =>
       unidad === "plates" ? "placas" : unidad === "lbs" ? "lb" : "kg",
     reps: (n: number) => `${n} reps`,
-    segundos: (n: number) => `${n} s`,
+    tiempo: (n: number, u: TimeUnit) => `${n} ${u}`,
   },
 
   /** Tarjeta de cada ejercicio dentro de la sesión. */
   ejercicio: {
     seriesPorReps: (series: number, reps: number) => `${series} × ${reps} reps`,
     columnaReps: "Reps",
-    seriesPorSegundos: (series: number, segundos: number) => `${series} × ${segundos} s`,
-    columnaSegundos: "Segundos",
+    seriesPorTiempo: (series: number, n: number, u: TimeUnit) => `${series} × ${n} ${u}`,
+    columnaTiempo: { s: "Segundos", min: "Minutos" } as Record<TimeUnit, string>,
     agregarSerie: "Agregar serie",
   },
 
@@ -41,7 +43,7 @@ export const entrenar = {
     ariaPeso: (serie: number, unidad: "kg" | "lbs") =>
       `Peso serie ${serie} (${unidad === "lbs" ? "lb" : "kg"})`,
     ariaReps: (serie: number) => `Repeticiones serie ${serie}`,
-    ariaSegundos: (serie: number) => `Segundos serie ${serie}`,
+    ariaTiempo: (serie: number, u: TimeUnit) => `${u === "min" ? "Minutos" : "Segundos"} serie ${serie}`,
     nuevoRecord: "Nuevo récord personal",
   },
 

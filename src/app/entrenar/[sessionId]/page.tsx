@@ -27,7 +27,7 @@ import {
   type Suggestion,
   type WeightUnit,
 } from "@/lib/suggest";
-import { isTimed } from "@/lib/measure";
+import { timeUnit } from "@/lib/measure";
 import { getDict, type Dict } from "@/i18n";
 import { DiscardSessionButton } from "@/components/DiscardSessionButton";
 import { SessionNotes } from "./SessionNotes";
@@ -309,8 +309,8 @@ export default async function EntrenarPage({
           const lastTime = lastTimeByExercise.get(item.exerciseId) ?? new Map<number, LastSet>();
           const rows = rowCount.get(item.exerciseId) ?? item.targetSets;
           const unit: LoadUnit = normalizeLoadUnit(item.loadUnit);
-          // Un estiramiento o una plancha no progresan como una carga: sin sugerencia.
-          const timed = isTimed(item.measure);
+          // Un estiramiento, una plancha o el cardio no progresan como una carga: sin sugerencia.
+          const timed = timeUnit(item.measure);
           const suggestion = timed
             ? null
             : suggestNext(lastTime, item.targetSets, item.targetReps, unit);
@@ -342,7 +342,7 @@ export default async function EntrenarPage({
                     <span className="inline-flex items-center gap-1 text-[13px] text-muted">
                       <Repeat className="h-3.5 w-3.5" />
                       {timed
-                        ? t.entrenar.ejercicio.seriesPorSegundos(item.targetSets, item.targetReps)
+                        ? t.entrenar.ejercicio.seriesPorTiempo(item.targetSets, item.targetReps, timed)
                         : t.entrenar.ejercicio.seriesPorReps(item.targetSets, item.targetReps)}
                     </span>
                     {!timed && (
@@ -381,7 +381,7 @@ export default async function EntrenarPage({
                   </span>
                 )}
                 <span className="label flex-1 text-center text-faint">
-                  {timed ? t.entrenar.ejercicio.columnaSegundos : t.entrenar.ejercicio.columnaReps}
+                  {timed ? t.entrenar.ejercicio.columnaTiempo[timed] : t.entrenar.ejercicio.columnaReps}
                 </span>
               </div>
 
@@ -414,7 +414,7 @@ export default async function EntrenarPage({
                       }
                       repsPlaceholder={
                         timed
-                          ? t.entrenar.carga.segundos(last?.reps || item.targetReps)
+                          ? t.entrenar.carga.tiempo(last?.reps || item.targetReps, timed)
                           : t.entrenar.carga.reps(last?.reps || item.targetReps)
                       }
                     />

@@ -1,4 +1,5 @@
 import type { rutinas as Es } from "../es/rutinas";
+import type { TimeUnit } from "@/lib/measure";
 
 /** Lista de rutinas, detalle, ajustes y alta de ejercicios. */
 
@@ -36,7 +37,7 @@ export const rutinas: typeof Es = {
   campos: {
     series: "Sets",
     reps: "Reps",
-    segundos: "Seconds",
+    tiempo: { s: "Seconds", min: "Minutes" },
     pesoPlaceholder: "—",
   },
 
@@ -104,7 +105,7 @@ export const rutinas: typeof Es = {
     editar: "Edit sets and reps",
     series: (n: number): string => `${n} ${n === 1 ? "set" : "sets"}`,
     reps: (n: number): string => `${n} reps`,
-    segundos: (n: number): string => `${n} s`,
+    tiempo: (n: number, u: TimeUnit): string => `${n} ${u}`,
     peso: (peso: string, unidad: Unidad): string => `${peso} ${unidadCorta(unidad)}`,
   },
 

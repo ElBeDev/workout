@@ -26,8 +26,9 @@ export async function createCustomExercise(
   const bodyPart = String(formData.get("bodyPart") ?? "").trim();
   const equipment = String(formData.get("equipment") ?? "").trim() || null;
   const instructions = String(formData.get("instructions") ?? "").trim() || null;
-  // Sólo repeticiones o isométrico: un estiramiento propio no tiene caso (no cuenta).
-  const measure = formData.get("measure") === "hold" ? "hold" : "reps";
+  // Repeticiones, isométrico o cardio: un estiramiento propio no tiene caso (no cuenta).
+  const rawMeasure = formData.get("measure");
+  const measure = rawMeasure === "hold" || rawMeasure === "minutes" ? rawMeasure : "reps";
   const photo = formData.get("photo");
 
   if (name.length < 2) return { ok: false, error: "Ponle un nombre al ejercicio." };

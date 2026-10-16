@@ -4,7 +4,7 @@ import { routines, routineExercises, exercises, workoutSessions, setLogs, swimBl
 import { exerciseGif } from "@/db/exercise-gif";
 import { localDate, weekKey, daysAgo, weekdayRank } from "@/lib/dates";
 import { toKg, type WeightUnit } from "@/lib/suggest";
-import { countsAsSet, isTimed } from "@/lib/measure";
+import { countsAsSet, isTimed, timeUnit, type TimeUnit } from "@/lib/measure";
 import { BODY_PARTS, type BodyPart } from "@/lib/body-parts";
 
 /**
@@ -528,8 +528,8 @@ export type SessionExerciseGroup = {
   nameEs: string | null;
   gifUrl: string | null;
   bodyPart: string | null;
-  /** Por segundos: `reps` de cada serie son segundos. */
-  timed: boolean;
+  /** Por tiempo: `reps` de cada serie es el tiempo en esta unidad (src/lib/measure.ts). */
+  timed: TimeUnit | null;
   sets: {
     setId: string;
     setNumber: number;
@@ -579,7 +579,7 @@ export async function getSessionExerciseGroups(
         nameEs: s.nameEs,
         gifUrl: s.gifUrl,
         bodyPart: s.bodyPart,
-        timed: isTimed(s.measure),
+        timed: timeUnit(s.measure),
         sets: [],
       };
       groups.push(g);

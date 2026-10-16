@@ -136,7 +136,7 @@ export default async function CoachSessionPage({
                         {s.setNumber}
                       </span>
                       {g.timed ? (
-                        <span className="font-semibold tabular-nums">{t.progreso.segundos(s.reps)}</span>
+                        <span className="font-semibold tabular-nums">{t.progreso.tiempo(s.reps, g.timed)}</span>
                       ) : (
                         <>
                           <span className="font-semibold tabular-nums">

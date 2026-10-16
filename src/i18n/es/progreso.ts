@@ -1,3 +1,5 @@
+import type { TimeUnit } from "@/lib/measure";
+
 /** Progreso, detalle de sesión y página por ejercicio. */
 export const progreso = {
   // Pantalla de progreso
@@ -30,7 +32,7 @@ export const progreso = {
   rutinaEliminada: "Rutina eliminada",
   series: (n: number) => `${n} ${n === 1 ? "serie" : "series"}`,
   reps: (n: number | null) => `${n ?? "—"} ${n === 1 ? "rep" : "reps"}`,
-  segundos: (n: number | null) => `${n ?? "—"} s`,
+  tiempo: (n: number | null, u: TimeUnit) => `${n ?? "—"} ${u}`,
 
   // Calendario de constancia
   calendarioDias: ["L", "M", "X", "J", "V", "S", "D"],
@@ -45,7 +47,6 @@ export const progreso = {
   ultima: "Última",
   unidadPlacas: "placas",
   unidadReps: "reps",
-  unidadSegundos: "s",
   ejercicioSinSesiones: "Todavía no tienes sesiones registradas para este ejercicio.",
   porSesion: "Por sesión",
   placas: (n: number) => `${n} ${n === 1 ? "placa" : "placas"}`,

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Layers, Pencil, Repeat, X } from "lucide-react";
 import type { LoadUnit } from "@/lib/suggest";
+import type { TimeUnit } from "@/lib/measure";
 import { useT } from "@/i18n/client";
 import { updateRoutineExercise } from "./actions";
 
@@ -16,7 +17,7 @@ export function ExerciseTargetsEditor({
   targetReps,
   targetWeight,
   loadUnit,
-  timed = false,
+  timed = null,
 }: {
   routineId: string;
   routineExerciseId: string;
@@ -24,8 +25,8 @@ export function ExerciseTargetsEditor({
   targetReps: number;
   targetWeight: string | null;
   loadUnit: LoadUnit;
-  /** Ejercicio por tiempo (estiramiento o isométrico): sin carga, sin unidad. */
-  timed?: boolean;
+  /** Por tiempo (estiramiento, isométrico o cardio): su unidad; sin carga ni unidad de carga. */
+  timed?: TimeUnit | null;
 }) {
   const t = useT();
   const [editing, setEditing] = useState(false);
@@ -45,7 +46,7 @@ export function ExerciseTargetsEditor({
         </span>
         <span className="inline-flex items-center gap-1">
           <Repeat className="h-3.5 w-3.5" />
-          {timed ? t.rutinas.objetivos.segundos(targetReps) : t.rutinas.objetivos.reps(targetReps)}
+          {timed ? t.rutinas.objetivos.tiempo(targetReps, timed) : t.rutinas.objetivos.reps(targetReps)}
           {!timed && targetWeight ? ` · ${t.rutinas.objetivos.peso(targetWeight, loadUnit)}` : ""}
         </span>
         {/* La unidad siempre a la vista: si no se ve, nadie la cambia. */}
@@ -91,7 +92,7 @@ export function ExerciseTargetsEditor({
           <input name="targetSets" type="number" min={1} defaultValue={targetSets} className={fieldClass} />
         </label>
         <label className="label text-muted">
-          {timed ? t.rutinas.campos.segundos : t.rutinas.campos.reps}
+          {timed ? t.rutinas.campos.tiempo[timed] : t.rutinas.campos.reps}
           <input name="targetReps" type="number" min={1} defaultValue={targetReps} className={fieldClass} />
         </label>
         {!timed && (
