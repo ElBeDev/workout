@@ -20,8 +20,8 @@ en producción (smoke 26/26 contra `workout-eight-neon.vercel.app`).
 | 2 | Permisos y panel `/coach` | ✅ En producción | `9a94b10` |
 | 3 | Ranking, XP y retos por grupo | ✅ En producción | `921a739` |
 | 4 | Alta de coach, invitaciones, "Mi coach", copiar rutinas | ✅ En producción | `72e6d81` |
-| 5 | Cobro con Stripe | **⏭️ Siguiente.** Falta la cuenta de Stripe | — |
-| 6 | Panel del dueño, página pública y legales | — | — |
+| 5 | Cobro con Stripe | Esperando que Stripe apruebe la cuenta | — |
+| 6 | Panel del dueño, página pública y legales | **⏭️ En curso.** Diseño en §8 | — |
 | 7 | Marca del coach | — | — |
 
 **Lo que ya ve la gente hoy:**
@@ -390,12 +390,77 @@ como cualquier alumno.
 
 ---
 
-## 8. El panel del dueño (`/admin`)
+## 8. El panel del dueño, la página pública y los legales (paso 6)
 
-Sólo `is_admin` (tú): la lista de coaches con plan, estado, alumnos, fecha de
-alta y último cobro; cuántos pagan y cuánto entra al mes. Sirve para ver de un
-vistazo quién no está pagando. El mantenimiento de gifs que hoy vive en
-`/admin` se queda ahí.
+Se hace **antes que el cobro** (paso 5) porque la cuenta de Stripe del dueño
+está en revisión (2026-10-15). Nada de esto depende de Stripe; donde el cobro
+toque (último pago, ingreso real) se deja el hueco y se llena en el paso 5.
+
+### 8.1 Panel del dueño (`/admin`)
+
+Sólo `is_admin`. Ve **coaches, no alumnos** (la regla de §2.2 no cambia: los
+datos de un alumno sólo los ve su coach).
+
+- **Números arriba**: coaches en total, en prueba, pagando, gratis (`comp`) y
+  con el cobro fallando (`past_due` / `locked`), y el **ingreso del mes**:
+  $199 por cada Coach activo y $399 por cada Coach con más de 30 alumnos, sin
+  contar `comp` ni pruebas. Hasta el paso 5 nadie paga, así que dice $0.
+- **La lista de coaches**, el más nuevo primero: nombre, usuario, marca,
+  código, plan, estado, cuándo termina la prueba, alumnos activos y fecha de
+  alta. Una prueba vencida sin pago se marca en rojo: hasta el paso 5 es la
+  forma de ver quién usaría la app sin pagar.
+- **Una sola acción**: dar o quitar el plan gratis (`comp`). Sirve para
+  amigos, coaches de prueba o pilotos sin pasar por Stripe. Lo demás (cambiar
+  de plan, cancelar) va por Stripe en el paso 5.
+- El mantenimiento de gifs se queda abajo.
+- La lógica en `src/server/dueno.ts`, igual que el resto (§2.1).
+
+### 8.2 Página pública para coaches (`/coaches`)
+
+La página que se manda a un coach para venderle. Pública, sin sesión y sin
+barra de abajo. Es lo que abre "Soy coach" en el login; de ahí se pasa a
+`/registro/coach`.
+
+- **Arriba**: qué es, en una frase, y el precio: **$199 al mes con todo**, y
+  "te cuesta menos que lo que te paga un alumno" (negocio.md §4).
+- **Qué hace**, sólo con lo que ya existe: armar y copiar rutinas, ver quién
+  no ha venido, comentarios con notificación, ranking y retos del grupo con
+  XP y rangos, invitar con liga o QR. Nada que todavía no esté hecho.
+- **Cómo funciona** en tres pasos: te registras, compartes tu liga, les armas
+  la rutina.
+- **El precio**: Coach $199 (hasta 30 alumnos), más de 30 $399, 14 días de
+  prueba, alumnos gratis. Hasta el paso 5 la prueba no vence en nada, pero la
+  página ya dice lo que va a pasar.
+- **Preguntas** cortas: ¿mis alumnos pagan? ¿qué pasa si dejo de pagar? ¿los
+  datos de quién son? ¿iPhone y Android?
+- Ligas a términos y privacidad al pie.
+
+### 8.3 Términos y aviso de privacidad (`/terminos`, `/privacidad`)
+
+Públicas. **Son un borrador para que lo revise un abogado**: no se presentan
+como asesoría legal.
+
+- **Aviso de privacidad** (integral), con lo que pide la nueva Ley Federal de
+  Protección de Datos Personales en Posesión de los Particulares (DOF, 20 de
+  marzo de 2025; la autoridad ahora es la Secretaría Anticorrupción y Buen
+  Gobierno, ya no el INAI): quién es el responsable y su domicilio, qué datos
+  se recaban (usuario, nombre visible, foto, peso corporal, entrenamientos,
+  suscripción a notificaciones, cookies), cuáles podrían ser sensibles (el
+  peso y los entrenamientos se acercan a datos de salud: se pide
+  consentimiento expreso), para qué se usan, **con quién se comparten** (el
+  coach del alumno mientras estén ligados; los proveedores Vercel, Neon y,
+  desde el paso 5, Stripe), cómo ejercer los derechos ARCO y revocar el
+  consentimiento, y cómo se avisan los cambios.
+- **Términos**: qué es el servicio, cuentas, los planes del coach (precio,
+  prueba, qué pasa si no paga, cancelar), que la app **no es consejo médico**,
+  que los datos son del alumno, uso aceptable, terminación, límite de
+  responsabilidad, ley mexicana y contacto.
+- **Los datos del responsable** (nombre o razón social, domicilio, correo de
+  contacto) viven en un solo archivo, `src/lib/legal.ts`. Mientras falten,
+  las dos páginas enseñan arriba un aviso de **borrador**. No se inventan ni
+  se toman de ningún lado: los da el dueño.
+- **Al registrarse** (alumno y coach) se lee "Al crear tu cuenta aceptas los
+  Términos y el Aviso de privacidad", con las ligas.
 
 ---
 
@@ -458,8 +523,8 @@ siguiente. Ninguno deja la app a medias para los usuarios de hoy.
    navegador.
 5. [ ] **Cobro** (§7). Necesita la cuenta de Stripe. Primero en modo de
    pruebas.
-6. [ ] **Panel del dueño, página pública y legales** (§8). `/coaches` con qué
-   hace y precios; términos y aviso de privacidad.
+6. [ ] **Panel del dueño, página pública y legales** (§8, diseño en 8.1–8.3).
+   **⏭️ En curso**, antes que el 5 mientras Stripe aprueba la cuenta.
 7. [ ] **Marca del coach**. Logo, nombre y color en la app de sus alumnos.
 
 Con 1–6 ya se puede vender (fase 3 de negocio.md). Después sigue la app nativa:
