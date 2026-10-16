@@ -168,7 +168,7 @@ con él, el curl femoral sentado, porque el dueño lo pidió así.
 4. Sentadilla péndulo — 2×10 *(ejercicio propio, ver §4)*
 5. Aducción de cadera sentado en máquina — 2×12 *(el martes es abducción)*
 6. Extensión de pierna en máquina — 2×12 *(de Erika)*
-7. Elevación de talones en máquina hack, de frente — 2×15 *(`hack calf raise`: en la máquina de sentadilla hack, volteado hacia el respaldo)*
+7. Elevación de talones de pie en máquina — 2×15 *(`lever standing calf raise`)*
 
 **Cambios del 2026-10-15** (en las 3 cuentas que la comparten, sobre las
 mismas filas, así que el historial no se desliga): el curl femoral acostado
@@ -190,6 +190,12 @@ animación de Kovo Fitness (`kovofitness.com/x-media/cdn/exercise-animations/lev
 enlazada directo en `gif_url`. Depende de su servidor: si la quitan o bloquean
 el enlace, el ejercicio se queda sin animación (el respaldo en Blob sigue sin
 funcionar, pendiente #1 de PLAN.md).
+
+Después, la elevación de talones pasó de la máquina hack a la de pie en
+máquina (`lever standing calf raise`), también a pedido del dueño. Ojo: en
+septiembre había dicho que el gimnasio **no tiene** máquina de talones de pie
+(por eso los martes van en Smith); si sigue sin tenerla, la alternativa es
+`smith standing leg calf raise`.
 
 La posición 4 pasó por dos intentos antes de quedar: patada de glúteo en polea
 (el dueño no quiso polea ahí) → sentadilla búlgara en Smith (tampoco) →
