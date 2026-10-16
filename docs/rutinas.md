@@ -184,8 +184,12 @@ muerto rumano en máquina** ("Leverage Machine RDL"). El catálogo de ExerciseDB
 no lo trae (sólo `lever deadlift`, que es convencional, y el de Smith), así que
 se agregó a mano una fila `leverage machine romanian deadlift` / "Peso muerto
 rumano en máquina" (`upper legs`, `leverage machine`, instrucciones en los dos
-idiomas, sin gif y sin `external_id`, así que el seed no la toca), igual que la
-`front plank`. Entró en la posición 3 a 2×10.
+idiomas y sin `external_id`, así que el seed no la toca), igual que la
+`front plank`. Entró en la posición 3 a 2×10. El gif lo eligió el dueño: es la
+animación de Kovo Fitness (`kovofitness.com/x-media/cdn/exercise-animations/leverRomanianDeadliftPlateLoaded.gif`),
+enlazada directo en `gif_url`. Depende de su servidor: si la quitan o bloquean
+el enlace, el ejercicio se queda sin animación (el respaldo en Blob sigue sin
+funcionar, pendiente #1 de PLAN.md).
 
 La posición 4 pasó por dos intentos antes de quedar: patada de glúteo en polea
 (el dueño no quiso polea ahí) → sentadilla búlgara en Smith (tampoco) →
