@@ -22,8 +22,12 @@ export const users = pgTable("users", {
   passwordHash: text("password_hash"),
   email: text("email").unique(),
   name: text("name"),
-  // Admins can build routines for any user from /admin.
+  // El dueño de la plataforma (sólo bener): ve a todos los coaches en /admin.
+  // Antes de la Decimoséptima era "el coach"; ahora el coach es `role`.
   isAdmin: boolean("is_admin").notNull().default(false),
+  // "member" (entrena) o "coach" (además tiene alumnos y paga un plan, con su
+  // fila en `coaches`). Ver docs/coaches.md §3.
+  role: text("role").notNull().default("member"),
   failedLogins: integer("failed_logins").notNull().default(0),
   lockedUntil: timestamp("locked_until"),
   // Metas semanales de los tres anillos del Resumen (carga / series / días).
@@ -105,6 +109,9 @@ export const routines = pgTable("routines", {
   // o en swim_blocks, y qué pantalla de entrenamiento usar. No cambia
   // después de creada (ver docs/natacion.md §1).
   kind: text("kind").notNull().default("fuerza"),
+  // Quién la armó, si no fue el dueño: su coach ("De tu coach"). Null en las
+  // que se hizo uno mismo y en todas las anteriores a la Decimoséptima.
+  createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -269,6 +276,9 @@ export const challenges = pgTable("challenges", {
   startsOn: date("starts_on").notNull(),
   endsOn: date("ends_on").notNull(),
   createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+  // De qué grupo es el reto: el coach cuyos alumnos participan. Nullable sólo
+  // porque la columna llegó con retos ya creados; todo reto nuevo lo lleva.
+  coachId: uuid("coach_id").references(() => users.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -303,4 +313,66 @@ export const userAvatars = pgTable("user_avatars", {
   image: bytea("image").notNull(),
   mime: text("mime").notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+/* ── Coaches (Decimoséptima, docs/coaches.md) ─────────────────────────── */
+
+/**
+ * Perfil y plan de cada coach: una fila por `users.role = 'coach'`. El estado
+ * del plan lo escribe el webhook de Stripe, nunca una pantalla (§7).
+ */
+export const coaches = pgTable("coaches", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  // Para invitar: GL-7K3P (4 caracteres sin 0/O ni 1/I).
+  code: text("code").notNull().unique(),
+  // Nombre de su marca, el que ven sus alumnos al ligarse.
+  brandName: text("brand_name"),
+  accentColor: text("accent_color"),
+  // "coach" (hasta 30 alumnos) | "coach_plus" (sin tope) | "comp" (gratis).
+  plan: text("plan").notNull().default("coach"),
+  // "trialing" | "active" | "past_due" | "locked" | "canceled".
+  billingStatus: text("billing_status").notNull().default("trialing"),
+  trialEndsAt: timestamp("trial_ends_at"),
+  currentPeriodEnd: timestamp("current_period_end"),
+  // Desde cuándo falla el cobro: a los 7 días el panel se bloquea.
+  pastDueSince: timestamp("past_due_since"),
+  stripeCustomerId: text("stripe_customer_id").unique(),
+  stripeSubscriptionId: text("stripe_subscription_id").unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+/**
+ * Alumno ↔ coach. Un alumno tiene a lo más un vínculo abierto (pendiente o
+ * activo), y lo garantiza la base. Los terminados se quedan como historial.
+ * Desligarse no borra nada del alumno: sólo le quita la vista al coach.
+ */
+export const coachClients = pgTable(
+  "coach_clients",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    coachId: uuid("coach_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    clientId: uuid("client_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    // "pending" (lo pidió el alumno) | "active" | "ended".
+    status: text("status").notNull(),
+    // "link" | "code" | "request" | "migration".
+    source: text("source").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    acceptedAt: timestamp("accepted_at"),
+    endedAt: timestamp("ended_at"),
+    endedBy: uuid("ended_by").references(() => users.id, { onDelete: "set null" }),
+  },
+  (table) => [
+    uniqueIndex("coach_clients_one_open_idx")
+      .on(table.clientId)
+      .where(sql`status in ('pending', 'active')`),
+    index("coach_clients_coach_idx").on(table.coachId, table.status),
+  ]
+);
+
+/** Eventos de Stripe ya procesados: Stripe puede mandar el mismo dos veces. */
+export const stripeEvents = pgTable("stripe_events", {
+  id: text("id").primaryKey(),
+  receivedAt: timestamp("received_at").defaultNow().notNull(),
 });
