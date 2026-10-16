@@ -612,3 +612,8 @@ contra producción:
   verificado en producción 32/32. Los legales se basan en la LFPDPPP
   publicada el 20 de marzo de 2025 y quedan como borrador hasta tener los
   datos del responsable y la revisión de un abogado.
+- **2026-10-15**: el dueño notó la app lenta al tocar botones. No era de esta
+  ronda: las consultas en paralelo iban en fila y no había pantalla de carga.
+  Arreglado en `908c7ee` (detalle en las notas de infra de PLAN.md). Ojo para
+  los pasos que siguen: con `loading.tsx`, un 404 de página ya no cambia el
+  código HTTP, así que las pruebas de permisos revisan el contenido.
