@@ -481,7 +481,7 @@ En la misma migración, con un script revisado antes de correrlo:
 
 - `bener`: `role = 'coach'`, fila en `coaches` con plan `comp`, su código.
   Sigue con `is_admin`.
-- Los otros 6 (`karizmendi@grupoargue.com`, `culona69`, `reberodriguez`,
+- Los otros 6 (`karizmendi@grupoargue.com`, `erika gordillo`, `reberodriguez`,
   `andicicero`, `chely`, `jeanalyne`): vínculo `active` con `bener`, `source =
   'migration'`.
 - Los retos de hoy: `coach_id = bener`.
