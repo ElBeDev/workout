@@ -11,8 +11,9 @@ que la app nativa lo use sin rehacerlo (§2).
 
 ## Dónde vamos
 
-Actualizado: **2026-10-15**. Pasos **1 a 4 de 7** hechos, subidos y probados
-en producción (smoke 26/26 contra `workout-eight-neon.vercel.app`).
+Actualizado: **2026-10-15**. Pasos **1 a 4 y 6** hechos, subidos y probados
+en producción (smoke 32/32 contra `workout-eight-neon.vercel.app`). Falta el
+5 (cobro), esperando a que Stripe apruebe la cuenta, y el 7 (marca).
 
 | Paso | Qué | Estado | Commit |
 |---|---|---|---|
@@ -20,8 +21,8 @@ en producción (smoke 26/26 contra `workout-eight-neon.vercel.app`).
 | 2 | Permisos y panel `/coach` | ✅ En producción | `9a94b10` |
 | 3 | Ranking, XP y retos por grupo | ✅ En producción | `921a739` |
 | 4 | Alta de coach, invitaciones, "Mi coach", copiar rutinas | ✅ En producción | `72e6d81` |
-| 5 | Cobro con Stripe | Esperando que Stripe apruebe la cuenta | — |
-| 6 | Panel del dueño, página pública y legales | **⏭️ En curso.** Diseño en §8 | — |
+| 5 | Cobro con Stripe | **⏭️ Siguiente**, en cuanto Stripe apruebe la cuenta | — |
+| 6 | Panel del dueño, página pública y legales | ✅ En producción (legales en borrador) | `e769d2f` |
 | 7 | Marca del coach | — | — |
 
 **Lo que ya ve la gente hoy:**
@@ -43,16 +44,26 @@ en producción (smoke 26/26 contra `workout-eight-neon.vercel.app`).
   copiar una rutina a varios alumnos de una vez ("Copiar a alumnos").
 - Avisos push al coach y al alumno en cada paso (se unió, pidió unirse,
   aceptado, rechazado, se fue, lo quitaron, plan lleno).
+- **`/coaches`** es la página para venderle a un coach (qué hace, cómo
+  funciona, $199, preguntas); "Soy coach" en el login lleva ahí.
+- **`/admin`** es el panel del dueño: ingreso del mes, cuántos coaches hay y
+  en qué estado, la lista de coaches con su prueba (vencida en rojo) y "dar o
+  quitar plan gratis".
+- **`/terminos` y `/privacidad`** están publicadas como **borrador**: les
+  faltan los datos del responsable (`src/lib/legal.ts`) y la revisión de un
+  abogado, y lo dicen arriba. Los dos registros dicen "al crear tu cuenta
+  aceptas…" y Perfil liga a los dos al pie.
 - Ranking, retos, XP, fotos y tarjetas son **por grupo de coach**. El ranking
   de `bener` salió idéntico al de antes, con él incluido (§5).
 - Quien no tiene coach ve en Retos una tarjeta en vez de ranking. Hoy nadie
   está en ese caso; la cuenta del smoke lo prueba.
 
 **Lo que todavía no hay** (para no prometerlo): cobro (la prueba de 14 días
-no vence en nada), el panel del dueño con la lista de coaches, la página
-pública con precios, términos y aviso de privacidad, la marca del coach
-(logo y color) y su foto en la liga. Y un pendiente conocido: el progreso de
-un ejercicio *propio* del coach da 404 al alumno (§4.5).
+no vence en nada; el panel del dueño sí marca quién ya se pasó), los datos del
+responsable en los legales, la marca del coach (logo y color) y su foto en la
+liga, y borrar la cuenta desde la app (hoy es por correo; Apple lo exige para
+la app nativa). Y un pendiente conocido: el progreso de un ejercicio *propio*
+del coach da 404 al alumno (§4.5).
 
 ---
 
@@ -523,8 +534,13 @@ siguiente. Ninguno deja la app a medias para los usuarios de hoy.
    navegador.
 5. [ ] **Cobro** (§7). Necesita la cuenta de Stripe. Primero en modo de
    pruebas.
-6. [ ] **Panel del dueño, página pública y legales** (§8, diseño en 8.1–8.3).
-   **⏭️ En curso**, antes que el 5 mientras Stripe aprueba la cuenta.
+6. [x] **Panel del dueño, página pública y legales** (§8), `e769d2f`. Hecho
+   antes que el 5 mientras Stripe aprueba la cuenta. Tal cual §8.1–8.3:
+   `src/server/dueno.ts`, precios y cupos en `src/lib/planes.ts` (los usan el
+   panel, la página, los términos y `coaches.ts`), datos del responsable en
+   `src/lib/legal.ts`, `LegalPage` / `LegalFooter` / `Consentimiento`. Los
+   legales van siempre en español (en inglés se avisa). Revisado con
+   capturas. Smoke 32/32, con 6 pruebas nuevas.
 7. [ ] **Marca del coach**. Logo, nombre y color en la app de sus alumnos.
 
 Con 1–6 ya se puede vender (fase 3 de negocio.md). Después sigue la app nativa:
@@ -569,6 +585,10 @@ contra producción:
 | ¿Un coach puede tener coach? | No. Para volverse coach, un alumno deja antes a su coach | Diseño del paso 4 |
 | ¿Pedir unirse por usuario con coach activo? | No: para cambiar de coach se usa la liga o el código, que preguntan antes | Diseño del paso 4 |
 | ¿Qué pasa al registrarse con la liga? | Queda ligado de una vez; al iniciar sesión con la liga, vuelve a ella a confirmar | Diseño del paso 4 |
+| ¿Paso 6 antes que el 5? | Sí, mientras Stripe aprueba la cuenta | Dueño, 2026-10-15 |
+| ¿Qué puede hacer el dueño con un coach? | Sólo dar o quitar el plan gratis; lo demás va por Stripe | Diseño del paso 6 |
+| ¿Los legales en inglés? | No: van en español (ley mexicana) y en inglés se avisa | Diseño del paso 6 |
+| ¿Datos del responsable en los legales? | Los da el dueño; mientras tanto, las páginas dicen "borrador" | **Pendiente del dueño** |
 | ¿Cuenta de Stripe? | La del dueño, con los datos fiscales de ElBe. **Hace falta para el paso 5** | Pendiente |
 | ¿Los ejercicios propios del coach los ven sus alumnos? | Pendiente conocido (§4.5); se resuelve después del paso 4 | Pendiente |
 
@@ -587,3 +607,8 @@ contra producción:
   es crítica en Next.js (`next/og`), que la app no usa. Anotado como
   pendiente #15 en PLAN.md. Sigue el paso 5, que necesita la cuenta de
   Stripe.
+- **2026-10-15**: la cuenta de Stripe está en revisión; el dueño pidió
+  adelantar el paso 6. Diseño en §8 (`d3f14f8`), código en `e769d2f`,
+  verificado en producción 32/32. Los legales se basan en la LFPDPPP
+  publicada el 20 de marzo de 2025 y quedan como borrador hasta tener los
+  datos del responsable y la revisión de un abogado.

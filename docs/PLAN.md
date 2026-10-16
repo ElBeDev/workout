@@ -493,7 +493,7 @@ Borrados: `users` → cascada a todo lo suyo (rutinas, sesiones, sets, pesos, ej
 - ~~Decimocuarta: panel del coach (quién no viene, ficha del socio, comentarios con push) y Retos (ranking del gimnasio y retos con meta) — [coach-y-retos.md](./coach-y-retos.md)~~ ✅
 - ~~Decimoquinta: rebrand de FiTME a GainLine, hecha por ElBeFit, con ícono propio en el sistema de la firma de ElBe Games ([rebrand-gainline.md](./rebrand-gainline.md)); la plancha y los isométricos por tiempo ([rutinas.md §7](./rutinas.md)) y nombres de planchas y calistenia arreglados~~ ✅
 - ~~Decimosexta: gamificación (XP, rangos de Bronce a Leyenda, medallas, XP en el ranking, tarjeta de socio) y foto de perfil en la base — [gamificacion.md](./gamificacion.md)~~ ✅
-- Decimoséptima (en curso): GainLine para coaches. Paga el coach ($199 MXN al mes), el alumno entrena gratis; cuentas de coach, vínculo alumno–coach, ranking y retos por grupo, cobro con Stripe, y todo listo para la app nativa — [negocio.md](./negocio.md) y [coaches.md](./coaches.md), que lleva el avance paso por paso. Pasos 1–4 de 7 ✅
+- Decimoséptima (en curso): GainLine para coaches. Paga el coach ($199 MXN al mes), el alumno entrena gratis; cuentas de coach, vínculo alumno–coach, ranking y retos por grupo, cobro con Stripe, y todo listo para la app nativa — [negocio.md](./negocio.md) y [coaches.md](./coaches.md), que lleva el avance paso por paso. Pasos 1–4 y 6 de 7 ✅ (falta el 5, cobro, y el 7, marca)
 
 **Queda abierto (sin prisa), en este orden sugerido:**
 
@@ -515,6 +515,8 @@ El plan de ataque de lo próximo, con lo que ya se decidió, vive en [siguiente-
 14. `npm run db:migrate` no carga `.env.local` (drizzle-kit no lo lee y el script no usa `--env-file`), así que sale "url: undefined". Hoy se corre como `node --env-file=.env.local node_modules/.bin/drizzle-kit migrate`; arreglarlo en `package.json` igual que `smoke`.
 15. **Next.js con una vulnerabilidad crítica** (visto el 2026-10-15 con `npm audit`): ejecución remota de código en `next/og` (`ImageResponse`). La app no usa `next/og`, así que no está expuesta, pero conviene subir `next` a la versión con el parche. `npm audit` marca además otras 13 (moderadas y altas) en dependencias de desarrollo y de Next (`sharp`, `undici`, `esbuild`, `braces`…).
 16. **Ejercicios propios del coach en rutinas de alumnos** (Decimoséptima, [coaches.md §4.5](./coaches.md)): el alumno los entrena, pero su página de progreso le da 404 porque sólo deja ver el catálogo y los propios de quien mira.
+17. **Borrar la cuenta desde la app**: hoy el aviso de privacidad dice que se pide por correo. Apple lo exige dentro de la app para publicar en la App Store (fase 5 de [negocio.md](./negocio.md)).
+18. **Datos del responsable en los legales** (`src/lib/legal.ts`: nombre o razón social, domicilio y correo) y revisión de un abogado. Mientras falten, `/terminos` y `/privacidad` dicen "borrador".
 
 ## 10. Mapa del código
 
@@ -736,6 +738,9 @@ Arrancó todo en un solo día (2026-09-03) y sigue creciendo: el historial fino 
 | `921a739` | Decimoséptima, paso 3: ranking, XP, retos, medallas, fotos y tarjetas por grupo de coach; `getActivity` y `getTimelines` ya no leen toda la base; migración 0006 `coaches.in_ranking` (encendido sólo para `bener`). Smoke 17/17 en producción |
 | `5c74a59` | docs: "Dónde vamos" en coaches.md, el diseño del paso 4 antes de construirlo, decisiones con quién y cuándo, bitácora |
 | `72e6d81` | Decimoséptima, paso 4: alta de coach (`/registro/coach` o desde Perfil), liga `/unirse/[code]` con y sin sesión (cookie `invitacion`), Invitar en `/coach` (código, liga, QR, WhatsApp, cupo), solicitudes, "Mi coach" en Perfil, quitar alumno, "De tu coach" y copiar rutina a varios alumnos. Servicios en `src/server/`. Smoke 26/26 en producción |
+| `0a4210a` | docs: el paso 4 queda en producción y verificado; pendientes #15 y #16 |
+| `d3f14f8` | docs: diseño del paso 6 (panel del dueño, página para coaches y legales), adelantado mientras Stripe aprueba la cuenta |
+| `e769d2f` | Decimoséptima, paso 6: `/admin` del dueño (ingreso del mes, coaches por estado, lista con prueba vencida y plan gratis), `/coaches` para vender, `/terminos` y `/privacidad` en borrador (LFPDPPP 2025), consentimiento en los registros y ligas en Perfil. `src/lib/planes.ts` y `src/lib/legal.ts`. Smoke 32/32 en producción |
 
 ## 12. Tercera ronda (acordada 2026-09-03) — cerrada
 

@@ -1,7 +1,8 @@
 # GainLine como negocio: el coach paga, el alumno entrena gratis
 
 Estado: **aprobado por el dueño el 2026-10-15; en construcción.** La fase 1
-está completa y la fase 2 (cobro) es lo siguiente: lo que ya está y lo que falta, paso por paso, en
+está completa, de la fase 3 ya están la página pública y los legales (en
+borrador), y la fase 2 (cobro) espera a que Stripe apruebe la cuenta: lo que ya está y lo que falta, paso por paso, en
 [coaches.md → "Dónde vamos"](./coaches.md#dónde-vamos). Precios de la
 competencia tomados de sitios de terceros en 2026 (fuentes al final): hay que
 confirmarlos antes de usarlos en una venta.
@@ -236,13 +237,13 @@ la app web que ya existe; la app nativa llega cuando ya hay coaches pagando.
 - [ ] Webhooks de Stripe: estado del plan en la base, bloqueo al fallar el
       cobro (§5), tope de alumnos por plan.
 - [ ] Página "Mi plan" del coach.
-- [ ] Términos de servicio y aviso de privacidad (los pide la ley y los pedirán
+- [x] Términos de servicio y aviso de privacidad (en `/terminos` y `/privacidad`, como borrador hasta tener tus datos y la revisión de un abogado) (los pide la ley y los pedirán
       las tiendas).
 
 ### Fase 3: vender
 
-- [ ] Página pública de GainLine para coaches: qué hace, precios, "Prueba 14
-      días".
+- [x] Página pública de GainLine para coaches: qué hace, precios, "Prueba 14
+      días". En `/coaches`.
 - [ ] Conseguir los **primeros 3–5 coaches** que paguen, con la app web
       instalable que ya funciona en el celular.
 - [ ] Lo que pidan ellos decide qué sigue. Plantillas de rutina (§3.4) es el
