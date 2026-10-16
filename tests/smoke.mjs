@@ -202,6 +202,52 @@ async function coachFlow(browser) {
   }
 }
 
+/**
+ * Paso 6 (docs/coaches.md §8): las páginas públicas abren sin sesión, una
+ * cuenta normal no entra a /admin, y un dueño desechable ve a los coaches y
+ * le da el plan gratis a uno. El dueño sólo ve coaches, nunca alumnos.
+ */
+async function ownerAndPublic(browser, normalPage) {
+  const ctx = await browser.newContext();
+  const anon = await ctx.newPage();
+  for (const [path, text] of [["/coaches", "$199"], ["/terminos", "No es consejo médico"], ["/privacidad", "ARCO"]]) {
+    const res = await anon.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
+    check(`public ${path}`, res.status() === 200 && (await anon.textContent("body")).includes(text));
+  }
+  await ctx.close();
+
+  await normalPage.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+  check("normal account can't open /admin", new URL(normalPage.url()).pathname === "/");
+
+  const tag = Date.now().toString(36);
+  const salt = randomBytes(16).toString("hex");
+  const hash = salt + ":" + scryptSync(password, salt, 64).toString("hex");
+  const [owner] = await sql`insert into users (username, password_hash, is_admin, show_in_ranking) values (${`smoke_dueno_${tag}`}, ${hash}, true, false) returning id, username`;
+  const [coach] = await sql`insert into users (username, password_hash, role, show_in_ranking) values (${`smoke_cdueno_${tag}`}, ${hash}, 'coach', false) returning id, username`;
+  try {
+    await sql`insert into coaches (user_id, code, plan, billing_status) values (${coach.id}, ${`SMK-D${tag}`}, 'coach', 'trialing')`;
+    const octx = await browser.newContext();
+    await octx.addCookies([{ name: "workout:idioma", value: "es", url: BASE }]);
+    const page = await octx.newPage();
+    await page.goto(`${BASE}/login`);
+    await page.fill('input[name="username"]', owner.username);
+    await page.fill('input[name="password"]', password);
+    await Promise.all([page.waitForURL(`${BASE}/`), page.click('button[type="submit"]')]);
+    await page.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
+    check("owner panel lists coaches", (await page.textContent("body")).includes(coach.username));
+    const row = page.locator("div", { hasText: coach.username }).locator("button", { hasText: "Dar plan gratis" }).last();
+    await row.click();
+    for (let i = 0; i < 30 && (await sql`select plan from coaches where user_id = ${coach.id}`)[0].plan !== "comp"; i++) {
+      await new Promise((r) => setTimeout(r, 500));
+    }
+    check("owner gives free plan", (await sql`select plan from coaches where user_id = ${coach.id}`)[0].plan === "comp");
+    await octx.close();
+  } finally {
+    await sql`delete from users where id in (${owner.id}, ${coach.id})`;
+    console.log("cleanup: deleted the owner and its coach");
+  }
+}
+
 async function main() {
   const userId = await createUser();
   const browser = await chromium.launch();
@@ -281,6 +327,7 @@ async function main() {
     check("delete routine", page.url() === `${BASE}/rutinas`);
     await isolation(browser);
     await coachFlow(browser);
+    await ownerAndPublic(browser, page);
   } catch (err) {
     check("unexpected error", false, String(err).slice(0, 200));
   } finally {

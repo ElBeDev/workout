@@ -3,17 +3,13 @@ import { and, count, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { coachClients, coaches, users } from "@/db/schema";
 import { publicName } from "@/db/gym";
+import { DIAS_PRUEBA, PLANES, esPlan } from "@/lib/planes";
 
 /**
  * Alta y datos de los coaches (docs/coaches.md §4.5). Sin cookies ni
  * redirects: lo usan la web y, más adelante, la API de la app nativa.
  */
 
-/** Alumnos activos que caben en cada plan; `null` = sin tope. */
-const CUPO: Record<string, number | null> = { coach: 30, coach_plus: null, comp: null };
-
-/** Días de prueba antes del primer cobro (negocio.md §4). */
-const DIAS_PRUEBA = 14;
 
 // Sin 0/O ni 1/I: el código se dicta y se copia a mano.
 const ALFABETO = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -98,7 +94,7 @@ async function cargarCoach(where: ReturnType<typeof eq>): Promise<CoachPublico |
     marca: row.brandName,
     plan: row.plan,
     alumnos: Number(n),
-    cupo: CUPO[row.plan] ?? CUPO.coach,
+    cupo: esPlan(row.plan) ? PLANES[row.plan].cupo : PLANES.coach.cupo,
   };
 }
 

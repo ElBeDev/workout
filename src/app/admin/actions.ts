@@ -6,6 +6,8 @@ import { db } from "@/db";
 import { exercises } from "@/db/schema";
 import { requireOwner } from "@/lib/coach";
 import { pendingGifIds } from "@/lib/blob";
+import { revalidatePath } from "next/cache";
+import { cambiarPlanGratis } from "@/server/dueno";
 
 /**
  * Por qué no hay copias de los gifs. `mirrorExerciseGif` se traga los errores
@@ -87,4 +89,11 @@ export async function diagnoseBlob(): Promise<{
     copias,
     pendientes,
   };
+}
+
+/** Dar o quitar el plan gratis a un coach (docs/coaches.md §8.1). */
+export async function cambiarPlanGratisAction(coachId: string, gratis: boolean) {
+  await requireOwner();
+  await cambiarPlanGratis(coachId, gratis);
+  revalidatePath("/admin");
 }

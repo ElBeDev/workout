@@ -28,6 +28,7 @@ import { getGameProfile } from "@/db/gamificacion";
 import { MEDALS } from "@/lib/xp";
 import { publicName } from "@/db/gym";
 import { MiCoach } from "./MiCoach";
+import { LegalFooter } from "@/components/LegalFooter";
 import { changePasswordAction, addBodyWeight, deleteBodyWeight, updateGoals, updateDisplayName } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -334,6 +335,8 @@ export default async function PerfilPage({
       </a>
 
       <LogoutButton />
+
+      <LegalFooter t={t} />
     </div>
   );
 }

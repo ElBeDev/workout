@@ -16,7 +16,7 @@ const TABS = [
   { href: "/perfil", clave: "perfil", icon: User },
 ] as const;
 
-const HIDDEN_ON = ["/login", "/registro", "/registro/coach"];
+const HIDDEN_ON = ["/login", "/registro", "/registro/coach", "/coaches", "/terminos", "/privacidad"];
 
 /**
  * Cápsula flotante de vidrio, como la tab bar de iOS 26: se encoge (esconde

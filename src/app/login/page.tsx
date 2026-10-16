@@ -56,7 +56,7 @@ export default async function LoginPage({
           {t.acceso.login.registrate}
         </Link>
         {" · "}
-        <Link href="/registro/coach" className="font-semibold text-accent">
+        <Link href="/coaches" className="font-semibold text-accent">
           {t.vinculos.registroCoach.soyCoach}
         </Link>
       </p>

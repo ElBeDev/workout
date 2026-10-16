@@ -5,6 +5,7 @@ import { getDict } from "@/i18n";
 import { leerInvitacion } from "@/lib/invitacion";
 import { coachPorCodigo } from "@/server/coaches";
 import { registerAction } from "./actions";
+import { Consentimiento } from "@/components/Consentimiento";
 
 export default async function RegistroPage({
   searchParams,
@@ -71,6 +72,7 @@ export default async function RegistroPage({
           </PrimaryButton>
 
           <p className="text-center text-[12px] text-muted">{t.acceso.registro.avisoSinCorreo}</p>
+          <Consentimiento t={t} />
         </form>
       </Card>
 

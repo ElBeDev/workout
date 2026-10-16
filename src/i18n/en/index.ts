@@ -12,6 +12,7 @@ import { retos } from "./retos";
 import { coach } from "./coach";
 import { juego } from "./juego";
 import { vinculos } from "./vinculos";
+import { publico } from "./publico";
 
 export const en = {
   comun,
@@ -28,4 +29,5 @@ export const en = {
   coach,
   juego,
   vinculos,
+  publico,
 };

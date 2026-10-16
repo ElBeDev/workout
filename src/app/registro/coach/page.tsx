@@ -6,6 +6,7 @@ import { PendingButton } from "@/components/PendingButton";
 import { getDict } from "@/i18n";
 import { getCurrentUserId } from "@/lib/session";
 import { registrarCoach } from "./actions";
+import { Consentimiento } from "@/components/Consentimiento";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +69,7 @@ export default async function RegistroCoachPage({
 
           <p className="text-center text-[12px] text-muted">{r.prueba}</p>
           {!conSesion && <p className="text-center text-[12px] text-muted">{t.acceso.registro.avisoSinCorreo}</p>}
+          <Consentimiento t={t} />
         </form>
       </Card>
 
