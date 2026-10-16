@@ -4,7 +4,7 @@ import { routines, routineExercises, exercises, workoutSessions, setLogs, swimBl
 import { exerciseGif } from "@/db/exercise-gif";
 import { localDate, weekKey, daysAgo, weekdayRank } from "@/lib/dates";
 import { toKg, type WeightUnit } from "@/lib/suggest";
-import { countsAsSet, isTimed, timeUnit, type TimeUnit } from "@/lib/measure";
+import { countsAsSet, timeUnit, type TimeUnit } from "@/lib/measure";
 import { BODY_PARTS, type BodyPart } from "@/lib/body-parts";
 
 /**
@@ -410,7 +410,14 @@ export function recordScore(rec: { weight: number | string | null; weightUnit: W
  * Mejor marca por ejercicio: la carga más alta registrada (por unidad) y, para
  * ejercicios sin carga, las reps máximas. Sale de `set_logs`, sin tabla nueva.
  */
-export async function getPersonalRecords(userId: string): Promise<Map<string, PersonalRecord>> {
+/**
+ * El récord de cada ejercicio de alguien. Con `exerciseId` lee sólo ese: es lo
+ * que necesita guardar una serie, y no tiene por qué leer todo el historial.
+ */
+export async function getPersonalRecords(
+  userId: string,
+  { exerciseId }: { exerciseId?: string } = {}
+): Promise<Map<string, PersonalRecord>> {
   const rows = await db
     .select({
       exerciseId: setLogs.exerciseId,
@@ -429,7 +436,8 @@ export async function getPersonalRecords(userId: string): Promise<Map<string, Pe
       and(
         eq(workoutSessions.userId, userId),
         eq(setLogs.completed, true),
-        eq(exercises.measure, "reps")
+        eq(exercises.measure, "reps"),
+        exerciseId ? eq(setLogs.exerciseId, exerciseId) : undefined
       )
     );
 

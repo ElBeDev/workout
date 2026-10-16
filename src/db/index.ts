@@ -1,8 +1,34 @@
 import { drizzle } from "drizzle-orm/neon-http";
-import { neon } from "@neondatabase/serverless";
+import { neon, neonConfig } from "@neondatabase/serverless";
+import { Agent, fetch as undiciFetch } from "undici";
 import * as schema from "./schema";
 
 type Db = ReturnType<typeof drizzle<typeof schema>>;
+
+/**
+ * Cada consulta del driver HTTP de Neon es un `fetch`. Con el `fetch` global
+ * de Node, las consultas que una página lanza en paralelo (`Promise.all`)
+ * terminaban una tras otra: después de la primera ronda todas viajaban por una
+ * sola conexión, y Progreso tardaba lo de 11 consultas seguidas (medido el
+ * 2026-10-15, ver PLAN.md, notas de infra). Un pool propio con varias
+ * conexiones HTTP/1.1 vivas las deja ir de verdad en paralelo.
+ */
+const pool = new Agent({ connections: 16, keepAliveTimeout: 30_000, allowH2: false });
+
+neonConfig.fetchFunction = async (url: string, init: RequestInit) => {
+  const inicio = process.env.DB_TRACE ? performance.now() : 0;
+  const res = await undiciFetch(url, { ...(init as object), dispatcher: pool } as Parameters<typeof undiciFetch>[1]);
+  // DB_TRACE=1 al arrancar el servidor imprime cuánto tardó cada consulta.
+  if (process.env.DB_TRACE) {
+    let q = "";
+    try {
+      const body = JSON.parse(String(init.body));
+      q = String(body.query ?? body.queries?.map((x: { query: string }) => x.query).join(" ;; ") ?? "");
+    } catch {}
+    console.log(`[db] ${(performance.now() - inicio).toFixed(0)}ms ${q.replace(/\s+/g, " ").slice(0, 90)}`);
+  }
+  return res as unknown as Response;
+};
 
 let _db: Db | undefined;
 

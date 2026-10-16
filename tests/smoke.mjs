@@ -17,6 +17,15 @@ const username = `smoke_${Date.now().toString(36)}`;
 const password = "smoke1234";
 
 const results = [];
+
+/**
+ * Espera a que la pantalla termine de llegar. Desde que hay `loading.tsx`, la
+ * URL cambia al instante y primero se ve el esqueleto (`aria-busy`); leer la
+ * página antes daría el esqueleto y no el contenido.
+ */
+async function ready(page) {
+  await page.waitForFunction(() => !document.querySelector('[aria-busy="true"]'), null, { timeout: 30000 });
+}
 function check(name, ok, extra = "") {
   results.push({ name, ok });
   console.log(`${ok ? "✓" : "✗"} ${name}${extra ? ` — ${extra}` : ""}`);
@@ -68,21 +77,32 @@ async function isolation(browser) {
     await page.fill('input[name="username"]', coachA.username);
     await page.fill('input[name="password"]', password);
     await Promise.all([page.waitForURL(`${BASE}/`), page.click('button[type="submit"]')]);
+    await ready(page);
 
     const status = async (path) => (await page.request.get(`${BASE}${path}`, { maxRedirects: 0 })).status();
     await page.goto(`${BASE}/coach`, { waitUntil: "networkidle" });
     const panel = await page.textContent("body");
     check("coach panel: only own members", panel.includes(clientA.username) && !panel.includes(clientB.username));
-    check("own member visible", (await status(`/coach/usuarios/${clientA.id}`)) === 200);
+    const own = await (await page.request.get(`${BASE}/coach/usuarios/${clientA.id}`)).text();
+    check("own member visible", own.includes(clientA.username) && !own.includes("NEXT_HTTP_ERROR_FALLBACK;404"));
     check("own hidden member's photo", (await status(`/api/avatar/${clientA.id}`)) === 200);
+    // Las páginas van en streaming (loading.tsx), así que el código HTTP ya
+    // salió como 200 cuando notFound() corre: se revisa el contenido. El
+    // texto "could not be found" viene en todas las páginas; la marca de que
+    // de verdad fue 404 es NEXT_HTTP_ERROR_FALLBACK;404. La foto es un route
+    // handler y sí da 404 de verdad.
+    const blockedPage = async (path) => {
+      const html = await (await page.request.get(`${BASE}${path}`)).text();
+      return html.includes("NEXT_HTTP_ERROR_FALLBACK;404") && !html.includes(clientB.username) && !html.includes("Smoke B");
+    };
     const blocked = await Promise.all([
-      status(`/coach/usuarios/${clientB.id}`),
-      status(`/coach/usuarios/${clientB.id}/sesion/${sessionB.id}`),
-      status(`/rutinas/${routineB.id}`),
-      status(`/api/avatar/${clientB.id}`),
-      status(`/retos/socio/${clientB.id}`),
+      blockedPage(`/coach/usuarios/${clientB.id}`),
+      blockedPage(`/coach/usuarios/${clientB.id}/sesion/${sessionB.id}`),
+      blockedPage(`/rutinas/${routineB.id}`),
+      blockedPage(`/retos/socio/${clientB.id}`),
+      status(`/api/avatar/${clientB.id}`).then((s) => s === 404),
     ]);
-    check("other coach's member: 404 everywhere", blocked.every((s) => s === 404), blocked.join(","));
+    check("other coach's member: not found everywhere", blocked.every(Boolean), blocked.join(","));
     await ctx.close();
 
     const ctx2 = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -92,18 +112,17 @@ async function isolation(browser) {
     await page2.fill('input[name="username"]', clientA2.username);
     await page2.fill('input[name="password"]', password);
     await Promise.all([page2.waitForURL(`${BASE}/`), page2.click('button[type="submit"]')]);
+    await ready(page2);
     await page2.goto(`${BASE}/retos`, { waitUntil: "networkidle" });
     const board = (await page2.textContent("body")).toLowerCase();
     check(
       "ranking: only own group",
       board.includes(clientA2.username) && !board.includes(clientB.username) && !board.includes(coachA.username)
     );
-    const other = await Promise.all(
-      [`/retos/socio/${clientB.id}`, `/api/avatar/${clientB.id}`].map(
-        async (path) => (await page2.request.get(`${BASE}${path}`, { maxRedirects: 0 })).status()
-      )
-    );
-    check("other group's visible member: 404", other.every((s) => s === 404), other.join(","));
+    const card = await (await page2.request.get(`${BASE}/retos/socio/${clientB.id}`)).text();
+    const photo = (await page2.request.get(`${BASE}/api/avatar/${clientB.id}`, { maxRedirects: 0 })).status();
+    const other = [card.includes("NEXT_HTTP_ERROR_FALLBACK;404") && !card.includes(clientB.username), photo === 404];
+    check("other group's visible member: not found", other.every(Boolean), other.join(","));
     await ctx2.close();
   } finally {
     await sql`delete from users where id = any(${ids})`;
@@ -138,6 +157,7 @@ async function coachFlow(browser) {
     await coach.page.fill('input[name="password"]', password);
     await coach.page.fill('input[name="brandName"]', "Smoke Fit");
     await Promise.all([coach.page.waitForURL(`${BASE}/coach`), coach.page.click("text=Crear cuenta de coach")]);
+    await ready(coach.page);
     const code = (await coach.page.textContent("body")).match(/GL-[0-9A-Z]{4}/)?.[0];
     check("coach signup → panel with code", Boolean(code), code ?? "");
     const coachId = await idOf(coachUser);
@@ -146,10 +166,12 @@ async function coachFlow(browser) {
     const viaLink = await newPage();
     await viaLink.page.goto(`${BASE}/unirse/${code}`);
     await Promise.all([viaLink.page.waitForURL(`${BASE}/registro`), viaLink.page.click("text=Crear cuenta")]);
+    await ready(viaLink.page);
     check("join link → signup shows coach", (await viaLink.page.textContent("body")).includes("Entrena con"));
     await viaLink.page.fill('input[name="username"]', linkUser);
     await viaLink.page.fill('input[name="password"]', password);
     await Promise.all([viaLink.page.waitForURL(`${BASE}/`), viaLink.page.click('button[type="submit"]')]);
+    await ready(viaLink.page);
     const linkId = await idOf(linkUser);
     check("signup via link → linked", (await link(coachId, linkId)) === "active");
 
@@ -162,9 +184,11 @@ async function coachFlow(browser) {
     await asks.page.fill('input[name="username"]', reqUser);
     await asks.page.fill('input[name="password"]', password);
     await Promise.all([asks.page.waitForURL(`${BASE}/`), asks.page.click('button[type="submit"]')]);
+    await ready(asks.page);
     await asks.page.goto(`${BASE}/perfil`);
     await asks.page.fill("#coach-username", coachUser);
     await Promise.all([asks.page.waitForURL(/coach=enviada/), asks.page.click("text=Pedir unirme")]);
+    await ready(asks.page);
     check("request by username → pending", (await link(coachId, reqId)) === "pending");
     await coach.page.goto(`${BASE}/coach`, { waitUntil: "networkidle" });
     await coach.page.click("text=Aceptar");
@@ -183,6 +207,7 @@ async function coachFlow(browser) {
     await coach.page.goto(`${BASE}/coach/copiar/${r.id}`, { waitUntil: "networkidle" });
     for (const box of await coach.page.locator('input[name="clientId"]').all()) await box.check();
     await Promise.all([coach.page.waitForURL(/ok=2/), coach.page.click("button:has-text('Copiar')")]);
+    await ready(coach.page);
     const copias = await sql`select count(*)::int n from routines where created_by = ${coachId} and user_id in (${linkId}, ${reqId}) and name = 'Smoke Copia'`;
     check("copy routine to 2 members", copias[0].n === 2);
     await viaLink.page.goto(`${BASE}/rutinas`, { waitUntil: "networkidle" });
@@ -192,6 +217,7 @@ async function coachFlow(browser) {
     await asks.page.goto(`${BASE}/perfil`, { waitUntil: "networkidle" });
     await asks.page.click("text=Dejar a mi coach");
     await Promise.all([asks.page.waitForURL(/perfil/), asks.page.click("text=Sí, dejarlo")]);
+    await ready(asks.page);
     await asks.page.waitForFunction(() => document.body.innerText.includes("Entrenas por tu cuenta"), null, { timeout: 15000 });
     check("member leaves coach → ended", (await link(coachId, reqId)) === "ended");
 
@@ -233,6 +259,7 @@ async function ownerAndPublic(browser, normalPage) {
     await page.fill('input[name="username"]', owner.username);
     await page.fill('input[name="password"]', password);
     await Promise.all([page.waitForURL(`${BASE}/`), page.click('button[type="submit"]')]);
+    await ready(page);
     await page.goto(`${BASE}/admin`, { waitUntil: "networkidle" });
     check("owner panel lists coaches", (await page.textContent("body")).includes(coach.username));
     const row = page.locator("div", { hasText: coach.username }).locator("button", { hasText: "Dar plan gratis" }).last();
@@ -263,6 +290,7 @@ async function main() {
     await page.fill('input[name="username"]', username);
     await page.fill('input[name="password"]', password);
     await Promise.all([page.waitForURL(`${BASE}/`), page.click('button[type="submit"]')]);
+    await ready(page);
     check("login", page.url() === `${BASE}/`);
 
     await page.goto(`${BASE}/rutinas`, { waitUntil: "networkidle" });
@@ -270,6 +298,7 @@ async function main() {
     await page.waitForSelector('input[name="name"]');
     await page.fill('input[name="name"]', "Smoke Push");
     await Promise.all([page.waitForURL(/\/rutinas\/[0-9a-f-]{36}$/), page.click("text=Crear rutina")]);
+    await ready(page);
     check("create routine", /\/rutinas\/[0-9a-f-]{36}$/.test(page.url()));
     const routineUrl = page.url();
 
@@ -297,6 +326,7 @@ async function main() {
 
     await page.click("text=Empezar entrenamiento");
     await page.waitForURL(/\/entrenar\//);
+    await ready(page);
     await page.waitForTimeout(500);
     await page.locator('input[name="load"]').first().fill("40");
     await page.locator('input[name="reps"]').first().fill("10");
@@ -308,6 +338,7 @@ async function main() {
 
     await page.click("text=Terminar entrenamiento");
     await page.waitForURL(/\/progreso/);
+    await ready(page);
     check("finish session → progreso", (await page.textContent("body")).includes("Smoke Push"));
 
     // Gamificación (docs/gamificacion.md): la sesión da XP y Hoy enseña el rango.
@@ -324,6 +355,7 @@ async function main() {
     await page.goto(routineUrl, { waitUntil: "networkidle" });
     await page.click("text=Eliminar rutina");
     await Promise.all([page.waitForURL(`${BASE}/rutinas`), page.click("text=Sí, eliminar")]);
+    await ready(page);
     check("delete routine", page.url() === `${BASE}/rutinas`);
     await isolation(browser);
     await coachFlow(browser);

@@ -9,8 +9,8 @@ import { and, eq, isNull, max } from "drizzle-orm";
 import { z } from "zod";
 import { getPersonalRecords, recordScore } from "@/db/queries";
 
-async function requireOwnedSession(sessionId: string) {
-  const userId = await requireUserId();
+async function requireOwnedSession(sessionId: string, knownUserId?: string) {
+  const userId = knownUserId ?? (await requireUserId());
   const [session] = await db
     .select({ id: workoutSessions.id, routineId: workoutSessions.routineId })
     .from(workoutSessions)
@@ -65,13 +65,19 @@ export async function logSet(formData: FormData): Promise<LogSetResult> {
   const plates = platesRaw !== "" && Number.isFinite(Number(platesRaw)) ? Math.round(Number(platesRaw)) : null;
   const reps = repsRaw !== "" && Number.isFinite(Number(repsRaw)) ? Number(repsRaw) : null;
 
-  const session = await requireOwnedSession(sessionId);
-
   // Lo que ya existía justo ANTES de esta escritura. Comparar contra "el
   // estado previo a este cambio" en vez de excluir esta fila a mano también
   // resuelve las ediciones: si subes una serie ya guardada, el punto de
   // comparación es lo que había antes de tocarla, sea o no la misma fila.
-  const before = await getPersonalRecords(session.userId);
+  // Sólo el récord de este ejercicio, y a la par que se comprueba la sesión:
+  // es el botón que más se toca y cada viaje a la base se nota.
+  const userId = await requireUserId();
+  // requireOwnedSession redirige si la sesión no es suya: la escritura de
+  // abajo nunca corre sin haberlo comprobado.
+  const [, before] = await Promise.all([
+    requireOwnedSession(sessionId, userId),
+    getPersonalRecords(userId, { exerciseId }),
+  ]);
   const previo = before.get(exerciseId);
 
   await db
