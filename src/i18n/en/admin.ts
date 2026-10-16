@@ -4,7 +4,7 @@ import type { admin as Es } from "../es/admin";
 export const admin: typeof Es = {
   // Listado de usuarios
   titulo: "Coach",
-  subtitulo: "How every member is doing",
+  subtitulo: "How your members are doing",
   usuarios: "Users",
   sinUsuario: "No username",
   tu: "you",

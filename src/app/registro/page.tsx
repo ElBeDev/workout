@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ElBeFit } from "@/components/ElBeFit";
 import { Card, Input, PrimaryButton } from "@/components/ui";
 import { getDict } from "@/i18n";
+import { leerInvitacion } from "@/lib/invitacion";
+import { coachPorCodigo } from "@/server/coaches";
 import { registerAction } from "./actions";
 
 export default async function RegistroPage({
@@ -12,6 +14,9 @@ export default async function RegistroPage({
   const { error } = await searchParams;
   const t = await getDict();
   const errores: Record<string, string | undefined> = t.acceso.registro.errores;
+  // Llegó por la liga de un coach: se le dice con quién va a quedar.
+  const invitacion = await leerInvitacion();
+  const coach = invitacion ? await coachPorCodigo(invitacion) : null;
 
   return (
     <div className="flex min-h-[85vh] flex-col justify-center gap-6">
@@ -23,6 +28,11 @@ export default async function RegistroPage({
         <div>
           <h1 className="text-[34px] font-bold tracking-[-0.02em]">{t.acceso.registro.titulo}</h1>
           <p className="text-[15px] text-muted">{t.acceso.registro.subtitulo}</p>
+          {coach && (
+            <p className="mt-1 text-[15px] font-semibold capitalize text-accent">
+              {t.vinculos.unirse.titulo} {coach.nombre}
+            </p>
+          )}
         </div>
       </div>
 

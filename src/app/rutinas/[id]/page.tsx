@@ -4,9 +4,10 @@ import { exerciseGif } from "@/db/exercise-gif";
 import { exerciseInstructions } from "@/db/exercise-instructions";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import { Play, ShieldCheck, Waves } from "lucide-react";
+import Link from "next/link";
+import { Copy, Play, ShieldCheck, Waves } from "lucide-react";
 import { requireUserId } from "@/lib/session";
-import { puedeEditarRutinasDe } from "@/server/acceso";
+import { esCoach, puedeEditarRutinasDe } from "@/server/acceso";
 import { timeUnit } from "@/lib/measure";
 import { normalizeLoadUnit } from "@/lib/suggest";
 import { blobConfigured } from "@/lib/blob";
@@ -83,6 +84,10 @@ export default async function RutinaDetailPage({
   const strokeCount = new Set(blocks.map((b) => b.stroke)).size;
 
   const hasContent = isSwim ? blocks.length > 0 : items.length > 0;
+  // Un coach puede copiar cualquier rutina que pueda ver (la suya o la de un
+  // alumno) a varios alumnos de una vez (docs/coaches.md §4.5).
+  const puedeCopiar = hasContent && (await esCoach(userId));
+  const deSuCoach = isOwner && routine.createdBy !== null && routine.createdBy !== userId;
 
   return (
     <div className="flex flex-col gap-6">
@@ -100,6 +105,23 @@ export default async function RutinaDetailPage({
               : t.rutinas.detalle.otroUsuario,
           )}
         </p>
+      )}
+
+      {deSuCoach && (
+        <p className="flex items-center gap-2 rounded-xl bg-accent/12 px-4 py-3 text-[14px] font-semibold text-accent">
+          <ShieldCheck className="h-4 w-4 shrink-0" />
+          {t.coach.deTuCoach}
+        </p>
+      )}
+
+      {puedeCopiar && (
+        <Link
+          href={`/coach/copiar/${routine.id}`}
+          className="flex items-center justify-center gap-2 rounded-full bg-surface-2 px-5 py-3 text-[15px] font-semibold text-foreground transition active:scale-[0.98]"
+        >
+          <Copy className="h-4 w-4" />
+          {t.vinculos.copiar.boton}
+        </Link>
       )}
 
       {error === "open-session" && (

@@ -6,6 +6,9 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { hashPassword } from "@/lib/password";
 import { createSession } from "@/lib/session";
+import { tomarInvitacion } from "@/lib/invitacion";
+import { mandarAvisos } from "@/lib/avisos";
+import { ligarConCodigo } from "@/server/vinculos";
 
 const USERNAME_RE = /^[a-z0-9._@-]{3,40}$/;
 
@@ -35,5 +38,14 @@ export async function registerAction(formData: FormData) {
   }
 
   await createSession(userId);
+
+  // Llegó por la liga de un coach (/unirse/[code]): queda en su grupo de una
+  // vez, porque una cuenta nueva no tiene coach que cambiar (docs/coaches.md §4.5).
+  const invitacion = await tomarInvitacion();
+  if (invitacion) {
+    const r = await ligarConCodigo(userId, invitacion, { source: "link" });
+    mandarAvisos(r.avisos);
+    if (!r.ok) redirect(`/unirse/${encodeURIComponent(invitacion)}?error=${r.error}`);
+  }
   redirect("/");
 }

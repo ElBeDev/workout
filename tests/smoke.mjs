@@ -111,6 +111,97 @@ async function isolation(browser) {
   }
 }
 
+/**
+ * Coaches y vínculos (docs/coaches.md §4.5), como lo haría una persona: alta
+ * de coach, alumno nuevo que entra por la liga, solicitud por usuario que el
+ * coach acepta, copiar una rutina a los dos ("De tu coach") y dejar al coach.
+ * Todo con un sufijo propio y borrado al final.
+ */
+async function coachFlow(browser) {
+  const tag = Date.now().toString(36);
+  const coachUser = `smoke_coach_${tag}`;
+  const linkUser = `smoke_liga_${tag}`;
+  const reqUser = `smoke_pide_${tag}`;
+  const newPage = async () => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    await ctx.addCookies([{ name: "workout:idioma", value: "es", url: BASE }]);
+    return { ctx, page: await ctx.newPage() };
+  };
+  const idOf = async (u) => (await sql`select id from users where username = ${u}`)[0]?.id;
+  const link = async (coachId, clientId) =>
+    (await sql`select status from coach_clients where coach_id = ${coachId} and client_id = ${clientId} order by created_at desc limit 1`)[0]?.status;
+  try {
+    // 1. Alta de coach
+    const coach = await newPage();
+    await coach.page.goto(`${BASE}/registro/coach`);
+    await coach.page.fill('input[name="username"]', coachUser);
+    await coach.page.fill('input[name="password"]', password);
+    await coach.page.fill('input[name="brandName"]', "Smoke Fit");
+    await Promise.all([coach.page.waitForURL(`${BASE}/coach`), coach.page.click("text=Crear cuenta de coach")]);
+    const code = (await coach.page.textContent("body")).match(/GL-[0-9A-Z]{4}/)?.[0];
+    check("coach signup → panel with code", Boolean(code), code ?? "");
+    const coachId = await idOf(coachUser);
+
+    // 2. Alumno nuevo por la liga
+    const viaLink = await newPage();
+    await viaLink.page.goto(`${BASE}/unirse/${code}`);
+    await Promise.all([viaLink.page.waitForURL(`${BASE}/registro`), viaLink.page.click("text=Crear cuenta")]);
+    check("join link → signup shows coach", (await viaLink.page.textContent("body")).includes("Entrena con"));
+    await viaLink.page.fill('input[name="username"]', linkUser);
+    await viaLink.page.fill('input[name="password"]', password);
+    await Promise.all([viaLink.page.waitForURL(`${BASE}/`), viaLink.page.click('button[type="submit"]')]);
+    const linkId = await idOf(linkUser);
+    check("signup via link → linked", (await link(coachId, linkId)) === "active");
+
+    // 3. Solicitud por usuario, aceptada por el coach
+    const salt = randomBytes(16).toString("hex");
+    await sql`insert into users (username, password_hash) values (${reqUser}, ${salt + ":" + scryptSync(password, salt, 64).toString("hex")})`;
+    const reqId = await idOf(reqUser);
+    const asks = await newPage();
+    await asks.page.goto(`${BASE}/login`);
+    await asks.page.fill('input[name="username"]', reqUser);
+    await asks.page.fill('input[name="password"]', password);
+    await Promise.all([asks.page.waitForURL(`${BASE}/`), asks.page.click('button[type="submit"]')]);
+    await asks.page.goto(`${BASE}/perfil`);
+    await asks.page.fill("#coach-username", coachUser);
+    await Promise.all([asks.page.waitForURL(/coach=enviada/), asks.page.click("text=Pedir unirme")]);
+    check("request by username → pending", (await link(coachId, reqId)) === "pending");
+    await coach.page.goto(`${BASE}/coach`, { waitUntil: "networkidle" });
+    await coach.page.click("text=Aceptar");
+    // Se espera a la base y no al texto: los títulos de sección van en
+    // mayúsculas por CSS y innerText las devuelve así.
+    for (let i = 0; i < 30 && (await link(coachId, reqId)) !== "active"; i++) await new Promise((r) => setTimeout(r, 500));
+    check("coach accepts → active", (await link(coachId, reqId)) === "active");
+    await coach.page.goto(`${BASE}/coach`, { waitUntil: "networkidle" });
+    const panel = await coach.page.textContent("body");
+    check("panel lists both members", panel.includes(linkUser) && panel.includes(reqUser));
+
+    // 4. Copiar una rutina del coach a los dos
+    const [ex] = await sql`select id from exercises where user_id is null and name = 'lever leg extension'`;
+    const [r] = await sql`insert into routines (user_id, name) values (${coachId}, 'Smoke Copia') returning id`;
+    await sql`insert into routine_exercises (routine_id, exercise_id, sort_order, target_sets, target_reps) values (${r.id}, ${ex.id}, 0, 2, 12)`;
+    await coach.page.goto(`${BASE}/coach/copiar/${r.id}`, { waitUntil: "networkidle" });
+    for (const box of await coach.page.locator('input[name="clientId"]').all()) await box.check();
+    await Promise.all([coach.page.waitForURL(/ok=2/), coach.page.click("button:has-text('Copiar')")]);
+    const copias = await sql`select count(*)::int n from routines where created_by = ${coachId} and user_id in (${linkId}, ${reqId}) and name = 'Smoke Copia'`;
+    check("copy routine to 2 members", copias[0].n === 2);
+    await viaLink.page.goto(`${BASE}/rutinas`, { waitUntil: "networkidle" });
+    check("member sees 'De tu coach'", (await viaLink.page.textContent("body")).includes("De tu coach"));
+
+    // 5. Dejar al coach
+    await asks.page.goto(`${BASE}/perfil`, { waitUntil: "networkidle" });
+    await asks.page.click("text=Dejar a mi coach");
+    await Promise.all([asks.page.waitForURL(/perfil/), asks.page.click("text=Sí, dejarlo")]);
+    await asks.page.waitForFunction(() => document.body.innerText.includes("Entrenas por tu cuenta"), null, { timeout: 15000 });
+    check("member leaves coach → ended", (await link(coachId, reqId)) === "ended");
+
+    for (const p of [coach, viaLink, asks]) await p.ctx.close();
+  } finally {
+    await sql`delete from users where username in (${coachUser}, ${linkUser}, ${reqUser})`;
+    console.log("cleanup: deleted the 3 coach-flow accounts");
+  }
+}
+
 async function main() {
   const userId = await createUser();
   const browser = await chromium.launch();
@@ -189,6 +280,7 @@ async function main() {
     await Promise.all([page.waitForURL(`${BASE}/rutinas`), page.click("text=Sí, eliminar")]);
     check("delete routine", page.url() === `${BASE}/rutinas`);
     await isolation(browser);
+    await coachFlow(browser);
   } catch (err) {
     check("unexpected error", false, String(err).slice(0, 200));
   } finally {

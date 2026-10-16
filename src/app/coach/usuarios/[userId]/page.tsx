@@ -37,6 +37,8 @@ import { RingLegend, RingTrio, type RingDatum } from "@/components/Rings";
 import { ExerciseThumb } from "@/components/ExerciseThumb";
 import { CoachCommentForm, CoachCommentHistory } from "@/components/CoachComments";
 import { createRoutineForUser } from "../../actions";
+import { quitarAlumno } from "../../vinculos-actions";
+import { ConfirmAction } from "@/components/ConfirmAction";
 
 export const dynamic = "force-dynamic";
 
@@ -260,6 +262,13 @@ export default async function AdminUserPage({
           </form>
         </Card>
       </section>
+
+      <ConfirmAction
+        label={t.vinculos.panel.quitar}
+        confirmText={t.vinculos.panel.confirmarQuitar}
+        yesLabel={t.vinculos.panel.siQuitar}
+        action={quitarAlumno.bind(null, userId)}
+      />
     </div>
   );
 }

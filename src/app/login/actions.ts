@@ -6,6 +6,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { verifyPassword } from "@/lib/password";
 import { createSession, destroySession } from "@/lib/session";
+import { tomarInvitacion } from "@/lib/invitacion";
 
 const MAX_FAILED = 8;
 const LOCK_MINUTES = 15;
@@ -43,6 +44,11 @@ export async function loginAction(formData: FormData) {
   }
 
   await createSession(user.id);
+
+  // Venía de la liga de un coach: de vuelta a ella, ya con sesión, para que
+  // confirme (si ya tiene coach, ahí se le pregunta si lo cambia).
+  const invitacion = await tomarInvitacion();
+  if (invitacion) redirect(`/unirse/${encodeURIComponent(invitacion)}`);
   redirect("/");
 }
 

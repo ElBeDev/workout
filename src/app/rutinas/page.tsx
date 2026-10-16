@@ -56,6 +56,9 @@ export default async function RutinasPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[17px] font-semibold">{routine.name}</p>
+                  {routine.fromCoach && (
+                    <p className="text-[12px] font-semibold text-accent">{t.coach.deTuCoach}</p>
+                  )}
                   <p className="text-[13px] text-muted">
                     {t.rutinas.lista.ejerciciosYSeries(routine.exerciseCount, routine.totalSets)}
                   </p>

@@ -27,6 +27,7 @@ import { MedalGrid, RankCard } from "@/components/Juego";
 import { getGameProfile } from "@/db/gamificacion";
 import { MEDALS } from "@/lib/xp";
 import { publicName } from "@/db/gym";
+import { MiCoach } from "./MiCoach";
 import { changePasswordAction, addBodyWeight, deleteBodyWeight, updateGoals, updateDisplayName } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -34,9 +35,9 @@ export const dynamic = "force-dynamic";
 export default async function PerfilPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; ok?: string }>;
+  searchParams: Promise<{ error?: string; ok?: string; coach?: string; coachError?: string }>;
 }) {
-  const { error, ok } = await searchParams;
+  const { error, ok, coach, coachError } = await searchParams;
   const t = await getDict();
   const errores: Record<string, string> = t.perfil.contrasena.errores;
   const userId = await requireUserId();
@@ -83,6 +84,8 @@ export default async function PerfilPage({
       </Card>
 
       <RankCard rank={game.rank} t={t} />
+
+      {user?.role === "member" && <MiCoach userId={userId} coach={coach} coachError={coachError} />}
 
       <section id="logros" className="flex scroll-mt-4 flex-col gap-3">
         <div className="flex items-baseline justify-between">

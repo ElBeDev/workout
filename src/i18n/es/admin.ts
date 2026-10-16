@@ -2,7 +2,7 @@
 export const admin = {
   // Listado de usuarios
   titulo: "Coach",
-  subtitulo: "Cómo va cada socio",
+  subtitulo: "Cómo van tus alumnos",
   usuarios: "Usuarios",
   sinUsuario: "Sin usuario",
   tu: "tú",

@@ -37,7 +37,8 @@ export function Connectivity() {
 
   useEffect(() => {
     if (process.env.NODE_ENV !== "production" || !("caches" in window) || !navigator.onLine) return;
-    if (pathname === "/login" || pathname === "/registro") return;
+    // Las páginas de entrada no se guardan: dependen de la sesión y de la invitación.
+    if (["/login", "/registro", "/registro/coach"].includes(pathname) || pathname.startsWith("/unirse/")) return;
     const id = setTimeout(() => {
       caches
         .open(PAGE_CACHE)

@@ -72,6 +72,8 @@ export type RoutineSummary = {
   totalSets: number;
   thumbUrl: string | null;
   lastDoneAt: Date | null;
+  /** La armó su coach, no la persona (`routines.created_by`): "De tu coach". */
+  fromCoach: boolean;
 };
 
 export async function getRoutineSummaries(userId: string): Promise<RoutineSummary[]> {
@@ -120,6 +122,7 @@ export async function getRoutineSummaries(userId: string): Promise<RoutineSummar
       totalSets: mine.reduce((sum, i) => sum + i.targetSets, 0),
       thumbUrl: mine[0]?.gifUrl ?? null,
       lastDoneAt: lastDoneMap.get(routine.id) ?? null,
+      fromCoach: routine.createdBy !== null && routine.createdBy !== userId,
     };
   });
 

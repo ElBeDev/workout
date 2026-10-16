@@ -16,7 +16,7 @@ const TABS = [
   { href: "/perfil", clave: "perfil", icon: User },
 ] as const;
 
-const HIDDEN_ON = ["/login", "/registro"];
+const HIDDEN_ON = ["/login", "/registro", "/registro/coach"];
 
 /**
  * Cápsula flotante de vidrio, como la tab bar de iOS 26: se encoge (esconde
@@ -39,7 +39,8 @@ export function BottomNav() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  if (HIDDEN_ON.includes(pathname)) return null;
+  // La liga de un coach también va sin barra: es una puerta de entrada.
+  if (HIDDEN_ON.includes(pathname) || pathname.startsWith("/unirse/")) return null;
 
   return (
     <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-5 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
