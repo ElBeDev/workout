@@ -1,21 +1,53 @@
 # Decimoséptima: GainLine para coaches
 
-Estado: **en curso.** Pasos 1 a 3 de 7 hechos (2026-10-15).
- Es la parte técnica de
-[negocio.md](./negocio.md) (qué se vende, a quién y a cuánto): aquí está cómo se
-construye sobre el código de hoy, en qué orden y cómo se sabe que quedó.
+Es la parte técnica de [negocio.md](./negocio.md) (qué se vende, a quién y a
+cuánto): cómo se construye sobre el código, en qué orden y cómo se sabe que
+quedó. **Documento vivo**: cada paso que se sube se marca aquí antes de
+empezar el siguiente.
 
 Por ahora todo sigue en Vercel y en la web. Pero **la app de iOS y Android ya
 viene** (fase 5 de negocio.md), así que todo lo de esta ronda se arma para
 que la app nativa lo use sin rehacerlo (§2).
 
+## Dónde vamos
+
+Actualizado: **2026-10-15**. Pasos **1 a 3 de 7** hechos, subidos y probados
+en producción (smoke 17/17 contra `workout-eight-neon.vercel.app`).
+
+| Paso | Qué | Estado | Commit |
+|---|---|---|---|
+| 1 | Esquema y datos de hoy | ✅ En producción | `6c711a4` |
+| 2 | Permisos y panel `/coach` | ✅ En producción | `9a94b10` |
+| 3 | Ranking, XP y retos por grupo | ✅ En producción | `921a739` |
+| 4 | Alta de coach, invitaciones, "Mi coach", copiar rutinas | **⏭️ Siguiente.** Diseño en §4.5 | — |
+| 5 | Cobro con Stripe | Falta la cuenta de Stripe | — |
+| 6 | Panel del dueño, página pública y legales | — | — |
+| 7 | Marca del coach | — | — |
+
+**Lo que ya ve la gente hoy:**
+
+- `bener` es coach (plan `comp`, gratis, código **`GL-27DE`**) y los otros 6
+  son sus alumnos. Nadie más es coach todavía: no hay forma de darse de alta
+  como coach hasta el paso 4.
+- El panel del coach está en **`/coach`** y sólo trae a sus alumnos. `/admin`
+  es del dueño y por ahora sólo tiene el mantenimiento de gifs.
+- Ranking, retos, XP, fotos y tarjetas son **por grupo de coach**. El ranking
+  de `bener` salió idéntico al de antes, con él incluido (§5).
+- Quien no tiene coach ve en Retos una tarjeta en vez de ranking. Hoy nadie
+  está en ese caso; la cuenta del smoke lo prueba.
+
+**Lo que todavía no hay** (para no prometerlo): alta de coach, liga e
+invitación, "Mi coach" en Perfil, solicitudes, "De tu coach" en la lista de
+rutinas, copiar una rutina a varios alumnos, cobro, panel del dueño.
+
 ---
 
-## 1. De dónde partimos
+## 1. De dónde partimos (antes de esta ronda)
 
-Hoy la app es **de un solo gimnasio con un solo coach**:
+Antes de la Decimoséptima la app era **de un solo gimnasio con un solo
+coach**:
 
-| Pieza | Cómo está hoy | Problema para coaches |
+| Pieza | Cómo estaba | Problema para coaches |
 |---|---|---|
 | Coach | `users.is_admin`; `requireAdmin()` en `src/lib/admin.ts` | Un admin ve **a todo el mundo** |
 | Panel del coach | `/admin`, `getMemberStatuses()` en `src/db/gym.ts` | Lee **todos** los usuarios (`from(users)` sin filtro) |
@@ -194,6 +226,81 @@ En **Perfil → "Mi coach"**:
   marcadas "De tu coach").
 - Lo puede hacer cualquiera de los dos. Al otro le llega un push.
 
+### 4.5 Diseño del paso 4 (decidido antes de construirlo)
+
+Lo de §4.1–4.4 aterrizado en piezas concretas:
+
+**Servicios** (`src/server/vinculos.ts` y `src/server/coaches.ts`, con la
+regla de §2.1: reciben a quién lo pide, devuelven un resultado tipado y no
+redirigen):
+
+- `crearCoach(userId, { brandName })`: `role = 'coach'`, fila en `coaches`
+  con código nuevo, `billing_status = 'trialing'` y prueba de 14 días. El
+  código se genera con 4 caracteres sin 0/O ni 1/I y se reintenta si choca.
+- `coachPorCodigo(code)`: nombre visible, marca y si tiene cupo.
+- `ligarConCodigo(alumno, code, { cambiar })`: devuelve `ok`,
+  `ya_es_tu_coach`, `tiene_otro` (con el nombre del coach actual), `sin_cupo`,
+  `no_existe` o `eres_tu`. Con `cambiar`, termina el vínculo viejo y crea el
+  nuevo en un solo `db.batch` (el driver `neon-http` no tiene transacciones
+  interactivas; `batch` sí es atómico).
+- `solicitarCoach(alumno, usuarioDelCoach)`: crea un vínculo `pending`. **Sólo
+  si el alumno no tiene coach**: para cambiar de coach se usa la liga o el
+  código, que piden confirmación.
+- `responderSolicitud(coach, vinculo, aceptar)`: acepta (revisando el cupo) o
+  la termina.
+- `cancelarSolicitud(alumno)` y `dejarCoach(quien, alumno)`.
+- **Cupo**: plan `coach` hasta 30 alumnos activos; `coach_plus` y `comp` sin
+  tope.
+- **Avisos push** (con `after()`, como los comentarios): al coach cuando
+  alguien se une, le pide unirse, se va o ya no cabe; al alumno cuando le
+  aceptan o rechazan la solicitud, o su coach lo deja.
+
+**La liga `/unirse/[code]`**:
+
+- Sin sesión: muestra al coach y dos botones, *Crear cuenta* y *Ya tengo
+  cuenta*. Cada uno es un formulario que guarda el código en la cookie
+  `invitacion` (1 hora, httpOnly) y lleva a `/registro` o `/login`. Las
+  cookies sólo se pueden escribir en una server action o un route handler,
+  no al pintar la página: por eso son formularios y no ligas.
+- **Al registrarse** con esa cookie, el alumno queda ligado de una vez (no
+  tiene coach que cambiar) y cae en Hoy.
+- **Al iniciar sesión** con esa cookie, vuelve a `/unirse/[code]` con sesión:
+  ahí confirma con un botón. Es donde se resuelve el "Ya entrenas con X.
+  ¿Cambiar a Y?".
+- Con sesión: el botón *Entrenar con X* (o *Cambiar a X*) llama a
+  `ligarConCodigo`.
+- Sin foto del coach por ahora: la foto exige sesión y ser del grupo. Llega
+  con la marca del coach (paso 7).
+
+**Alta de coach `/registro/coach`**: sin sesión pide usuario, contraseña,
+nombre visible y nombre de su marca. Con sesión (un alumno que se vuelve
+coach) sólo pide la marca y conserva su historial. En los dos casos cae en
+`/coach`. En el paso 5 se mete Stripe Checkout entre el alta y el panel.
+
+**Perfil → "Mi coach"** (sólo `role = 'member'`; un coach no tiene coach):
+con coach, su nombre, desde cuándo y *Dejar a mi coach* con confirmación;
+con solicitud pendiente, a quién y *Cancelar*; sin coach, el campo del código,
+el de usuario del coach para pedir unirse y la liga *¿Eres coach?*.
+
+**Panel `/coach`**: tarjeta **Invitar** (código, liga, QR en SVG con el
+paquete `qrcode`, *Copiar liga*, *Compartir por WhatsApp* y "N de 30
+alumnos") y **Solicitudes** con *Aceptar* y *Rechazar*.
+
+**"De tu coach"**: etiqueta en la lista de rutinas y en el detalle cuando
+`routines.created_by` es alguien distinto del dueño.
+
+**Copiar una rutina a varios alumnos**: el coach arma la rutina en su propia
+cuenta (o abre la de un alumno) y desde ella entra a
+`/coach/copiar/[routineId]`: lista de sus alumnos con casillas. Copia la
+rutina con sus ejercicios o bloques de natación, con `created_by` = el coach.
+No pisa rutinas existentes: siempre crea una nueva.
+
+**Pendiente conocido, no se arregla en este paso**: si el coach usa un
+ejercicio *propio* en la rutina de un alumno, el alumno lo puede entrenar,
+pero la página de progreso de ese ejercicio le da 404 (sólo deja ver los
+ejercicios del catálogo y los propios del que mira). Hoy el único ejercicio
+propio en uso es la sentadilla péndulo, y cada cuenta tiene su copia.
+
 ---
 
 ## 5. Grupo: ranking, retos, XP y fotos
@@ -298,13 +405,13 @@ En la misma migración, con un script revisado antes de correrlo:
 Cada paso es un commit que se sube y se prueba en producción antes del
 siguiente. Ninguno deja la app a medias para los usuarios de hoy.
 
-1. [x] **Esquema y datos** (§3, §9). Migración `drizzle/0005_smart_saracen.sql`
+1. [x] **Esquema y datos** (§3, §9), `6c711a4`. Migración `drizzle/0005_smart_saracen.sql`
    (aditiva) aplicada en Neon el 2026-10-15. Datos: `bener` es coach con plan
    `comp` y código **`GL-27DE`**; los otros 6 quedaron como sus alumnos
    (`source = 'migration'`). No había retos que pasarle. Comprobado que la
    base rechaza un segundo vínculo abierto para el mismo alumno. Sin cambios
    visibles: smoke 11/11.
-2. [x] **Permisos** (§2.2). `src/server/acceso.ts` y las guardias
+2. [x] **Permisos** (§2.2), `9a94b10`. `src/server/acceso.ts` y las guardias
    `requireCoach` / `requireCoachDe` / `requireOwner` en `src/lib/coach.ts`
    (adiós `src/lib/admin.ts`). El panel se mudó a `/coach` y sólo lee a sus
    alumnos (`getMemberStatuses(ids)`, `getActivity({ userIds })`); `/admin`
@@ -315,7 +422,7 @@ siguiente. Ninguno deja la app a medias para los usuarios de hoy.
    puerta trasera** a los datos de los alumnos de otros coaches (sólo los ve
    su coach), y el coach ya no aparece en su propia lista de alumnos. Smoke
    15/15 con la prueba de aislamiento (§11).
-3. [x] **Grupos** (§5). `grupoDe`, `participantesDe` y
+3. [x] **Grupos** (§5), `921a739`. `grupoDe`, `participantesDe` y
    `puedeVerPerfilPublico` en `src/server/acceso.ts`. `getActivity` exige la
    lista de ids (ya no hay forma de leer toda la base) y filtra también las
    series y la natación por grupo; `getTimelines(ids)` arma el XP sólo de
@@ -324,9 +431,9 @@ siguiente. Ninguno deja la app a medias para los usuarios de hoy.
    coach: tarjeta en vez de ranking. Migración 0006: `coaches.in_ranking`,
    encendido para `bener`. El ranking real salió idéntico al de antes (7 en
    el grupo, `bener` 4.º). Smoke 17/17, con dos pruebas nuevas de grupos.
-4. [ ] **Coaches y vínculos** (§4, §6). Registro de coach, `/unirse/[code]`, QR,
-   "Mi coach", solicitudes, invitar, copiar rutina a varios alumnos, "De tu
-   coach".
+4. [ ] **Coaches y vínculos** (§4, §6; diseño en §4.5). Registro de coach,
+   `/unirse/[code]`, QR, "Mi coach", solicitudes, invitar, copiar rutina a
+   varios alumnos, "De tu coach".
 5. [ ] **Cobro** (§7). Necesita la cuenta de Stripe. Primero en modo de
    pruebas.
 6. [ ] **Panel del dueño, página pública y legales** (§8). `/coaches` con qué
@@ -361,10 +468,27 @@ contra producción:
 
 ## 12. Decisiones
 
-| Pregunta | Propuesta |
-|---|---|
-| ¿Los 6 usuarios de hoy son alumnos de `bener`? | Sí (§9) |
-| ¿Dónde vive el panel del coach? | `/coach`; `/admin` para el dueño |
-| ¿Cuenta de Stripe? | La tuya, con los datos fiscales de ElBe. **Hace falta para el paso 5** |
-| ¿El alumno sin coach ve algo en Retos? | La tarjeta para unirse a un coach (§5) |
-| ¿Los ejercicios propios del coach los ven sus alumnos? | Sí, los que use en sus rutinas. Hoy son por usuario; se revisa en el paso 4 |
+| Pregunta | Decisión | Quién y cuándo |
+|---|---|---|
+| ¿Por coach o por gimnasio? | **Por coach**: un coach trabaja en varios gimnasios | Dueño, 2026-10-15 |
+| ¿Cuánto paga un coach? | **$199 MXN al mes** con todo, hasta 30 alumnos (negocio.md §4) | Dueño, 2026-10-15 |
+| ¿Los 6 usuarios de hoy son alumnos de `bener`? | Sí (§9) | Dueño, 2026-10-15 |
+| ¿Los coaches salen en el ranking de su grupo? | **No**, salvo `bener` (`coaches.in_ranking`) | Dueño, 2026-10-15 |
+| ¿El dueño ve los datos de los alumnos de otros coaches? | **No**: sólo su coach. Si hace falta para soporte, se agrega aparte | Propuesta, sin objeción |
+| ¿El coach sale en su propia lista de alumnos? | No | Propuesta, sin objeción |
+| ¿Dónde vive el panel del coach? | `/coach`; `/admin` para el dueño | Plan aprobado |
+| ¿El alumno sin coach ve algo en Retos? | Una tarjeta en vez de ranking (§5) | Plan aprobado |
+| ¿Un alumno puede tener varios coaches? | No, uno a la vez (lo garantiza la base) | Plan aprobado |
+| ¿Cuenta de Stripe? | La del dueño, con los datos fiscales de ElBe. **Hace falta para el paso 5** | Pendiente |
+| ¿Los ejercicios propios del coach los ven sus alumnos? | Pendiente conocido (§4.5); se resuelve después del paso 4 | Pendiente |
+
+---
+
+## 13. Bitácora
+
+- **2026-10-15**: plan escrito y aprobado. Pasos 1, 2 y 3 subidos y
+  verificados en producción el mismo día. Al cerrar el paso 2 el dueño pidió
+  seguir saliendo en el ranking; se resolvió en el paso 3 con
+  `coaches.in_ranking` (encendido sólo para él). Antes de empezar el paso 4,
+  el dueño pidió dejar documentado dónde vamos: de ahí salen "Dónde vamos"
+  (arriba) y §4.5.
