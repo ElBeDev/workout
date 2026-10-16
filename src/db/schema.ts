@@ -330,6 +330,9 @@ export const coaches = pgTable("coaches", {
   // Nombre de su marca, el que ven sus alumnos al ligarse.
   brandName: text("brand_name"),
   accentColor: text("accent_color"),
+  // Si el coach compite en el ranking y los retos de su grupo. Por omisión
+  // no: es el coach, no un alumno más. `bener` sí (docs/coaches.md §5).
+  inRanking: boolean("in_ranking").notNull().default(false),
   // "coach" (hasta 30 alumnos) | "coach_plus" (sin tope) | "comp" (gratis).
   plan: text("plan").notNull().default("coach"),
   // "trialing" | "active" | "past_due" | "locked" | "canceled".

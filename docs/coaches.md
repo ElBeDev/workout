@@ -1,6 +1,6 @@
 # Decimoséptima: GainLine para coaches
 
-Estado: **en curso.** Pasos 1 y 2 de 7 hechos (2026-10-15).
+Estado: **en curso.** Pasos 1 a 3 de 7 hechos (2026-10-15).
  Es la parte técnica de
 [negocio.md](./negocio.md) (qué se vende, a quién y a cuánto): aquí está cómo se
 construye sobre el código de hoy, en qué orden y cómo se sabe que quedó.
@@ -102,6 +102,7 @@ lo nota, igual que las migraciones anteriores.
 | `code` (único) | Código para invitar, `GL-7K3P`: 4 caracteres sin 0/O ni 1/I |
 | `brand_name` | Nombre que ven sus alumnos (fase de marca) |
 | `accent_color` | Color de su marca (fase de marca) |
+| `in_ranking` | Si el coach compite en el ranking y los retos de su grupo. Por omisión no; `bener` sí (migración 0006) |
 | `plan` | `'coach'` (hasta 30) / `'coach_plus'` (sin tope) / `'comp'` (gratis, para `bener`) |
 | `billing_status` | `'trialing'` / `'active'` / `'past_due'` / `'locked'` / `'canceled'` |
 | `trial_ends_at`, `current_period_end` | Fechas del plan |
@@ -197,15 +198,23 @@ En **Perfil → "Mi coach"**:
 
 ## 5. Grupo: ranking, retos, XP y fotos
 
-**El grupo** de alguien es su coach activo más todos los alumnos activos de
-ese coach. Para un coach, él mismo más sus alumnos. Un alumno sin coach es un
-grupo de uno.
+**El grupo** de alguien es el de su coach activo: los alumnos activos de ese
+coach, más el coach **sólo si compite** (`coaches.in_ranking`). Un coach ve el
+ranking de su propio grupo. Un alumno sin coach no tiene grupo.
+
+**Los coaches no compiten por omisión**: son el coach, no un alumno más. El
+dueño lo pidió así para todos menos para él: `bener` tiene `in_ranking`
+encendido y sale en el ranking de sus alumnos (2026-10-15). Más adelante se
+puede volver un interruptor en el panel del coach.
 
 - **Ranking**: `getActivity()` recibe la lista de ids del grupo en lugar de
   leer a todos.
 - **XP y rangos**: `getTimelines()` también. Esto además **arregla el
   rendimiento**: hoy cada página arma la línea de tiempo de toda la base.
 - **Retos**: los del `coach_id` del grupo. Un alumno sin coach no ve retos.
+- **Medallas de retos**: cuentan los retos de todos los coaches que la persona
+  ha tenido (y los suyos, si es coach), para que cambiar de coach no le quite
+  medallas.
 - **Alumno sin coach en Retos**: en lugar de un ranking de uno solo, una
   tarjeta *"Entrena con tu coach"* con el campo del código.
 - **Foto, tarjeta de socio y nombre**: se ven dentro del mismo grupo
@@ -306,8 +315,15 @@ siguiente. Ninguno deja la app a medias para los usuarios de hoy.
    puerta trasera** a los datos de los alumnos de otros coaches (sólo los ve
    su coach), y el coach ya no aparece en su propia lista de alumnos. Smoke
    15/15 con la prueba de aislamiento (§11).
-3. [ ] **Grupos** (§5). Ranking, XP, retos y fotos por grupo. `getTimelines()`
-   recibe ids.
+3. [x] **Grupos** (§5). `grupoDe`, `participantesDe` y
+   `puedeVerPerfilPublico` en `src/server/acceso.ts`. `getActivity` exige la
+   lista de ids (ya no hay forma de leer toda la base) y filtra también las
+   series y la natación por grupo; `getTimelines(ids)` arma el XP sólo de
+   quienes se piden, con `cache` por clave de texto. Retos por `coach_id`,
+   medallas por coaches históricos, foto y tarjeta sólo dentro del grupo. Sin
+   coach: tarjeta en vez de ranking. Migración 0006: `coaches.in_ranking`,
+   encendido para `bener`. El ranking real salió idéntico al de antes (7 en
+   el grupo, `bener` 4.º). Smoke 17/17, con dos pruebas nuevas de grupos.
 4. [ ] **Coaches y vínculos** (§4, §6). Registro de coach, `/unirse/[code]`, QR,
    "Mi coach", solicitudes, invitar, copiar rutina a varios alumnos, "De tu
    coach".

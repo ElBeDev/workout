@@ -33,6 +33,7 @@ export const retos: typeof Es = {
   sinActividad: "Nobody has scored in this period yet. Be the first.",
   tuLugar: (lugar: number) => `You're in place ${lugar}`,
   noSumas: "You haven't scored in this period yet.",
+  sinCoach: "Once you train with a coach, you'll compete with their group here.",
   oculto: "You don't show up in the leaderboard or challenges. Change it in Profile.",
   lugar: (n: number) => `Place ${n}`,
 

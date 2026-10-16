@@ -1,28 +1,35 @@
-import { and, eq, lt } from "drizzle-orm";
+import { and, eq, inArray, lt } from "drizzle-orm";
 import { db } from "@/db";
 import { users, challenges } from "@/db/schema";
 import { getChallengeActivity, isMetric, metricValue, rank as rankRows } from "@/db/gym";
 import { getTimeline, getTimelines } from "@/db/timelines";
 import { todayYmd } from "@/lib/dates";
 import { MEDALS, rankFor, type MedalUnlock, type Rank } from "@/lib/xp";
+import { coachesHistoricosDe } from "@/server/acceso";
 
-/** El rango de cada cuenta, para pintar insignias en listas. */
-export async function getRanks(): Promise<Map<string, Rank>> {
-  const all = await getTimelines();
+/** El rango de cada cuenta de una lista (un grupo), para pintar insignias. */
+export async function getRanks(userIds: string[]): Promise<Map<string, Rank>> {
+  const all = await getTimelines(userIds);
   return new Map([...all].map(([id, t]) => [id, rankFor(t.totalXp)]));
 }
 
 /**
  * Las medallas de retos, que no salen de la línea de tiempo: haber cumplido la
  * meta de un reto ya terminado, y haberlo ganado (primer lugar, empates
- * incluidos). Cuentan los retos en los que la persona aparecía en la tabla.
+ * incluidos). Cuentan los retos en los que la persona aparecía en la tabla:
+ * los de todos los coaches que ha tenido (y los suyos, si es coach), para que
+ * cambiar de coach no le quite medallas.
  */
 async function getChallengeMedals(userId: string): Promise<MedalUnlock[]> {
-  const finished = await db.select().from(challenges).where(lt(challenges.endsOn, todayYmd()));
+  const coachIds = [...(await coachesHistoricosDe(userId)), userId];
+  const finished = await db
+    .select()
+    .from(challenges)
+    .where(and(lt(challenges.endsOn, todayYmd()), inArray(challenges.coachId, coachIds)));
   let completed = 0;
   let won = 0;
   for (const c of finished) {
-    const rows = await getChallengeActivity(c);
+    const rows = await getChallengeActivity(c, [userId]);
     const metric = isMetric(c.metric) ? c.metric : "days";
     const mine = rows.find((r) => r.userId === userId);
     if (!mine) continue;

@@ -1,0 +1,1 @@
+ALTER TABLE "coaches" ADD COLUMN "in_ranking" boolean DEFAULT false NOT NULL;

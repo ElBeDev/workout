@@ -21,7 +21,8 @@ export default async function CoachPage() {
   const coachId = await requireCoach();
   const t = await getDict();
 
-  const [members, ranks] = await Promise.all([getMemberStatuses(await alumnosDe(coachId)), getRanks()]);
+  const ids = await alumnosDe(coachId);
+  const [members, ranks] = await Promise.all([getMemberStatuses(ids), getRanks(ids)]);
   const needsAttention = (m: MemberStatus) => m.daysSince === null || m.daysSince >= INACTIVE_DAYS;
   // Primero quien dejó de venir (más días, más arriba) y al final quien nunca
   // ha entrenado: al primero hay que ir a buscarlo, al segundo arrancarlo.

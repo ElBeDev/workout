@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { eq } from "drizzle-orm";
-import { CalendarClock, CheckCircle2, Crown, EyeOff, Trophy } from "lucide-react";
+import { CalendarClock, CheckCircle2, Crown, EyeOff, Trophy, Users } from "lucide-react";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import {
@@ -20,6 +20,7 @@ import {
   type RankedRow,
 } from "@/db/gym";
 import { requireUserId } from "@/lib/session";
+import { grupoDe } from "@/server/acceso";
 import { daysBetweenYmd, todayYmd } from "@/lib/dates";
 import { fmtMetric, fmtMetricText, METRIC_BG, METRIC_TONE } from "@/lib/metric-format";
 import { getDict, type Dict } from "@/i18n";
@@ -53,18 +54,20 @@ export default async function RetosPage({
   const metric: Metric = isMetric(m) ? m : "xp";
 
   const range = periodRange(period);
+  // Todo es del grupo: el de su coach, o el suyo si es coach (docs/coaches.md §5).
+  const grupo = await grupoDe(userId);
   const [[me], board, challenges, ranks] = await Promise.all([
     db.select({ showInRanking: users.showInRanking }).from(users).where(eq(users.id, userId)),
-    getActivity(range.since, range.until),
-    getChallenges(),
-    getRanks(),
+    getActivity(range.since, range.until, { userIds: grupo.ids }),
+    getChallenges(grupo.coachId),
+    getRanks(grupo.ids),
   ]);
   const [activeBoards, finishedBoards] = await Promise.all([
-    Promise.all(challenges.active.map(getChallengeActivity)),
-    Promise.all(challenges.finished.map(getChallengeActivity)),
+    Promise.all(challenges.active.map((c) => getChallengeActivity(c))),
+    Promise.all(challenges.finished.map((c) => getChallengeActivity(c))),
   ]);
 
-  // Todos salen en el ranking, aunque vayan en cero: es la tabla del gimnasio.
+  // Todos los del grupo salen en el ranking, aunque vayan en cero.
   const ranked = rank(board, metric, { withZeros: true });
   const mine = ranked.find((r) => r.userId === userId) ?? null;
   const anyScored = ranked.some((r) => r.value > 0);
@@ -116,50 +119,61 @@ export default async function RetosPage({
         </section>
       )}
 
-      <section className="flex flex-col gap-3">
-        <SectionTitle>{t.retos.ranking}</SectionTitle>
-        <div className="flex gap-1 rounded-full bg-surface-2 p-1">
-          {PERIODS.map((option) => (
-            <Link
-              key={option}
-              href={href({ p: option })}
-              scroll={false}
-              className={`flex-1 rounded-full py-2 text-center text-[13px] font-semibold transition ${
-                option === period ? "bg-surface text-foreground shadow-hero" : "text-muted"
-              }`}
-            >
-              {t.retos[option]}
-            </Link>
-          ))}
-        </div>
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none]">
-          {METRICS.map((option) => (
-            <Link
-              key={option}
-              href={href({ m: option })}
-              scroll={false}
-              className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-95 ${
-                option === metric ? "bg-accent text-accent-foreground" : "bg-surface-2 text-muted"
-              }`}
-            >
-              {t.retos.metricas[option]}
-            </Link>
-          ))}
-        </div>
-
-        {!anyScored && <p className="text-[13px] text-muted">{t.retos.sinActividad}</p>}
-        {ranked.length > 0 && (
-          <GroupedList>
-            {ranked.map((r) => (
-              <BoardRow key={r.userId} row={r} rank={ranks.get(r.userId)} metric={metric} isMe={r.userId === userId} t={t} />
+      {!grupo.coachId ? (
+        <section className="flex flex-col gap-3">
+          <SectionTitle>{t.retos.ranking}</SectionTitle>
+          {/* Sin coach no hay grupo con quién competir (docs/coaches.md §5). */}
+          <Card className="flex items-center gap-3 p-4 text-[15px] text-muted">
+            <Users className="h-5 w-5 shrink-0" />
+            {t.retos.sinCoach}
+          </Card>
+        </section>
+      ) : (
+        <section className="flex flex-col gap-3">
+          <SectionTitle>{t.retos.ranking}</SectionTitle>
+          <div className="flex gap-1 rounded-full bg-surface-2 p-1">
+            {PERIODS.map((option) => (
+              <Link
+                key={option}
+                href={href({ p: option })}
+                scroll={false}
+                className={`flex-1 rounded-full py-2 text-center text-[13px] font-semibold transition ${
+                  option === period ? "bg-surface text-foreground shadow-hero" : "text-muted"
+                }`}
+              >
+                {t.retos[option]}
+              </Link>
             ))}
-          </GroupedList>
-        )}
-        {!hidden && anyScored && mine?.value === 0 && (
-          <p className="text-[13px] text-muted">{t.retos.noSumas}</p>
-        )}
-        {metric === "volume" && <p className="text-[12px] text-faint">{t.retos.notaCarga}</p>}
-      </section>
+          </div>
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none]">
+            {METRICS.map((option) => (
+              <Link
+                key={option}
+                href={href({ m: option })}
+                scroll={false}
+                className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold transition active:scale-95 ${
+                  option === metric ? "bg-accent text-accent-foreground" : "bg-surface-2 text-muted"
+                }`}
+              >
+                {t.retos.metricas[option]}
+              </Link>
+            ))}
+          </div>
+
+          {!anyScored && <p className="text-[13px] text-muted">{t.retos.sinActividad}</p>}
+          {ranked.length > 0 && (
+            <GroupedList>
+              {ranked.map((r) => (
+                <BoardRow key={r.userId} row={r} rank={ranks.get(r.userId)} metric={metric} isMe={r.userId === userId} t={t} />
+              ))}
+            </GroupedList>
+          )}
+          {!hidden && anyScored && mine?.value === 0 && (
+            <p className="text-[13px] text-muted">{t.retos.noSumas}</p>
+          )}
+          {metric === "volume" && <p className="text-[12px] text-faint">{t.retos.notaCarga}</p>}
+        </section>
+      )}
 
       {challenges.finished.length > 0 && (
         <section className="flex flex-col gap-3">

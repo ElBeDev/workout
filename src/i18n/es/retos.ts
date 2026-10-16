@@ -31,6 +31,7 @@ export const retos = {
   sinActividad: "Nadie ha sumado todavía en este periodo. Sé el primero.",
   tuLugar: (lugar: number) => `Vas en el lugar ${lugar}`,
   noSumas: "Todavía no sumas en este periodo.",
+  sinCoach: "Cuando entrenes con un coach, aquí compites con su grupo.",
   oculto: "No apareces en el ranking ni en los retos. Se cambia en Perfil.",
   lugar: (n: number) => `Lugar ${n}`,
 

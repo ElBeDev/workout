@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { coachClients, coaches, users } from "@/db/schema";
 
@@ -66,4 +66,60 @@ export async function puedeVerSocio(viewerId: string, socioId: string): Promise<
 /** Editar las rutinas de alguien: las mismas reglas que verlo. */
 export function puedeEditarRutinasDe(viewerId: string, ownerId: string): Promise<boolean> {
   return puedeVerSocio(viewerId, ownerId);
+}
+
+/* ── Grupos: ranking, retos, fotos y tarjetas (docs/coaches.md §5) ─────── */
+
+/** Todos los coaches que alguien ha tenido, vínculos terminados incluidos. */
+export async function coachesHistoricosDe(clientId: string): Promise<string[]> {
+  const rows = await db
+    .selectDistinct({ coachId: coachClients.coachId })
+    .from(coachClients)
+    .where(and(eq(coachClients.clientId, clientId), inArray(coachClients.status, ["active", "ended"])));
+  return rows.map((r) => r.coachId);
+}
+
+/**
+ * Quienes compiten en el grupo de un coach: sus alumnos activos y él mismo
+ * sólo si eligió competir (`coaches.in_ranking`).
+ */
+export async function participantesDe(coachId: string): Promise<string[]> {
+  const [ids, [coach]] = await Promise.all([
+    alumnosDe(coachId),
+    db.select({ inRanking: coaches.inRanking }).from(coaches).where(eq(coaches.userId, coachId)),
+  ]);
+  return coach?.inRanking ? [coachId, ...ids] : ids;
+}
+
+export type Grupo = {
+  /** El coach del grupo, o null si la persona entrena sola. */
+  coachId: string | null;
+  /** Quienes salen en su ranking y en sus retos. */
+  ids: string[];
+};
+
+/**
+ * El grupo de alguien: el de su coach activo si es alumno, el propio si es
+ * coach. Quien no tiene coach entrena solo, en un grupo de uno.
+ */
+export async function grupoDe(userId: string): Promise<Grupo> {
+  const coachId = (await coachActivoDe(userId)) ?? ((await esCoach(userId)) ? userId : null);
+  if (!coachId) return { coachId: null, ids: [userId] };
+  return { coachId, ids: await participantesDe(coachId) };
+}
+
+/**
+ * Ver la cara pública de alguien (foto, tarjeta de socio): uno mismo, su
+ * coach, su alumno, o alguien de su grupo que no se ocultó del ranking.
+ */
+export async function puedeVerPerfilPublico(
+  viewerId: string,
+  targetId: string,
+  targetShowInRanking: boolean
+): Promise<boolean> {
+  if (viewerId === targetId) return true;
+  if ((await esCoachDe(viewerId, targetId)) || (await esCoachDe(targetId, viewerId))) return true;
+  if (!targetShowInRanking) return false;
+  const grupo = await grupoDe(viewerId);
+  return grupo.coachId !== null && (grupo.ids.includes(targetId) || grupo.coachId === targetId);
 }

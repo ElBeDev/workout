@@ -15,6 +15,7 @@ import { APP_TIME_ZONE, addDaysYmd, daysAgo, localDate, localDayStart, todayYmd,
 import { toKg } from "@/lib/suggest";
 import { xpBetween } from "@/lib/xp";
 import { getTimelines } from "@/db/timelines";
+import { participantesDe } from "@/server/acceso";
 
 /* ── Métricas del ranking y de los retos (docs/coach-y-retos.md) ──────────── */
 
@@ -91,18 +92,23 @@ const LB_TO_KG = sql.raw(String(toKg(1, "lbs")));
 export async function getActivity(
   since: Date,
   until: Date,
-  { includeHidden = false, userIds }: { includeHidden?: boolean; userIds?: string[] } = {}
+  { includeHidden = false, userIds }: { includeHidden?: boolean; userIds: string[] }
 ): Promise<ActivityRow[]> {
-  if (userIds && userIds.length === 0) return [];
+  // Siempre de un grupo (docs/coaches.md §5): nunca de toda la base.
+  if (userIds.length === 0) return [];
+  // Las tres consultas de series y natación cruzan con workout_sessions, así
+  // que el filtro por grupo va sobre su user_id.
   const setRange = and(
     eq(setLogs.completed, true),
     gte(setLogs.loggedAt, since),
-    lt(setLogs.loggedAt, until)
+    lt(setLogs.loggedAt, until),
+    inArray(workoutSessions.userId, userIds)
   );
   const swimRange = and(
     eq(swimBlockLogs.completed, true),
     gte(swimBlockLogs.loggedAt, since),
-    lt(swimBlockLogs.loggedAt, until)
+    lt(swimBlockLogs.loggedAt, until),
+    inArray(workoutSessions.userId, userIds)
   );
 
   const [people, strength, strengthDays, swim, timelines] = await Promise.all([
@@ -117,7 +123,7 @@ export async function getActivity(
       .where(
         and(
           includeHidden ? undefined : eq(users.showInRanking, true),
-          userIds ? inArray(users.id, userIds) : undefined
+          inArray(users.id, userIds)
         )
       ),
     db
@@ -147,7 +153,7 @@ export async function getActivity(
       .innerJoin(workoutSessions, eq(swimBlockLogs.sessionId, workoutSessions.id))
       .where(swimRange)
       .groupBy(workoutSessions.userId, localDay(swimBlockLogs.loggedAt)),
-    getTimelines(),
+    getTimelines(userIds),
   ]);
 
   const strengthBy = new Map(strength.map((r) => [r.userId, r]));
@@ -235,13 +241,16 @@ export type Challenge = typeof challenges.$inferSelect;
 /** Cuántos días de un reto ya terminado se sigue mostrando su resultado. */
 const FINISHED_VISIBLE_DAYS = 30;
 
-export async function getChallenges(now = new Date()) {
+/** Los retos del grupo de un coach; sin coach no hay retos. */
+export async function getChallenges(coachId: string | null, now = new Date()) {
   const today = todayYmd(now);
-  const rows = await db
-    .select()
-    .from(challenges)
-    .where(gte(challenges.endsOn, addDaysYmd(today, -FINISHED_VISIBLE_DAYS)))
-    .orderBy(asc(challenges.endsOn), asc(challenges.createdAt));
+  const rows = coachId
+    ? await db
+        .select()
+        .from(challenges)
+        .where(and(eq(challenges.coachId, coachId), gte(challenges.endsOn, addDaysYmd(today, -FINISHED_VISIBLE_DAYS))))
+        .orderBy(asc(challenges.endsOn), asc(challenges.createdAt))
+    : [];
 
   return {
     active: rows.filter((c) => c.startsOn <= today && c.endsOn >= today),
@@ -250,8 +259,7 @@ export async function getChallenges(now = new Date()) {
   };
 }
 
-/** Todos los retos, para el admin (los viejos también, para poder borrarlos). */
-/** Todos los retos de un coach, para su panel. */
+/** Todos los retos de un coach, los viejos también, para su panel. */
 export async function getAllChallenges(coachId: string): Promise<Challenge[]> {
   return db
     .select()
@@ -260,9 +268,16 @@ export async function getAllChallenges(coachId: string): Promise<Challenge[]> {
     .orderBy(desc(challenges.startsOn), desc(challenges.createdAt));
 }
 
-/** La actividad de cada participante dentro de las fechas del reto. */
-export function getChallengeActivity(c: Challenge): Promise<ActivityRow[]> {
-  return getActivity(localDayStart(c.startsOn), localDayStart(addDaysYmd(c.endsOn, 1)));
+/**
+ * La actividad de cada participante dentro de las fechas del reto: los de hoy
+ * del grupo de su coach, más `extra` (alguien que ya se fue del grupo y está
+ * viendo sus medallas, para que no las pierda al cambiar de coach).
+ */
+export async function getChallengeActivity(c: Challenge, extra: string[] = []): Promise<ActivityRow[]> {
+  const ids = c.coachId ? await participantesDe(c.coachId) : [];
+  return getActivity(localDayStart(c.startsOn), localDayStart(addDaysYmd(c.endsOn, 1)), {
+    userIds: [...new Set([...ids, ...extra])],
+  });
 }
 
 /* ── Panel del coach ───────────────────────────────────────────────────── */

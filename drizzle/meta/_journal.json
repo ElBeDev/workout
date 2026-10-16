@@ -43,6 +43,13 @@
       "when": 1792118106161,
       "tag": "0005_smart_saracen",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792119081614,
+      "tag": "0006_flippant_pet_avengers",
+      "breakpoints": true
     }
   ]
 }
