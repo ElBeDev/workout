@@ -164,7 +164,7 @@ con él, el curl femoral sentado, porque el dueño lo pidió así.
 
 1. Prensa de pierna a 45° en trineo — 2×10 *(de Karla; pies altos en la plataforma para cargar glúteo y femoral)*
 2. Curl femoral sentado en máquina — 2×10 *(el mismo del martes, a pedido del dueño)*
-3. Hiperextensión inversa en máquina — 2×12 *(`lever reverse hyperextension`: bisagra de cadera, femoral y glúteo)*
+3. Peso muerto rumano en máquina — 2×10 *(`leverage machine romanian deadlift`, fila agregada a mano al catálogo: bisagra de cadera, femoral y glúteo)*
 4. Sentadilla péndulo — 2×10 *(ejercicio propio, ver §4)*
 5. Aducción de cadera sentado en máquina — 2×12 *(el martes es abducción)*
 6. Extensión de pierna en máquina — 2×12 *(de Erika)*
@@ -177,8 +177,15 @@ polea, y entró la hiperextensión inversa en máquina (la patada de glúteo en
 máquina, `lever hip extension v. 2`, ya está el martes); y la elevación de
 talones pasó de la prensa a la máquina hack. Se corrigieron a mano los
 `name_es` de los dos nuevos ("inverso hiperextensión en máquina" y "hack
-elevación de talones"). Si el gimnasio no tiene la máquina de hiperextensión
-inversa, la alternativa sin polea es `lever seated good morning`.
+elevación de talones").
+
+El mismo día, al dueño no le gustó la hiperextensión inversa y pidió **peso
+muerto rumano en máquina** ("Leverage Machine RDL"). El catálogo de ExerciseDB
+no lo trae (sólo `lever deadlift`, que es convencional, y el de Smith), así que
+se agregó a mano una fila `leverage machine romanian deadlift` / "Peso muerto
+rumano en máquina" (`upper legs`, `leverage machine`, instrucciones en los dos
+idiomas, sin gif y sin `external_id`, así que el seed no la toca), igual que la
+`front plank`. Entró en la posición 3 a 2×10.
 
 La posición 4 pasó por dos intentos antes de quedar: patada de glúteo en polea
 (el dueño no quiso polea ahí) → sentadilla búlgara en Smith (tampoco) →
